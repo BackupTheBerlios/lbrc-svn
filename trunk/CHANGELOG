@@ -1,0 +1,21 @@
+2007-02-10 Matthias Bläsing <matthias.blaesing@rwth-aachen.de>
+    * Initial Release
+
+2007-02-15 Matthias Bläsing <matthias.blaesing@rwth-aachen.de>
+    * renamed BlueRemote to LBRC (the hopefully final name)
+    * get rid of fixed path to scriptlocation
+      (reported by Petr Fiala)
+    * added mapping file for Sony Ericsson K750i
+      (provided by Petr Fiala)
+    * moved mapping files to seperate directory
+    * updated requirements
+      (reported by Ralf Meyer and Petr Fiala)
+    * added README
+    * added instructions how to enable uinput device and how to configure it
+      (reported by Petr Fiala)
+    * added config.conf (uinput devicefile and default profile)
+    * added profile switching to gui
+    * seperated gui from controller
+      (drops hard dependeny for python gtk2, adds python dbus,
+       needs python glib)
+    * J2ME part now closes, when the server part is shutdown
