@@ -55,6 +55,46 @@ class LBRCdbus(dbus.service.Object):
     def get_profile(self):
         return (self.cur_profile, self.profiles[self.cur_profile]['name'])
 
+    @dbus.service.method('custom.LBRC', in_signature='as')
+    def set_allowed(self, filter):
+        self.btserver.set_allowed(filter)
+
+    @dbus.service.method('custom.LBRC', in_signature='s')
+    def add_allowed(self, address):
+        self.btserver.add_allowed(address)
+
+    @dbus.service.method('custom.LBRC', out_signature='as')
+    def get_allowed(self):
+        return self.btserver.get_allowed()
+
+    @dbus.service.method('custom.LBRC', in_signature='s')
+    def remove_allowed(self, address):
+        self.btserver.remove_allowed(address)
+
+    @dbus.service.method('custom.LBRC', out_signature='')
+    def clear_allowed(self):
+        self.btserver.clear_allowed()
+
+    @dbus.service.method('custom.LBRC', out_signature='')
+    def set_connectable_on(self):
+        self.btserver.set_property('connectable', 'yes')
+
+    @dbus.service.method('custom.LBRC', out_signature='')
+    def set_connectable_filtered(self):
+        self.btserver.set_property('connectable', 'filtered')
+
+    @dbus.service.method('custom.LBRC', out_signature='')
+    def set_connectable_off(self):
+        self.btserver.set_property('connectable', 'no')
+
+    @dbus.service.signal('custom.LBRC', signature='s')
+    def connectable_event(self, state):
+        pass
+
+    @dbus.service.signal('custom.LBRC', signature='')
+    def update_filter(self):
+        pass
+
     @dbus.service.signal('custom.LBRC', signature="ssi")
     def connect_cb(self, btname, btadress, port):
         pass
