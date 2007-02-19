@@ -16,58 +16,50 @@ class BTServer(gobject.GObject):
         gobject.GObject.__init__(self)
         self.name = name
         self.serverid = serverid
-        self.c_reader, self.c_writer = os.pipe()
-        self.i_reader, self.i_writer = os.pipe()
+        self.port = bluetooth.get_available_port( bluetooth.L2CAP)
+        self.connected = None
 
-        self.pid = os.fork()
-        if self.pid:
-            # We are the parent
-            os.close(self.c_writer)
-            os.close(self.i_writer)
-            gobject.io_add_watch(self.c_reader, gobject.IO_IN, self.read);
-            gobject.io_add_watch(self.i_reader, gobject.IO_IN, self.info);
-        else:
-            # The Child does the work ...
-            os.close(self.c_reader)
-            os.close(self.i_reader)
-            while 1:
-                server_sock = bluetooth.BluetoothSocket( bluetooth.L2CAP )
-                port = bluetooth.get_available_port( bluetooth.L2CAP)
-                server_sock.bind(("",port))
-                server_sock.listen(1)
-                bluetooth.advertise_service(server_sock, self.name, self.serverid)
-                client_sock,client_address = server_sock.accept()
-                bluetooth.stop_advertising(server_sock)
-                os.write(self.i_writer, "CONNECT " + str(client_address))
-                data = client_sock.recv(5)
-                while 1:
-                    os.write(self.c_writer, data)
-                    data = client_sock.recv(5)
-                    if len(data) == 0:
-                        break
-                client_sock.close()
-                server_sock.close()
-                os.write(self.i_writer, "DISCONNECT " + str(client_address))
+        self.client_sock = None
+        self.server_sock = bluetooth.BluetoothSocket( bluetooth.L2CAP )
+        self.server_sock.bind(("", self.port))
+        self.server_sock.listen(1)
+        
+        bluetooth.advertise_service(self.server_sock, self.name, self.serverid)
+
+        self.client_io_watch = None
+        self.server_io_watch = gobject.io_add_watch(self.server_sock, gobject.IO_IN, self.handle_connection)
 
     def shutdown(self):
-        os.kill(self.pid, 15)
+        pass
 
-    def info(self, source, condition):
-        data = os.read(self.i_reader, 1024)
-        if data[0:7] == "CONNECT":
-            matched = bt_address.match(data[8:])
-            self.emit("connect", matched.group(1), int(matched.group(2)))
-        elif data[0:10] == "DISCONNECT":
-            matched = bt_address.match(data[11:])
-            self.emit("disconnect",  matched.group(1), int(matched.group(2)))
+    def handle_incoming_data(self, clientsocket, condition):
+        data = clientsocket.recv(5)
+        if data:
+            mapping = ord(data[0])
+            keycode = self.byte_array_to_int(data[1:5])
+            self.emit('keycode', int(mapping), int(keycode))
         return True
 
-    def read(self, source, condition):
-        data = os.read(self.c_reader, 5)
-        mapping = ord(data[0])
-        keycode = self.byte_array_to_int(data[1:5])
-        self.emit('keycode', int(mapping), int(keycode))
-        return True
+    def handle_disconnection(self, serversocket, condidition):
+        gobject.source_remove(self.server_io_watch)
+        gobject.source_remove(self.client_io_watch)
+        self.emit("disconnect", self.connected[0], self.connected[1])
+        self.server_io_watch = gobject.io_add_watch(self.server_sock, gobject.IO_IN, self.handle_connection)
+        bluetooth.advertise_service(self.server_sock, self.name, self.serverid)
+        return False
+
+    def handle_connection(self, serversocket, condition):
+        gobject.source_remove(self.server_io_watch)
+        bluetooth.stop_advertising(self.server_sock)
+
+        self.client_sock,client_address = self.server_sock.accept()
+
+        self.connected = client_address
+        self.emit("connect", client_address[0], client_address[1])
+
+        self.client_io_watch = gobject.io_add_watch(self.client_sock, gobject.IO_IN, self.handle_incoming_data)
+        self.server_io_watch = gobject.io_add_watch(self.client_sock, gobject.IO_HUP, self.handle_disconnection)
+        return False
 
     @staticmethod
     def byte_array_to_int(bytes):
