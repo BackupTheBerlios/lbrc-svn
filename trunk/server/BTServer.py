@@ -70,3 +70,24 @@ class BTServer(gobject.GObject):
             factor =  int(math.pow(2, (exponent - i) * 8 ))
             result += ord(bytes[i]) * factor
         return result
+
+if __name__ == '__main__':
+    def print_args(*args):
+        print args
+
+    import gobject
+    bt = BTServer()
+    bt.connect("keycode", print_args, 'keycode')
+    bt.connect("connect", print_args, 'connect')
+    bt.connect("disconnect", print_args, 'disconnect')
+    
+    print "You entered Testmode, when you fireup LBRC on your device"
+    print "you will see the events (connect, disconnect, keycode), "
+    print "your device generates."
+    print
+    print "To exit, press STRG-C"
+    m = gobject.MainLoop()
+    try:
+        m.run()
+    except KeyboardInterrupt:
+        m.quit()
