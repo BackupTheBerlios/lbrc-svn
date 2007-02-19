@@ -1,0 +1,81 @@
+=====================================================
+=== Linux Bluetooth Remote Control ==================
+===              LBRC              ==================
+=====================================================
+
+Preface
+=======
+This software is provided without any warranty. It should work ok, but
+if it eats your computer, its not my problem.
+
+
+Description
+===========
+A small programm allowing a Java 2 ME and bluetooth enabled device to control a
+linux computer. It consists of a client part on the device and a server part on
+the controlled computer.
+
+The basic approach of injecting input events via the uinput Device in Linux
+Kernel 2.6.x. This also means, that the user running LBRC will be required to
+have write access to the device (currently assumed as /dev/input/uinput). This
+approach was inspired by the WiiMote(??) Driver written in Python.
+
+The J2ME Part does two things: Scan for an device, where our Service is running
+and then just send keycodes from the device with additional info, wheter the
+key was pressed or released.
+
+The Server part receives these keycodes and according to a config file
+(profiles.conf) maps these to keystrokes, mouse movement, mousewheel movement
+or mousebutton clicks.
+
+
+Install / Usage
+===============
+   0. make sure uinput device driver is available (module is called uinput),
+      check that "uinputdevice" in "config.conf" points to your device entry for
+      uinput (known locations: /dev/input/uinput or /dev/misc/uinput) and this
+      device is writeable by you
+
+   0a. if the uinput module is not available, you can enable it by recompiling
+       your kernel you find the option unter  
+       DeviceDrivers/InputDeviceSupport/MiscellaneousDrivers/User Level Driver Support
+
+   1. install the .jad/.jar File in j2me/bin onto your phone
+
+   2. run server/BlueRemoteServer.py (it's adviced to run it on the console, at
+      least the first time)
+
+   3. Make your computer visible
+      (at least mine is per default not visible)
+
+   4. run BlueRemote on your phone, "Find Devices" and choose your PC
+
+   5a. If you own a phone, that send the same codes as mine (Nokia 6230i), 
+       you get mouse control on the steering cross, ... (see profiles.conf)
+
+   5b. Else look at the computer screen, when pressing the keys on the phone an
+       note down the shown codes. After that open profiles.conf and modify it
+       according to the example given there
+
+       After that I would ask you to create a file documenting your codes and
+       send it to me
+
+
+Requirements
+============
+DBUS Part
+        * uinput Device
+        * python gobject bindinds
+        * pybluez
+        * python-json
+        * python-dbus
+
+GnomeUI Part
+        * python-dbus
+        * python-notify
+        * python-gnome2-extras (egg.trayicon)
+
+
+Author
+======
+Matthias Bläsing <matthias.blaesing@rwth-aachen.de>
