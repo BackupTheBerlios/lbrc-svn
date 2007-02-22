@@ -169,7 +169,7 @@ class BTServer(gobject.GObject):
             self.emit('keycode', int(mapping), int(keycode))
         return True
 
-    def handle_disconnection(self, serversocket, condidition):
+    def handle_disconnection(self, serversocket, condition):
         """
         Handles the shutdown of connections. When the serversocket signals the
         HUP condition.  The handler disconnects from the mainloop by returning
