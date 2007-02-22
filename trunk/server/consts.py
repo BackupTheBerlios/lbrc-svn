@@ -1,9 +1,9 @@
 uinput = {}
-uinput['UI_DEV_CREATE '] = 0x5501
+uinput['UI_DEV_CREATE'] = 0x5501
 uinput['UI_DEV_DESTROY'] = 0x5502
-uinput['UI_SET_EVBIT  '] = 0x40045564
-uinput['UI_SET_KEYBIT '] = 0x40045565
-uinput['UI_SET_RELBIT '] = 0x40045566
+uinput['UI_SET_EVBIT'] = 0x40045564
+uinput['UI_SET_KEYBIT'] = 0x40045565
+uinput['UI_SET_RELBIT'] = 0x40045566
 uinput['UI_SET_ABSBIT'] = 0x40045567
 uinput['UI_SET_MSCBIT'] = 0x40045568
 uinput['UI_SET_LEDBIT'] = 0x40045569

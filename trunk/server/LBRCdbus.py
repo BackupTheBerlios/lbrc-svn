@@ -12,7 +12,6 @@ import dbus.glib
 from UinputDispatcher import UinputDispatcher
 import consts as co
 from BTServer import BTServer
-input_map = co.input()
 
 class LBRCdbus(dbus.service.Object):
     def __init__(self):
@@ -170,7 +169,7 @@ class LBRCdbus(dbus.service.Object):
                     keys.append(bt)
 
             for key in pd['keys']:
-                k =  input_map.__getattribute__("KEY_" + key['map_to'])
+                k =  co.input["KEY_" + key['map_to']]
                 events[(int(key['keycode']),0)] = {'repeat_freq': int(key['repeat_freq']), 
                                       'repeat_func': self.const_key, 
                                       'repeat_commands': [[co.input['EV_KEY'], k, 0], [co.input['EV_KEY'], k, 1] ] , 
