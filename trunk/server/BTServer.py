@@ -246,8 +246,9 @@ class BTServer(gobject.GObject):
         else:
             self.client_sock.close()
             self.client_sock = None
-            self.server_io_watch = gobject.io_add_watch(self.server_sock, gobject.IO_IN, self.handle_connection)
-            bluetooth.advertise_service(self.server_sock, self.name, self.serverid)
+            if self.connectable == 'filtered':
+                self.server_io_watch = gobject.io_add_watch(self.server_sock, gobject.IO_IN, self.handle_connection)
+                bluetooth.advertise_service(self.server_sock, self.name, self.serverid)
             
         return False
 
