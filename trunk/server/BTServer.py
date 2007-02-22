@@ -232,7 +232,6 @@ class BTServer(gobject.GObject):
         @rtype:         bool
         @return:        always False, as we only allow one concurrent connection
         """
-        gobject.source_remove(self.server_io_watch)
         bluetooth.stop_advertising(self.server_sock)
 
         self.client_sock,client_address = self.server_sock.accept()
