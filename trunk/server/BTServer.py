@@ -192,7 +192,6 @@ class BTServer(gobject.GObject):
         @rtype:         bool
         @return:        always False, as we only allow one concurrent connection
         """
-        gobject.source_remove(self.server_io_watch)
         gobject.source_remove(self.client_io_watch)
         self.server_io_watch = None
         self.client_io_watch = None
