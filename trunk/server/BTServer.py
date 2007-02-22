@@ -116,7 +116,6 @@ class BTServer(gobject.GObject):
         @return:    Bluetooth Adresses allowed to connect
         """
         return self.filter.keys()
-        self.emit('updated_filter')
 
     def __init__(self, name = "LBRC", serverid = "a1e7"):
         gobject.GObject.__init__(self)
