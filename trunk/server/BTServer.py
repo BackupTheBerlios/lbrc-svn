@@ -4,8 +4,6 @@ import pygtk
 pygtk.require("2.0")
 import bluetooth,os,math,gobject,re
 
-bt_address = re.compile("\('([A-Fa-f0-9:]+)', ([0-9]+)\)")
-
 class BTServer(gobject.GObject):
     """
     Class to handle communication with a client on a Bluetooth Phone.
