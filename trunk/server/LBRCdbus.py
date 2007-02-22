@@ -137,35 +137,35 @@ class LBRCdbus(dbus.service.Object):
             pd = profiles[profile]
             events = {}
             for axis in pd['mouseaxes']:
-                ax = input_map.__getattribute__("REL_" + axis['map_to'][1:2])
+                ax = co.input["REL_" + axis['map_to'][1:2]]
                 if axis['map_to'][0:1] == "-":
                     events[(int(axis['keycode']), 0)] = {'repeat_freq': 10, 
                                                          'repeat_func': self.lin_mouse_freq,
-                                                         'commands': [[co.input.EV_REL, ax, lambda x,y: -1 * self.lin_mouse_step(x,y)]]}
+                                                         'commands': [[co.input['EV_REL'], ax, lambda x,y: -1 * self.lin_mouse_step(x,y)]]}
                 else:
                     events[(int(axis['keycode']), 0)] = {'repeat_freq': 10, 
                                                          'repeat_func': self.lin_mouse_freq,
-                                                         'commands': [[co.input.EV_REL, ax, lambda x,y: self.lin_mouse_step(x,y)]]}
+                                                         'commands': [[co.input['EV_REL'], ax, lambda x,y: self.lin_mouse_step(x,y)]]}
                 if ax not in relative_axes:
                     relative_axes.append(ax)
 
             for axis in pd['mousewheel']:
-                ax = input_map.__getattribute__("REL_" + axis['map_to'][1:])
+                ax = co.input["REL_" + axis['map_to'][1:]]
                 if axis['map_to'][0:1] == "-":
                     events[(int(axis['keycode']),0)] = {'repeat_freq': int(axis['repeat_freq']), 
                                                         'repeat_func': lambda x,n: x,
-                                                        'commands': [[co.input.EV_REL, ax, -1]]}
+                                                        'commands': [[co.input['EV_REL'], ax, -1]]}
                 else:
                     events[(int(axis['keycode']),0)] = {'repeat_freq': int(axis['repeat_freq']), 
                                                         'repeat_func': lambda x,n: x,
-                                                        'commands': [[co.input.EV_REL, ax, 1]]}
+                                                        'commands': [[co.input['EV_REL'], ax, 1]]}
                 if ax not in relative_axes:
                     relative_axes.append(ax)
 
             for button in pd['mousebuttons']:
-                bt = input_map.__getattribute__("BTN_" + button['map_to'])
-                events[(int(button['keycode']),0)] = {'commands': [[co.input.EV_KEY, bt, 1]]}
-                events[(int(button['keycode']),1)] = {'commands': [[co.input.EV_KEY, bt, 0]]}
+                bt = co.input["BTN_" + button['map_to']]
+                events[(int(button['keycode']),0)] = {'commands': [[co.input['EV_KEY'], bt, 1]]}
+                events[(int(button['keycode']),1)] = {'commands': [[co.input['EV_KEY'], bt, 0]]}
                 if bt not in keys:
                     keys.append(bt)
 
@@ -173,10 +173,10 @@ class LBRCdbus(dbus.service.Object):
                 k =  input_map.__getattribute__("KEY_" + key['map_to'])
                 events[(int(key['keycode']),0)] = {'repeat_freq': int(key['repeat_freq']), 
                                       'repeat_func': self.const_key, 
-                                      'repeat_commands': [[co.input.EV_KEY, k, 0], [co.input.EV_KEY, k, 1] ] , 
-                                      'commands': [[co.input.EV_KEY, k, 1]],
+                                      'repeat_commands': [[co.input['EV_KEY'], k, 0], [co.input['EV_KEY'], k, 1] ] , 
+                                      'commands': [[co.input['EV_KEY'], k, 1]],
                                       'blocking': 1}
-                events[(int(key['keycode']),1)] = {'commands': [[co.input.EV_KEY, k, 0]]}
+                events[(int(key['keycode']),1)] = {'commands': [[co.input['EV_KEY'], k, 0]]}
                 if k not in keys:
                     keys.append(k)
             self.profiles[profile] = {'events': events, 'name': pd['name'] }
@@ -206,7 +206,7 @@ class LBRCdbus(dbus.service.Object):
             if callable(param):
                 param = param(freq, calls)
             self.uinput_dispatch.send_event(command[0], command[1], param)
-        self.uinput_dispatch.send_event(co.input.EV_SYN, co.input.SYN_REPORT, 0)
+        self.uinput_dispatch.send_event(co.input['EV_SYN'], co.input['SYN_REPORT'], 0)
 
     def pre_profile_switch(self):
         repeathandler = self.repeathandler
