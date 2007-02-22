@@ -94,8 +94,9 @@ class BTServer(gobject.GObject):
         @type   filter:     string array
         @param  filter:     List of addresses allowed to connect
         """
+        self.filter = {}
         for address in filter:
-            self.add_allowed(address)
+            self.filter[address] = 1
         self.emit('updated_filter')
 
     def add_allowed(self, address):
