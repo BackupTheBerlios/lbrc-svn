@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import os, struct, fcntl, time
-import consts as co
+import LBRC.consts as co
 
 class UinputDispatcher(object):
     def __init__(self, device_file="/dev/input/uinput", **kwds):

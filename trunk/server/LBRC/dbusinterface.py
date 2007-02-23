@@ -9,9 +9,9 @@ import dbus
 import dbus.service
 import dbus.glib
 
-from UinputDispatcher import UinputDispatcher
-import consts as co
-from BTServer import BTServer
+from LBRC.UinputDispatcher import UinputDispatcher
+import LBRC.consts as co
+from LBRC.BTServer import BTServer
 
 class LBRCdbus(dbus.service.Object):
     def __init__(self):
