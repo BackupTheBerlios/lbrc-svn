@@ -94,7 +94,7 @@ class LBRC(gobject.GObject):
         n.show()
 
 if __name__=="__main__":
-    gobject.spawn_async([scriptpath+"/../server/LBRCdbus.py"], 
+    gobject.spawn_async([scriptpath+"/LBRCdbus.py"], 
                        flags= gobject.SPAWN_STDOUT_TO_DEV_NULL | 
                               gobject.SPAWN_STDERR_TO_DEV_NULL )
     bus = dbus.SessionBus()
