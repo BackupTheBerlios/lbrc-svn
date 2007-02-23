@@ -4,7 +4,7 @@ import pygtk
 pygtk.require("2.0")
 import gtk
 import pynotify
-pynotify.init("BlueRemote")
+pynotify.init("LBRC")
 import gtk.gdk
 import gobject
 import egg.trayicon
@@ -22,8 +22,8 @@ class LBRC(gobject.GObject):
         self.config = {}
         self.config['icon_size'] = 24
         self.config['abspath'] = scriptpath
-        self.icon = gtk.gdk.pixbuf_new_from_file(self.config['abspath'] + "/BlueRemote.svg")
-        self.trayicon = egg.trayicon.TrayIcon("BlueRemote")
+        self.icon = gtk.gdk.pixbuf_new_from_file(self.config['abspath'] + "/LBRC.svg")
+        self.trayicon = egg.trayicon.TrayIcon("LBRC")
         image = gtk.Image()
         image.set_from_pixbuf(self.icon.scale_simple(self.config['icon_size'],self.config['icon_size'], gtk.gdk.INTERP_BILINEAR))
         self.__create_menu()
@@ -87,7 +87,7 @@ class LBRC(gobject.GObject):
 
     def notify(self, message):
         (x,y) = self.trayicon.window.get_origin()
-        n = pynotify.Notification("BlueRemote", message, "file://" + self.config['abspath'] + "/BlueRemote.svg")
+        n = pynotify.Notification("Linux Bluetooth Remote Control", message, "file://" + self.config['abspath'] + "/LBRC.svg")
         n.set_timeout(5000)
         n.set_hint("x", x + self.config['icon_size'] / 2)
         n.set_hint("y", y + self.config['icon_size'] / 2)
