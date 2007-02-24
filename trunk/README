@@ -40,9 +40,9 @@ Install / Usage
        your kernel you find the option unter  
        DeviceDrivers/InputDeviceSupport/MiscellaneousDrivers/User Level Driver Support
 
-   1. install the .jad/.jar File in j2me/bin onto your phone
+   1. install the LBRC.jad/LBRC.jar File in j2me/bin onto your phone
 
-   2. run server/BlueRemoteServer.py (it's adviced to run it on the console, at
+   2. run server/LBRC.py (it's adviced to run it on the console, at
       least the first time)
 
    3. Make your computer visible

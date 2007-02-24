@@ -19,3 +19,18 @@
       (drops hard dependeny for python gtk2, adds python dbus,
        needs python glib)
     * J2ME part now closes, when the server part is shutdown
+
+2007-02-24 Matthias Bläsing <matthias.blaesing@rwth-aachen.de>
+    * switch to async IO in BTServer => no more forking necessary
+    * added tests to BTServer (run the BTServer.py)
+    * Added mappings file for Sony Ericsson K610i
+    * add infrastructure to BTServer.py and LBRCdbus.py to enable
+      deactivation or filtering the connections
+    * beginn documentation in BTServer.py
+    * Cleanup code (spelling, unnecessary calls)
+    * create LBRC Package (first step to real packaging)
+    * create doc dir and move include files and mapping files there
+    * finalize renameing (there were some places that were still waiting
+      for a name change)
+    * make sure our dbus service is only started once (next step is to
+      switch to dbus activation)
