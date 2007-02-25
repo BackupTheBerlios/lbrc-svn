@@ -10,10 +10,9 @@ import gobject
 import egg.trayicon
 import time
 import dbus
-import os
 import sys
-
-scriptpath = os.path.dirname(os.path.abspath(sys.argv[0]))
+import os.path as osp
+from LBRC import get_datafiles, get_binfile
 
 class LBRC(gobject.GObject):
     def __init__(self, lbrc, **kwds):
@@ -21,8 +20,7 @@ class LBRC(gobject.GObject):
         self.lbrc = lbrc
         self.config = {}
         self.config['icon_size'] = 24
-        self.config['abspath'] = scriptpath
-        self.icon = gtk.gdk.pixbuf_new_from_file(self.config['abspath'] + "/LBRC.svg")
+        self.icon = gtk.gdk.pixbuf_new_from_file(get_datafiles('LBRC.svg')[-1])
         self.trayicon = egg.trayicon.TrayIcon("LBRC")
         image = gtk.Image()
         image.set_from_pixbuf(self.icon.scale_simple(self.config['icon_size'],self.config['icon_size'], gtk.gdk.INTERP_BILINEAR))
@@ -87,14 +85,14 @@ class LBRC(gobject.GObject):
 
     def notify(self, message):
         (x,y) = self.trayicon.window.get_origin()
-        n = pynotify.Notification("Linux Bluetooth Remote Control", message, "file://" + self.config['abspath'] + "/LBRC.svg")
+        n = pynotify.Notification("Linux Bluetooth Remote Control", message, "file://" + get_datafiles('LBRC.svg')[-1])
         n.set_timeout(5000)
         n.set_hint("x", x + self.config['icon_size'] / 2)
         n.set_hint("y", y + self.config['icon_size'] / 2)
         n.show()
 
 if __name__=="__main__":
-    gobject.spawn_async([scriptpath+"/LBRCdbus.py"], 
+    gobject.spawn_async([get_binfile("LBRCdbus.py")], 
                        flags= gobject.SPAWN_STDOUT_TO_DEV_NULL | 
                               gobject.SPAWN_STDERR_TO_DEV_NULL )
     bus = dbus.SessionBus()

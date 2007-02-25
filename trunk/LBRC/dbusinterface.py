@@ -9,8 +9,9 @@ import dbus
 import dbus.service
 import dbus.glib
 
-from LBRC.UinputDispatcher import UinputDispatcher
 import LBRC.consts as co
+from LBRC import get_binfile, get_datafiles, get_configfile
+from LBRC.UinputDispatcher import UinputDispatcher
 from LBRC.BTServer import BTServer
 
 class LBRCdbus(dbus.service.Object):
@@ -122,74 +123,74 @@ class LBRCdbus(dbus.service.Object):
         pass
 
     def __read_config(self):
-        # abspath points to the directory which hold our graphics, which
-        # is the path where we are staying
-        abspath = os.path.dirname(os.path.abspath(sys.argv[0]))
-        config_file = open(abspath + "/config.conf")
-        config_data = config_file.read()
-        json_reader = json.JsonReader()
-        self.config = json_reader.read(config_data)
-        config_file.close()
-        self.config['abspath'] = abspath
+        try:
+            config_file = open(get_configfile('config.conf'))
+            config_data = config_file.read()
+            json_reader = json.JsonReader()
+            self.config = json_reader.read(config_data)
+            config_file.close()
+        except:
+            self.config = {}
 
     # Reads Profile file and creates Eventmap
     def __read_profiles(self):
-        profiles_file = open(self.config['abspath'] + "/profiles.conf")
-        profiles_data = profiles_file.read()
-        json_reader = json.JsonReader()
-        profiles = json_reader.read(profiles_data)
-        profiles_file.close()
-        del profiles_data
         self.profiles = {}
-        keys = []
-        relative_axes = []
-        for profile in profiles.keys():
-            pd = profiles[profile]
-            events = {}
-            for axis in pd['mouseaxes']:
-                ax = co.input["REL_" + axis['map_to'][1:2]]
-                if axis['map_to'][0:1] == "-":
-                    events[(int(axis['keycode']), 0)] = {'repeat_freq': 10, 
-                                                         'repeat_func': self.lin_mouse_freq,
-                                                         'commands': [[co.input['EV_REL'], ax, lambda x,y: -1 * self.lin_mouse_step(x,y)]]}
-                else:
-                    events[(int(axis['keycode']), 0)] = {'repeat_freq': 10, 
-                                                         'repeat_func': self.lin_mouse_freq,
-                                                         'commands': [[co.input['EV_REL'], ax, lambda x,y: self.lin_mouse_step(x,y)]]}
-                if ax not in relative_axes:
-                    relative_axes.append(ax)
+        for profile_file in get_datafiles('profiles.conf'):
+            profiles_file = open(profile_file)
+            profiles_data = profiles_file.read()
+            json_reader = json.JsonReader()
+            profiles = json_reader.read(profiles_data)
+            profiles_file.close()
+            del profiles_data
+            keys = []
+            relative_axes = []
+            for profile in profiles.keys():
+                pd = profiles[profile]
+                events = {}
+                for axis in pd['mouseaxes']:
+                    ax = co.input["REL_" + axis['map_to'][1:2]]
+                    if axis['map_to'][0:1] == "-":
+                        events[(int(axis['keycode']), 0)] = {'repeat_freq': 10, 
+                                                             'repeat_func': self.lin_mouse_freq,
+                                                             'commands': [[co.input['EV_REL'], ax, lambda x,y: -1 * self.lin_mouse_step(x,y)]]}
+                    else:
+                        events[(int(axis['keycode']), 0)] = {'repeat_freq': 10, 
+                                                             'repeat_func': self.lin_mouse_freq,
+                                                             'commands': [[co.input['EV_REL'], ax, lambda x,y: self.lin_mouse_step(x,y)]]}
+                    if ax not in relative_axes:
+                        relative_axes.append(ax)
 
-            for axis in pd['mousewheel']:
-                ax = co.input["REL_" + axis['map_to'][1:]]
-                if axis['map_to'][0:1] == "-":
-                    events[(int(axis['keycode']),0)] = {'repeat_freq': int(axis['repeat_freq']), 
-                                                        'repeat_func': lambda x,n: x,
-                                                        'commands': [[co.input['EV_REL'], ax, -1]]}
-                else:
-                    events[(int(axis['keycode']),0)] = {'repeat_freq': int(axis['repeat_freq']), 
-                                                        'repeat_func': lambda x,n: x,
-                                                        'commands': [[co.input['EV_REL'], ax, 1]]}
-                if ax not in relative_axes:
-                    relative_axes.append(ax)
+                for axis in pd['mousewheel']:
+                    ax = co.input["REL_" + axis['map_to'][1:]]
+                    if axis['map_to'][0:1] == "-":
+                        events[(int(axis['keycode']),0)] = {'repeat_freq': int(axis['repeat_freq']), 
+                                                            'repeat_func': lambda x,n: x,
+                                                            'commands': [[co.input['EV_REL'], ax, -1]]}
+                    else:
+                        events[(int(axis['keycode']),0)] = {'repeat_freq': int(axis['repeat_freq']), 
+                                                            'repeat_func': lambda x,n: x,
+                                                            'commands': [[co.input['EV_REL'], ax, 1]]}
+                    if ax not in relative_axes:
+                        relative_axes.append(ax)
 
-            for button in pd['mousebuttons']:
-                bt = co.input["BTN_" + button['map_to']]
-                events[(int(button['keycode']),0)] = {'commands': [[co.input['EV_KEY'], bt, 1]]}
-                events[(int(button['keycode']),1)] = {'commands': [[co.input['EV_KEY'], bt, 0]]}
-                if bt not in keys:
-                    keys.append(bt)
+                for button in pd['mousebuttons']:
+                    bt = co.input["BTN_" + button['map_to']]
+                    events[(int(button['keycode']),0)] = {'commands': [[co.input['EV_KEY'], bt, 1]]}
+                    events[(int(button['keycode']),1)] = {'commands': [[co.input['EV_KEY'], bt, 0]]}
+                    if bt not in keys:
+                        keys.append(bt)
 
-            for key in pd['keys']:
-                k =  co.input["KEY_" + key['map_to']]
-                events[(int(key['keycode']),0)] = {'repeat_freq': int(key['repeat_freq']), 
-                                      'repeat_func': self.const_key, 
-                                      'repeat_commands': [[co.input['EV_KEY'], k, 0], [co.input['EV_KEY'], k, 1] ] , 
-                                      'commands': [[co.input['EV_KEY'], k, 1]],
-                                      'blocking': 1}
-                events[(int(key['keycode']),1)] = {'commands': [[co.input['EV_KEY'], k, 0]]}
-                if k not in keys:
-                    keys.append(k)
-            self.profiles[profile] = {'events': events, 'name': pd['name'] }
+                for key in pd['keys']:
+                    k =  co.input["KEY_" + key['map_to']]
+                    events[(int(key['keycode']),0)] = {'repeat_freq': int(key['repeat_freq']), 
+                                          'repeat_func': self.const_key, 
+                                          'repeat_commands': [[co.input['EV_KEY'], k, 0], [co.input['EV_KEY'], k, 1] ] , 
+                                          'commands': [[co.input['EV_KEY'], k, 1]],
+                                          'blocking': 1}
+                    events[(int(key['keycode']),1)] = {'commands': [[co.input['EV_KEY'], k, 0]]}
+                    if k not in keys:
+                        keys.append(k)
+                self.profiles[profile] = {'events': events, 'name': pd['name'] }
         return[keys, relative_axes]
 
     def lin_mouse_freq(self, x,n):
