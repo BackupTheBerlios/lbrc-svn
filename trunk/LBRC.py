@@ -92,12 +92,7 @@ class LBRC(gobject.GObject):
         n.show()
 
 if __name__=="__main__":
-    gobject.spawn_async([get_binfile("LBRCdbus.py")], 
-                       flags= gobject.SPAWN_STDOUT_TO_DEV_NULL | 
-                              gobject.SPAWN_STDERR_TO_DEV_NULL )
     bus = dbus.SessionBus()
-    proxy_obj = None
-    count = 0
     proxy_obj = dbus.SessionBus().get_object('custom.LBRC', '/custom/LBRC')
     lbrc_interface = dbus.Interface(proxy_obj, 'custom.LBRC')
     ok = 0
@@ -107,6 +102,15 @@ if __name__=="__main__":
             ok = 1
             break
         except dbus.DBusException:
+            if count == 0:
+                # We got an dbus exception => our service is not running, so
+                # try to invoke it (if dbus activation would have worked, we
+                # the get_profiles call would have blocked till it was started)
+                # But we try the invokation only once!
+                gobject.spawn_async([get_binfile("LBRCdbus.py")], 
+                                    flags= gobject.SPAWN_STDOUT_TO_DEV_NULL | 
+                                           gobject.SPAWN_STDERR_TO_DEV_NULL )
+ 
             count += 1
             time.sleep(0.5)
     if not ok:
