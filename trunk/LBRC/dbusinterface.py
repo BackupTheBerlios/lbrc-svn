@@ -23,11 +23,11 @@ class LBRCdbus(dbus.service.Object):
         self.__read_config()
         self.btserver = BTServer()
         [used_keys, used_relative_axes] = self.__read_profiles()
-        self.uinput_dispatch = UinputDispatcher(
-            keys=used_keys, 
-            relative_axes=used_relative_axes,
-            device_file = self.config['uinputdevice']
-        )
+        uinput_call_kwds = {'keys': used_keys, 'relative_axes': used_relative_axes}
+        if self.config['uinputdevice']:
+            uinput_call_kwds['device_file'] = self.config['uinputdevice']
+        self.uinput_dispatch = UinputDispatcher(**uinput_call_kwds)
+
         # (keycode,mapping) => [callback_id, calls]
         self.repeathandler = {}
         self.btserver.connect('keycode', self.handler)
