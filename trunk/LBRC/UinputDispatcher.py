@@ -48,8 +48,8 @@ class UinputDispatcher(object):
         known_places = ['/dev/input/uinput', '/dev/misc/uinput']
         for place in known_places:
             logging.debug('Examing %s as uinput device' % (place,))
-            if osp.isfile(place):
-                if not os.access(place, os.R_OK | os.W_OK)
+            if osp.exists(place):
+                if not os.access(place, os.R_OK | os.W_OK):
                     logging.warning('%s looks like a uinput device node, but you lack necessary permissions' % (place,))
                 else:
                     logging.debug('Asuming we found a suitable uinput device node: %s' % (place,))
@@ -63,8 +63,8 @@ class UinputDispatcher(object):
                     logging.debug('Possible device node: %s' % (osp.join(root, 'uinput'),))
         for place in possible_places:
             logging.debug('Examing %s as uinput device' % (place,))
-            if osp.isfile(place):
-                if not os.access(place, os.R_OK | os.W_OK)
+            if osp.exists(place):
+                if not os.access(place, os.R_OK | os.W_OK):
                     logging.warning('%s looks like a uinput device node, but you lack necessary permissions' % (place,))
                 else:
                     logging.debug('Asuming we found a suitable uinput device node: %s' % (place,))

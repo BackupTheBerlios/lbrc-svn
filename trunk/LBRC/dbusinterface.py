@@ -9,6 +9,8 @@ import dbus
 import dbus.service
 import dbus.glib
 
+import logging
+
 import LBRC.consts as co
 from LBRC import get_binfile, get_datafiles, get_configfile
 from LBRC.UinputDispatcher import UinputDispatcher
@@ -122,6 +124,16 @@ class LBRCdbus(dbus.service.Object):
     def profile_change(self, id, name):
         pass
 
+    def __write_config(self):
+        try:
+            config_file = open(get_configfile('config.conf'), 'w')
+            json_writer = json.JsonWriter()
+            config_data = json_writer.write(self.config)
+            config_file.write(config_data)
+            config_file.close()
+        except Exception, e:
+            logging.error("Could not write config file: %s", get_configfile('config.conf'))
+
     def __read_config(self):
         try:
             config_file = open(get_configfile('config.conf'))
@@ -130,6 +142,7 @@ class LBRCdbus(dbus.service.Object):
             self.config = json_reader.read(config_data)
             config_file.close()
         except:
+            logging.debug("Could not open config file: %s", get_configfile('config.conf'))
             self.config = {}
 
     # Reads Profile file and creates Eventmap
@@ -271,6 +284,7 @@ class LBRCdbus(dbus.service.Object):
     @dbus.service.method('custom.LBRC')
     @dbus.service.signal('custom.LBRC')
     def shutdown(self):
+        self.__write_config()
         self.btserver.shutdown()
         self.mainloop.quit()
 
