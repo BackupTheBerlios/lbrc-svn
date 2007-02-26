@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 from LBRC.dbusinterface import LBRCdbus
+import sys
 
 brs = LBRCdbus()
 brs.run()
