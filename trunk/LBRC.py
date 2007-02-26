@@ -95,6 +95,7 @@ if __name__=="__main__":
     bus = dbus.SessionBus()
     proxy_obj = dbus.SessionBus().get_object('custom.LBRC', '/custom/LBRC')
     lbrc_interface = dbus.Interface(proxy_obj, 'custom.LBRC')
+    count = 0
     ok = 0
     while count < 10:
         try:

@@ -42,6 +42,7 @@ class LBRCdbus(dbus.service.Object):
              self.config['defaultprofile'] in self.profiles):
             self.cur_profile = self.config['defaultprofile']
         self.events = self.profiles[self.cur_profile]['events']
+        self.commands = self.profiles[self.cur_profile]['commands']
 
     def check_running_instance(self):
         proxy_obj = dbus.SessionBus().get_object('custom.LBRC', '/custom/LBRC')
@@ -57,6 +58,7 @@ class LBRCdbus(dbus.service.Object):
         if profileid in self.profiles and not profileid == self.cur_profile:
             if self.pre_profile_switch():
                 self.events = self.profiles[profileid]['events']
+                self.commands = self.profiles[profileid]['commands']
                 self.cur_profile = profileid
                 self.profile_change(profileid, self.profiles[profileid]['name'])
 
@@ -160,6 +162,9 @@ class LBRCdbus(dbus.service.Object):
             for profile in profiles.keys():
                 pd = profiles[profile]
                 events = {}
+                commands = {}
+                if not 'mouseaxes' in pd:
+                    pd['mouseaxes'] = {}
                 for axis in pd['mouseaxes']:
                     ax = co.input["REL_" + axis['map_to'][1:2]]
                     if axis['map_to'][0:1] == "-":
@@ -172,7 +177,8 @@ class LBRCdbus(dbus.service.Object):
                                                              'commands': [[co.input['EV_REL'], ax, lambda x,y: self.lin_mouse_step(x,y)]]}
                     if ax not in relative_axes:
                         relative_axes.append(ax)
-
+                if not 'mousewheel' in pd:
+                    pd['mousewheel'] = {}
                 for axis in pd['mousewheel']:
                     ax = co.input["REL_" + axis['map_to'][1:]]
                     if axis['map_to'][0:1] == "-":
@@ -185,14 +191,16 @@ class LBRCdbus(dbus.service.Object):
                                                             'commands': [[co.input['EV_REL'], ax, 1]]}
                     if ax not in relative_axes:
                         relative_axes.append(ax)
-
+                if not 'mousebuttons' in pd:
+                    pd['mousebuttons'] = {}
                 for button in pd['mousebuttons']:
                     bt = co.input["BTN_" + button['map_to']]
                     events[(int(button['keycode']),0)] = {'commands': [[co.input['EV_KEY'], bt, 1]]}
                     events[(int(button['keycode']),1)] = {'commands': [[co.input['EV_KEY'], bt, 0]]}
                     if bt not in keys:
                         keys.append(bt)
-
+                if not 'keys' in pd:
+                    pd['keys'] = {}
                 for key in pd['keys']:
                     k =  co.input["KEY_" + key['map_to']]
                     events[(int(key['keycode']),0)] = {'repeat_freq': int(key['repeat_freq']), 
@@ -203,7 +211,21 @@ class LBRCdbus(dbus.service.Object):
                     events[(int(key['keycode']),1)] = {'commands': [[co.input['EV_KEY'], k, 0]]}
                     if k not in keys:
                         keys.append(k)
-                self.profiles[profile] = {'events': events, 'name': pd['name'] }
+                if not 'commands' in pd:
+                    pd['commands'] = {}
+                for command in pd['commands']:
+                    try:
+                        mapping = int(command['mapping'])
+                    except:
+                        mapping = 0
+                    event_tuple = (int(command['keycode']), mapping)
+                    if not event_tuple in commands:
+                        commands[event_tuple] = []
+                    new_command = {}
+                    new_command['command'] = command['command']
+                    new_command['argv'] = command['argv']
+                    commands[event_tuple].append(new_command)
+                self.profiles[profile] = {'events': events, 'commands': commands, 'name': pd['name'] }
         return[keys, relative_axes]
 
     def lin_mouse_freq(self, x,n):
@@ -275,6 +297,14 @@ class LBRCdbus(dbus.service.Object):
                 freq = entry['repeat_func'](entry['repeat_freq'], 0)
                 repeathandler[event_tuple].append(gobject.timeout_add(int(1000.0/freq), self.repeater, event_tuple))
                 repeathandler[event_tuple].append(0)
+        if event_tuple in self.commands:
+            for command in self.commands[event_tuple]:
+                command_line = []
+                command_line.append(command['command'])
+                command_line.extend(command['argv'])
+                gobject.spawn_async( command_line, 
+                                     flags= gobject.SPAWN_STDOUT_TO_DEV_NULL | 
+                                            gobject.SPAWN_STDERR_TO_DEV_NULL )
         return True
 
     def run(self):
