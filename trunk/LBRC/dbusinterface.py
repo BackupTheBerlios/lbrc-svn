@@ -14,6 +14,7 @@ import logging
 import LBRC.consts as co
 from LBRC import get_binfile, get_datafiles, get_configfile
 from LBRC.UinputDispatcher import UinputDispatcher
+from LBRC.CommandExecutor import CommandExecutor
 from LBRC.BTServer import BTServer
 
 class LBRCdbus(dbus.service.Object):
@@ -23,26 +24,24 @@ class LBRCdbus(dbus.service.Object):
         bus_name = dbus.service.BusName('custom.LBRC', bus=dbus.SessionBus())
         dbus.service.Object.__init__(self, bus_name, "/custom/LBRC")
         self.__read_config()
+        self.__read_profiledata()
         self.btserver = BTServer()
-        [used_keys, used_relative_axes] = self.__read_profiles()
-        uinput_call_kwds = {'keys': used_keys, 'relative_axes': used_relative_axes}
-        if self.config['uinputdevice']:
-            uinput_call_kwds['device_file'] = self.config['uinputdevice']
-        self.uinput_dispatch = UinputDispatcher(**uinput_call_kwds)
+        self.cur_profile = None
+       
+        self.event_listener = []
+        self.event_listener.append(UinputDispatcher(self.config, self.profiledata))
+        self.event_listener.append(CommandExecutor(self.config, self.profiledata))
 
-        # (keycode,mapping) => [callback_id, calls]
-        self.repeathandler = {}
         self.btserver.connect('keycode', self.handler)
         self.btserver.connect('connect', lambda btserver, btadress, port: 
                                          self.connect_cb(bluetooth.lookup_name(btadress), btadress, port))
         self.btserver.connect('disconnect', lambda btserver, btadress, port:
                                          self.disconnect_cb(bluetooth.lookup_name(btadress), btadress, port))
-        self.cur_profile = self.profiles.keys()[0]
         if ( "defaultprofile" in self.config and
-             self.config['defaultprofile'] in self.profiles):
-            self.cur_profile = self.config['defaultprofile']
-        self.events = self.profiles[self.cur_profile]['events']
-        self.commands = self.profiles[self.cur_profile]['commands']
+             self.config['defaultprofile'] in self.profile_index):
+            self.set_profile(self.config['defaultprofile'])
+        else:
+            self.set_profile(self.profile_index.keys()[0])
 
     def check_running_instance(self):
         try:
@@ -55,12 +54,12 @@ class LBRCdbus(dbus.service.Object):
 
     @dbus.service.method('custom.LBRC', in_signature='s', out_signature=None)
     def set_profile(self, profileid):
-        if profileid in self.profiles and not profileid == self.cur_profile:
+        if profileid in self.profile_index and not profileid == self.cur_profile:
             if self.pre_profile_switch():
-                self.events = self.profiles[profileid]['events']
-                self.commands = self.profiles[profileid]['commands']
                 self.cur_profile = profileid
-                self.profile_change(profileid, self.profiles[profileid]['name'])
+                for listener in self.event_listener:
+                    listener.set_profile(self.cur_profile)
+                self.profile_change(profileid, self.profile_index[profileid])
 
     @dbus.service.method('custom.LBRC', out_signature="a(ss)")
     def get_profiles(self):
@@ -146,165 +145,30 @@ class LBRCdbus(dbus.service.Object):
         except:
             logging.debug("Could not open config file: %s", get_configfile('config.conf'))
             self.config = {}
-
-    # Reads Profile file and creates Eventmap
-    def __read_profiles(self):
-        self.profiles = {}
+    
+    def __read_profiledata(self):
+        self.profiledata = []
+        self.profile_index = {}
         for profile_file in get_datafiles('profiles.conf'):
             profiles_file = open(profile_file)
             profiles_data = profiles_file.read()
             json_reader = json.JsonReader()
-            profiles = json_reader.read(profiles_data)
+            data = json_reader.read(profiles_data)
+            for pro in data:
+                self.profile_index[pro] = data[pro]['name']
+            self.profiledata.append(data)
             profiles_file.close()
             del profiles_data
-            keys = []
-            relative_axes = []
-            for profile in profiles.keys():
-                pd = profiles[profile]
-                events = {}
-                commands = {}
-                if not 'mouseaxes' in pd:
-                    pd['mouseaxes'] = {}
-                for axis in pd['mouseaxes']:
-                    ax = co.input["REL_" + axis['map_to'][1:2]]
-                    if axis['map_to'][0:1] == "-":
-                        events[(int(axis['keycode']), 0)] = {'repeat_freq': 10, 
-                                                             'repeat_func': self.lin_mouse_freq,
-                                                             'commands': [[co.input['EV_REL'], ax, lambda x,y: -1 * self.lin_mouse_step(x,y)]]}
-                    else:
-                        events[(int(axis['keycode']), 0)] = {'repeat_freq': 10, 
-                                                             'repeat_func': self.lin_mouse_freq,
-                                                             'commands': [[co.input['EV_REL'], ax, lambda x,y: self.lin_mouse_step(x,y)]]}
-                    if ax not in relative_axes:
-                        relative_axes.append(ax)
-                if not 'mousewheel' in pd:
-                    pd['mousewheel'] = {}
-                for axis in pd['mousewheel']:
-                    ax = co.input["REL_" + axis['map_to'][1:]]
-                    if axis['map_to'][0:1] == "-":
-                        events[(int(axis['keycode']),0)] = {'repeat_freq': int(axis['repeat_freq']), 
-                                                            'repeat_func': lambda x,n: x,
-                                                            'commands': [[co.input['EV_REL'], ax, -1]]}
-                    else:
-                        events[(int(axis['keycode']),0)] = {'repeat_freq': int(axis['repeat_freq']), 
-                                                            'repeat_func': lambda x,n: x,
-                                                            'commands': [[co.input['EV_REL'], ax, 1]]}
-                    if ax not in relative_axes:
-                        relative_axes.append(ax)
-                if not 'mousebuttons' in pd:
-                    pd['mousebuttons'] = {}
-                for button in pd['mousebuttons']:
-                    bt = co.input["BTN_" + button['map_to']]
-                    events[(int(button['keycode']),0)] = {'commands': [[co.input['EV_KEY'], bt, 1]]}
-                    events[(int(button['keycode']),1)] = {'commands': [[co.input['EV_KEY'], bt, 0]]}
-                    if bt not in keys:
-                        keys.append(bt)
-                if not 'keys' in pd:
-                    pd['keys'] = {}
-                for key in pd['keys']:
-                    k =  co.input["KEY_" + key['map_to']]
-                    events[(int(key['keycode']),0)] = {'repeat_freq': int(key['repeat_freq']), 
-                                          'repeat_func': self.const_key, 
-                                          'repeat_commands': [[co.input['EV_KEY'], k, 0], [co.input['EV_KEY'], k, 1] ] , 
-                                          'commands': [[co.input['EV_KEY'], k, 1]],
-                                          'blocking': 1}
-                    events[(int(key['keycode']),1)] = {'commands': [[co.input['EV_KEY'], k, 0]]}
-                    if k not in keys:
-                        keys.append(k)
-                if not 'commands' in pd:
-                    pd['commands'] = {}
-                for command in pd['commands']:
-                    try:
-                        mapping = int(command['mapping'])
-                    except:
-                        mapping = 0
-                    event_tuple = (int(command['keycode']), mapping)
-                    if not event_tuple in commands:
-                        commands[event_tuple] = []
-                    new_command = {}
-                    new_command['command'] = command['command']
-                    new_command['argv'] = command['argv']
-                    commands[event_tuple].append(new_command)
-                self.profiles[profile] = {'events': events, 'commands': commands, 'name': pd['name'] }
-        return[keys, relative_axes]
-
-    def lin_mouse_freq(self, x,n):
-        freq = x * (n * 0.75 +1)
-        if freq > 500:
-            freq = 500
-        return freq
-
-    def lin_mouse_step(self, x,n):
-        freq = self.lin_mouse_freq(x,n);
-        if(freq < 500):
-            return 2
-        else:
-            return 3
-
-    def const_key(self, x, n):
-        if n == 0:
-            return 2
-        return 20
-
-    def send_commands(self, commands, freq, calls):
-        for command in commands:
-            param = command[2]
-            if callable(param):
-                param = param(freq, calls)
-            self.uinput_dispatch.send_event(command[0], command[1], param)
-        self.uinput_dispatch.send_event(co.input['EV_SYN'], co.input['SYN_REPORT'], 0)
 
     def pre_profile_switch(self):
-        repeathandler = self.repeathandler
-        # Make sure we handled everythink
-        # Currently profile switching while in a keypress handler will lead to problems!!
-        # The key would never be released, so we wont go into the switch with keypress active!
-        for release_event_tuple in repeathandler:
-            entry = self.events[event_tuple]
-            if 'blocking' in entry and entry['blocking']:
-                return 0
-        for release_event_tuple in repeathandler:
-            gobject.source_remove(repeathandler[release_event_tuple][0])
-            del repeathandler[release_event_tuple]
-        return 1
-
-    def repeater(self, event_tuple):
-        repeathandler = self.repeathandler
-        entry = self.events[event_tuple];
-        repeathandler[event_tuple][1] += 1
-        if 'repeat_commands' in entry:
-            self.send_commands(entry['repeat_commands'], entry['repeat_freq'], repeathandler[event_tuple][1])
-        else:
-            self.send_commands(entry['commands'], entry['repeat_freq'], repeathandler[event_tuple][1])
-        freq = entry['repeat_func'](entry['repeat_freq'], repeathandler[event_tuple][1])
-        repeathandler[event_tuple][0] = gobject.timeout_add(int(1000.0/freq), self.repeater, event_tuple)
-        return False
+        result = 1
+        for listener in self.event_listener:
+            result = result and listener.switch_profile()
+        return result
 
     def handler(self, btserver, map, keycode):
-        self.keycode_cb(map, keycode)
-        repeathandler = self.repeathandler
-        print "KeyCode: " + str(keycode)
-        event_tuple = (keycode, map)
-        release_event_tuple = (keycode, map - 1)
-        if release_event_tuple in repeathandler:
-            gobject.source_remove(repeathandler[release_event_tuple][0])
-            del repeathandler[release_event_tuple]
-        if event_tuple in self.events:
-            entry = self.events[event_tuple];
-            self.send_commands(entry['commands'], 0, 0)
-            if 'repeat_freq' in entry:
-                repeathandler[event_tuple] = []
-                freq = entry['repeat_func'](entry['repeat_freq'], 0)
-                repeathandler[event_tuple].append(gobject.timeout_add(int(1000.0/freq), self.repeater, event_tuple))
-                repeathandler[event_tuple].append(0)
-        if event_tuple in self.commands:
-            for command in self.commands[event_tuple]:
-                command_line = []
-                command_line.append(command['command'])
-                command_line.extend(command['argv'])
-                gobject.spawn_async( command_line, 
-                                     flags= gobject.SPAWN_STDOUT_TO_DEV_NULL | 
-                                            gobject.SPAWN_STDERR_TO_DEV_NULL )
+        for listener in self.event_listener:
+            listener.keycode(map, keycode)
         return True
 
     def run(self):

@@ -28,4 +28,4 @@ def get_binfile(name):
     else:
         return osp.join(scriptpath, name)
 
-__all__ = ["dbusinterface", "BTServer", "UinputDispatcher"]
+__all__ = ["dbusinterface", "BTServer", "UinputDispatcher", "CommandExecutor"]
