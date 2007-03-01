@@ -63,11 +63,11 @@ class LBRCdbus(dbus.service.Object):
 
     @dbus.service.method('custom.LBRC', out_signature="a(ss)")
     def get_profiles(self):
-        return [(i[0], i[1]['name']) for i in self.profiles.iteritems()]
+        return [(i[0], i[1]) for i in self.profile_index.iteritems()]
 
     @dbus.service.method('custom.LBRC', out_signature="ss")
     def get_profile(self):
-        return (self.cur_profile, self.profiles[self.cur_profile]['name'])
+        return (self.cur_profile, self.profile_index[self.cur_profile])
 
     @dbus.service.method('custom.LBRC', in_signature='as')
     def set_allowed(self, filter):
