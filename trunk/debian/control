@@ -1,0 +1,15 @@
+Source: lbrc
+Section: python
+Priority: optional
+Maintainer: Matthias Bläsing <matthias.blaesing@rwth-aachen.de>
+Build-Depends: python (>= 2.3.5-11), debhelper (>= 5.0.37.2)
+Build-Depends-Indep: python-all-dev, python-central (>= 0.5)
+XS-Python-Version: all
+Standards-Version: 3.7.2
+
+Package: python-lbrc
+Architecture: all
+XB-Python-Version: ${python:Versions}
+Depends: ${python:Depends}
+Description: Linux Bluetooth Remote Control
+

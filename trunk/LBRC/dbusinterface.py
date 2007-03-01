@@ -19,8 +19,6 @@ from LBRC.BTServer import BTServer
 
 class LBRCdbus(dbus.service.Object):
     def __init__(self):
-        if self.check_running_instance():
-            sys.exit(0)
         bus_name = dbus.service.BusName('custom.LBRC', bus=dbus.SessionBus())
         dbus.service.Object.__init__(self, bus_name, "/custom/LBRC")
         self.__read_config()
@@ -42,15 +40,6 @@ class LBRCdbus(dbus.service.Object):
             self.set_profile(self.config['defaultprofile'])
         else:
             self.set_profile(self.profile_index.keys()[0])
-
-    def check_running_instance(self):
-        try:
-            proxy_obj = dbus.SessionBus().get_object('custom.LBRC', '/custom/LBRC')
-            lbrc_interface = dbus.Interface(proxy_obj, 'custom.LBRC')
-            lbrc_interface.get_profiles()
-            return 1
-        except:
-            return 0
 
     @dbus.service.method('custom.LBRC', in_signature='s', out_signature=None)
     def set_profile(self, profileid):
