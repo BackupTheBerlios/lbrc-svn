@@ -21,8 +21,8 @@ class LBRCdbus(dbus.service.Object):
     def __init__(self):
         bus_name = dbus.service.BusName('custom.LBRC', bus=dbus.SessionBus())
         dbus.service.Object.__init__(self, bus_name, "/custom/LBRC")
-        self.__read_config()
-        self.__read_profiledata()
+        self._read_config()
+        self._read_profiledata()
         self.btserver = BTServer()
         self.cur_profile = None
        
@@ -46,6 +46,7 @@ class LBRCdbus(dbus.service.Object):
         if profileid in self.profile_index and not profileid == self.cur_profile:
             if self.pre_profile_switch():
                 self.cur_profile = profileid
+                self.config['defaultprofile'] = self.cur_profile
                 for listener in self.event_listener:
                     listener.set_profile(self.cur_profile)
                 self.profile_change(profileid, self.profile_index[profileid])
@@ -114,7 +115,7 @@ class LBRCdbus(dbus.service.Object):
     def profile_change(self, id, name):
         pass
 
-    def __write_config(self):
+    def _write_config(self):
         try:
             config_file = open(get_configfile('config.conf'), 'w')
             json_writer = json.JsonWriter()
@@ -124,7 +125,7 @@ class LBRCdbus(dbus.service.Object):
         except Exception, e:
             logging.error("Could not write config file: %s", get_configfile('config.conf'))
 
-    def __read_config(self):
+    def _read_config(self):
         try:
             config_file = open(get_configfile('config.conf'))
             config_data = config_file.read()
@@ -135,7 +136,7 @@ class LBRCdbus(dbus.service.Object):
             logging.debug("Could not open config file: %s", get_configfile('config.conf'))
             self.config = {}
     
-    def __read_profiledata(self):
+    def _read_profiledata(self):
         self.profiledata = []
         self.profile_index = {}
         for profile_file in get_datafiles('profiles.conf'):
@@ -167,7 +168,7 @@ class LBRCdbus(dbus.service.Object):
     @dbus.service.method('custom.LBRC')
     @dbus.service.signal('custom.LBRC')
     def shutdown(self):
-        self.__write_config()
+        self._write_config()
         self.btserver.shutdown()
         self.mainloop.quit()
 
