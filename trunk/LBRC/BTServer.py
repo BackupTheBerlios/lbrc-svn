@@ -1,28 +1,38 @@
 #!/usr/bin/python
 
+__extra_epydoc_fields__ = [('signal', 'Signal', 'Signals')]
+
 import pygtk
 pygtk.require("2.0")
 import bluetooth,os,math,gobject,re
 
 class BTServer(gobject.GObject):
     """
-    Class to handle communication with a client on a Bluetooth Phone.
+    Class to handle communication with a client on a bluetooth phone.
 
-    These signals are available:
-    - keycode: (mapping, keycode)
-        The signal is fired when a data package is recieved. The package is
+    @signal: keycode: (mapping, keycode)
+
+        The signal is fired when a data package is received. The package is
         decoded and the mapping and keycode is extracted. Mapping refers to the
         press state (0 => pressed, 1 => released), the keycode is defined by
         the phone (or a JSR)
-    - connect: (bluetoothaddress, port)
+
+    @signal: connect: (bluetoothaddress, port)
+
         The signal is fired on connection from a device. The bluetooth address
         and the connected port are carried as port.
-    - disconnect: (bluetoothaddress, port)
+
+    @signal: disconnect: (bluetoothaddress, port)
+
         The signal is fired on disconnection from a device. See "connect".
-    - connectable_event: (connectable_state)
+
+    @signal: connectable_event: (connectable_state)
+
         The signal is fired on change of connectable settings.  The new state
         is passed as parameter.
-    - updated_filter
+
+    @signal: updated_filter
+
         The signal is fired when changes to the filter are done
     """
     __gsignals__ = {
@@ -49,13 +59,13 @@ class BTServer(gobject.GObject):
         if property.name == 'connectable':
             if value in ("no", "yes", "filtered"):
                 self.connectable = value
-                self.__switch_connectable()
+                self._switch_connectable()
             else:
                 raise AttributeError, 'illegal value for property connectable (allowed: no, yes, filtered): %s' % value
         else:
             raise AttributeError, 'unknown property %s' % property.name
 
-    def __switch_connectable(self):
+    def _switch_connectable(self):
         if (self.connectable == 'yes' or self.connectable == 'filtered') and not self.server_io_watch:
             self.server_io_watch = gobject.io_add_watch(self.server_sock, gobject.IO_IN, self.handle_connection)
             bluetooth.advertise_service(self.server_sock, self.name, self.serverid)
@@ -112,11 +122,19 @@ class BTServer(gobject.GObject):
         Returns bluetooth addresses currently allowed to connect
 
         @rtype:     string array
-        @return:    Bluetooth Adresses allowed to connect
+        @return:    bluetooth addresses allowed to connect
         """
         return self.filter.keys()
 
     def __init__(self, name = "LBRC", serverid = "a1e7"):
+        """
+        @param  serverid:   ID associated to the service we announce
+        @type   serverid:   string (hexadecimal)
+        @param  name:      The name used to announce the service via bluetooth
+        @type   name:      string
+        @rtype:     BTServer object
+        @return:    BTServer object
+        """
         gobject.GObject.__init__(self)
         self.name = name
         self.serverid = serverid
@@ -135,7 +153,7 @@ class BTServer(gobject.GObject):
         self.server_sock.bind(("", self.port))
         self.server_sock.listen(1)
 
-        self.__switch_connectable()
+        self._switch_connectable()
 
     def shutdown(self):
         pass
@@ -174,7 +192,7 @@ class BTServer(gobject.GObject):
         false.
 
         This method is called when the connection was shutdown from the
-        otherside of the connection. The data handler (L{handle_incoming_data})
+        other side of the connection. The data handler (L{handle_incoming_data})
         for incoming data is disconnected and the disconnect signal is fired. 
         
         If we are in connectable or filtered mode, we will reattach the
@@ -256,7 +274,7 @@ class BTServer(gobject.GObject):
         Convert byte array to int, assuming most significant byte first
 
         @type   bytes:  bytestring
-        @param  bytes:  bytestring interpreted as a bytearray representing an integervalue
+        @param  bytes:  bytestring interpreted as a bytearray representing an integer value
         @rtype:         integer
         @return:        Interger value of the bytearray supplied
         """
@@ -277,7 +295,7 @@ if __name__ == '__main__':
     bt.connect("connect", print_args, 'connect')
     bt.connect("disconnect", print_args, 'disconnect')
     
-    print "You entered Testmode, when you fireup LBRC on your device"
+    print "You entered Testmode, when you fire up LBRC on your device"
     print "you will see the events (connect, disconnect, keycode), "
     print "your device generates."
     print

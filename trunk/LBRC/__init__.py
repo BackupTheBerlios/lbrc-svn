@@ -4,12 +4,28 @@ import os.path as osp
 scriptpath = osp.dirname(osp.abspath(sys.argv[0]))
 
 def get_configfile(name):
+    """
+    Returns absolute path to configfile, with C{name} name
+
+    @param  name:   name of configfile
+    @type   name:   string
+    @return:    path to configfile
+    @rtype:     string
+    """
     if scriptpath.startswith('/usr/bin'):
         return osp.join(osp.expanduser("~"), ".lbrc", name)
     else:
         return osp.join(scriptpath, name)
 
 def get_datafiles(name):
+    """
+    Returns absolute path to datafiles, with C{name} name
+
+    @param  name:   name of datafile
+    @type   name:   string
+    @return:    list of complete paths to datafiles
+    @rtype:     list of strings
+    """
     paths = []
     dataprefix = []
     dataprefix.append('/usr/share/lbrc/')
@@ -23,9 +39,18 @@ def get_datafiles(name):
     return paths
 
 def get_binfile(name):
+    """
+    Returns absolute path to executable, with C{name} name
+
+    @param  name:   name of executable
+    @type   name:   string
+    @return:    path to executable
+    @rtype:     string
+    """
+
     if scriptpath.startswith('/usr/bin'):
         return osp.join('/usr/bin/', name)
     else:
         return osp.join(scriptpath, name)
 
-__all__ = ["dbusinterface", "BTServer", "UinputDispatcher", "CommandExecutor"]
+__all__ = ["dbusinterface", "BTServer", "UinputDispatcher", "CommandExecutor", "get_binfile", "get_datafiles", "get_configfile"]

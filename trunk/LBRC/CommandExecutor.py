@@ -3,13 +3,31 @@
 import gobject
 
 class CommandExecutor(object):
+    """
+    Class to handle keycodes received by BTServer and issue commands according to them
+    """
     def __init__(self, config, profiledata):
+        """
+        @param  config:         configuration data
+        @type   config:         dictionary
+        @param  profiledata:    profile data
+        @type   profiledata:    dictionary
+        """
         self.config = config
         self.profiledata = profiledata
         self.profile = None
-        self.__interpret_profiles()
+        self._interpret_profiles()
 
     def keycode(self, mapping, keycode):
+        """
+        The method maps the incoming keycode and mapping to the associated
+        command and spawns a subprocess for them.
+
+        @param  mapping:        mapping state of the keycode
+        @type   mapping:        int
+        @param  keycode:        keycode received
+        @type:  keycode:        int
+        """
         event_tuple = (keycode, mapping)
         if event_tuple in self.profiles[self.profile]:
             for command in self.profiles[self.profile][event_tuple]:
@@ -22,12 +40,31 @@ class CommandExecutor(object):
 
     
     def set_profile(self, profile):
+        """
+        Switch to new profile
+
+        @param  profile:    the profile we switch to
+        @type   profile:    string
+        """
         self.profile = profile
 
     def switch_profile(self):
+        """
+        Method is called before a profile switch is issued. We could stop the switch,
+        but we are always ready to switch, as the commands are spawned asynchonously.
+
+        @return:    Always true
+        @rtype:     bool
+        """
         return 1
 
-    def __interpret_profiles(self):
+    def _interpret_profiles(self):
+        """
+        Interpret the profile data from the profile.conf(s) and push the commands into
+        an array and call it, when the appropriate keycodes and mappings are received.
+
+        If no mapping is provided, we assume mapping = 0 => keypress
+        """
         self.profiles = {}
         for profile_file in self.profiledata:
             for profile in profile_file.keys():
