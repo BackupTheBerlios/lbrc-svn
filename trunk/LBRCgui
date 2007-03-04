@@ -3,13 +3,12 @@
 import pygtk
 pygtk.require("2.0")
 import gtk
-import pynotify
-pynotify.init("LBRC")
 import gtk.gdk
 import gobject
 import egg.trayicon
 import time
 import dbus
+import dbus.glib
 import sys
 import os.path as osp
 from LBRC import get_datafiles, get_binfile
@@ -36,6 +35,12 @@ class LBRC(gobject.GObject):
         self.lbrc.connect_to_signal("profile_change", self.profile_change_cb)
         self.pid_menu_map[self.lbrc.get_profile()[0]].set_active(1)
         self.trayicon.show_all()
+        try:
+            proxy_obj = dbus.SessionBus().get_object('org.freedesktop.Notifications', '/org/freedesktop/Notifications')
+            self.notify_interface = dbus.Interface(proxy_obj, 'org.freedesktop.Notifications')
+            self.notify_interface.GetServerInformation()
+        except:
+            self.notify_interface = None
 
     def profile_change_cb(self, id, name):
         self.notify("Profile changed.\n" + name)
@@ -84,12 +89,19 @@ class LBRC(gobject.GObject):
         self.lbrc.shutdown()
 
     def notify(self, message):
+        if not self.notify_interface:
+            return
         (x,y) = self.trayicon.window.get_origin()
-        n = pynotify.Notification("Linux Bluetooth Remote Control", message, "file://" + get_datafiles('LBRC.svg')[-1])
-        n.set_timeout(5000)
-        n.set_hint("x", x + self.config['icon_size'] / 2)
-        n.set_hint("y", y + self.config['icon_size'] / 2)
-        n.show()
+        app_name = "LBRC"
+        replaces_id = 0
+        app_icon = "file://" + get_datafiles('LBRC.svg')[-1]
+        summary = "Linux Bluetooth Remote Control"
+        body = message
+        actions = []
+        hints = {}
+        hints = {"x": x + self.config['icon_size'] / 2, "y": y + self.config['icon_size'] / 2}
+        expire_timeout = -1
+        self.notify_interface.Notify(app_name, 0, app_icon, summary, body, actions, hints, expire_timeout)
 
 if __name__=="__main__":
     bus = dbus.SessionBus()
