@@ -4,6 +4,9 @@ import pygtk
 pygtk.require("2.0")
 import dbus, dbus.glib
 import gtk
+import gobject
+import time
+from LBRC import get_binfile
 from LBRC_gtk_gui.applet import applet
 from LBRC.l10n import _
 
