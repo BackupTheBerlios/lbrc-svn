@@ -43,10 +43,10 @@ class applet(object):
         self.notify(_("Profile changed:\n%(profilename)s") % {"profilename": name})
         self.pid_menu_map[id].set_active(1)
 
-    def connect_cb(self, btname, btadress, port):
+    def connect_cb(self, btname, btaddress, port):
         self.notify(_("Connect from:\n%(btname)s (%(btaddress)s)") % {"btname": btname, "btaddress": btaddress})
 
-    def disconnect_cb(self, btname, btadress, port):
+    def disconnect_cb(self, btname, btaddress, port):
         self.notify(_("Disconnect from:\n%(btname)s (%(btaddress)s)") % {"btname": btname, "btaddress": btaddress})
 
     def popup_menu(self, trayicon, event):
