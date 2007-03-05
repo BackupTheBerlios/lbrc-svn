@@ -7,7 +7,9 @@ import gtk.gdk
 import egg.trayicon
 import dbus
 import dbus.glib
+
 from LBRC import get_datafiles, get_binfile
+from LBRC.l18n import _
 
 class applet(object):
     def __init__(self, lbrc, **kwds):
@@ -38,14 +40,14 @@ class applet(object):
             self.notify_interface = None
 
     def profile_change_cb(self, id, name):
-        self.notify("Profile changed.\n" + name)
+        self.notify(_("Profile changed:\n%(profilename)s") % {"profilename": name})
         self.pid_menu_map[id].set_active(1)
 
     def connect_cb(self, btname, btadress, port):
-        self.notify("Connect from:\n" + btname + " (" + btadress + ")")
+        self.notify(_("Connect from:\n%(btname)s (%(btaddress)s)") % {"btname": btname, "btaddress": btaddress})
 
     def disconnect_cb(self, btname, btadress, port):
-        self.notify("Disconnect from:\n" + btname + " (" + btadress + ")")
+        self.notify(_("Disconnect from:\n%(btname)s (%(btaddress)s)") % {"btname": btname, "btaddress": btaddress})
 
     def popup_menu(self, trayicon, event):
         if(event.button == 3):
@@ -61,7 +63,7 @@ class applet(object):
         self.traymenu = gtk.Menu()
         
         profilemenu = gtk.Menu()
-        menuitem = gtk.MenuItem("Profile")
+        menuitem = gtk.MenuItem(_("Profiles"))
         menuitem.set_submenu(profilemenu)
         self.traymenu.add(menuitem)
         self.pid_menu_map = {}

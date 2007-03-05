@@ -5,8 +5,8 @@ pygtk.require("2.0")
 import dbus, dbus.glib
 import gtk
 from LBRC_gtk_gui.applet import applet
+from LBRC.l18n import _
 
-bus = dbus.SessionBus()
 count = 0
 ok = 0
 while count < 10:
@@ -29,7 +29,7 @@ while count < 10:
         count += 1
         time.sleep(0.5)
 if not ok:
-    print "Could not connect to DBUS component of LBRC"
+    print _("Could not connect to DBUS component of LBRC")
     sys.exit(1)
 else:
     lbrc = applet(lbrc_interface)
