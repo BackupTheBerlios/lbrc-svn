@@ -187,14 +187,24 @@ class UinputDispatcher(object):
                 if not 'keys' in pd:
                     pd['keys'] = {}
                 for key in pd['keys']:
-                    k =  co.input["KEY_" + key['map_to']]
-                    events[(int(key['keycode']),0)] = {'repeat_freq': int(key['repeat_freq']), 
-                                          'repeat_func': self._const_key, 
-                                          'repeat_commands': [[co.input['EV_KEY'], k, 0], [co.input['EV_KEY'], k, 1] ] , 
-                                          'commands': [[co.input['EV_KEY'], k, 1]],
-                                          'stop_commands': [[co.input['EV_KEY'], k, 0]]}
-                    if k not in keys:
-                        keys.append(k)
+                    events[(int(key['keycode']),0)] = {}
+                    rc = events[(int(key['keycode']),0)]['repeat_commands'] = []
+                    c = events[(int(key['keycode']),0)]['commands'] = []
+                    sc = events[(int(key['keycode']),0)]['stop_commands'] = []
+
+                    for part in key['map_to'].split("+"):
+                        k =  co.input["KEY_" + part]
+                        if k not in keys:
+                            keys.append(k)
+                        c.append([co.input['EV_KEY'], k, 1])
+                        rc.append([co.input['EV_KEY'], k, 1])
+                        rc.insert(0,[co.input['EV_KEY'], k, 0])
+                        sc.insert(0, [co.input['EV_KEY'], k, 0])
+                        
+                    if 'repeat_freq' in key:
+                         events[(int(key['keycode']),0)]['repeat_freq'] = int(key['repeat_freq'])
+                         events[(int(key['keycode']),0)]['repeat_func'] = self._const_key
+
                 self.profiles[profile] = events
         
         if len(relative_axes) > 0:
