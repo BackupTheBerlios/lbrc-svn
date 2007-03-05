@@ -6,6 +6,7 @@ import dbus, dbus.glib
 import gtk
 import gobject
 import time
+import sys
 from LBRC import get_binfile
 from LBRC_gtk_gui.applet import applet
 from LBRC.l10n import _
