@@ -140,7 +140,7 @@ class BTServer(gobject.GObject):
         self.serverid = serverid
         self.connectable = 'yes'
         self.filter = {}
-        self.port = bluetooth.get_available_port( bluetooth.L2CAP)
+        self.port = bluetooth.get_available_port( bluetooth.L2CAP )
         self.connected = None
 
         self.client_sock = None
@@ -166,7 +166,7 @@ class BTServer(gobject.GObject):
         which decodes the bytestring to the original integer X{keycode}.
 
         With this data the keycode signal is fired, with the mapping as first
-        and the keycode as seconde parameter.
+        and the keycode as second parameter.
 
         @type   self:           BTServer
         @param  self:           The BTServer object responsible for handling the connection

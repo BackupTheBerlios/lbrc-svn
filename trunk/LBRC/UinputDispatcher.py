@@ -37,8 +37,8 @@ class UinputDispatcher(object):
         self.uinput_dev = os.open(device_file, os.O_RDWR)
         dev = ["BlueRemote",            # Name for device
            co.input['BUS_BLUETOOTH'],   # Bus where we stay on
-           1,                           # Vender ID
-           1,                           # Produkt ID
+           1,                           # Vendor ID
+           1,                           # Product ID
            1,                           # Version ID
            0                            # We don't support force feedback
         ]
@@ -122,11 +122,11 @@ class UinputDispatcher(object):
 
     def switch_profile(self):
         """
-        Check whether it is save for us to switch the profile. This is always the case,
+        Check whether it is safe for us to switch the profile. This is always the case,
         if no keypress handler is running. The keypress has to be completed by a key release,
         or it get really nasty. Currently we do not do this, so we block the switch
 
-        @return:    Is it save to switch profile now?
+        @return:    Is it safe to switch profile now?
         @rtype:     bool
         """
         repeathandler = self.repeathandler
