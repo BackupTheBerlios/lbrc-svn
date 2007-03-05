@@ -44,12 +44,11 @@ class LBRCdbus(dbus.service.Object):
     @dbus.service.method('custom.LBRC', in_signature='s', out_signature=None)
     def set_profile(self, profileid):
         if profileid in self.profile_index and not profileid == self.cur_profile:
-            if self.pre_profile_switch():
-                self.cur_profile = profileid
-                self.config['defaultprofile'] = self.cur_profile
-                for listener in self.event_listener:
-                    listener.set_profile(self.cur_profile)
-                self.profile_change(profileid, self.profile_index[profileid])
+            self.cur_profile = profileid
+            self.config['defaultprofile'] = self.cur_profile
+            for listener in self.event_listener:
+                listener.set_profile(self.cur_profile)
+            self.profile_change(profileid, self.profile_index[profileid])
 
     @dbus.service.method('custom.LBRC', out_signature="a(ss)")
     def get_profiles(self):
@@ -149,12 +148,6 @@ class LBRCdbus(dbus.service.Object):
             self.profiledata.append(data)
             profiles_file.close()
             del profiles_data
-
-    def pre_profile_switch(self):
-        result = 1
-        for listener in self.event_listener:
-            result = result and listener.switch_profile()
-        return result
 
     def handler(self, btserver, map, keycode):
         for listener in self.event_listener:

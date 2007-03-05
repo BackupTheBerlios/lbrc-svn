@@ -28,7 +28,9 @@ class UinputDispatcher(object):
         self.profiledata = profiledata
         self.profile = None
         # (keycode,mapping) => [callback_id, calls]
+        # dictionaries, for handling repeats and cleanups of repeats
         self.repeathandler = {}
+        self.cleanup = {}
 
         if 'uinputdevice' in self.config:
             device_file = self.config['uinputdevice']
@@ -63,6 +65,17 @@ class UinputDispatcher(object):
         @param  profile:    the profile we switch to
         @type   profile:    string
         """
+        repeathandler = self.repeathandler
+        cleanup = self.cleanup
+        # Remove the repeater timeouts
+        for release_event_tuple in repeathandler:
+            gobject.source_remove(repeathandler[release_event_tuple][0])
+        # Cleanup, where necessary
+        for release_event_tuple in cleanup:
+            self._send_commands(cleanup[release_event_tuple], 0, 0)
+        # Set new profile
+        self.repeathandler  = {}
+        self.cleanup = {}
         self.profile = profile
 
     def _send_commands(self, commands, freq, calls):
@@ -119,25 +132,6 @@ class UinputDispatcher(object):
         freq = entry['repeat_func'](entry['repeat_freq'], repeathandler[event_tuple][1])
         repeathandler[event_tuple][0] = gobject.timeout_add(int(1000.0/freq), self._repeater, event_tuple)
         return False
-
-    def switch_profile(self):
-        """
-        Check whether it is safe for us to switch the profile. This is always the case,
-        if no keypress handler is running. The keypress has to be completed by a key release,
-        or it get really nasty. Currently we do not do this, so we block the switch
-
-        @return:    Is it safe to switch profile now?
-        @rtype:     bool
-        """
-        repeathandler = self.repeathandler
-        for release_event_tuple in repeathandler:
-            entry = self.profiles[self.profile][event_tuple]
-            if 'blocking' in entry and entry['blocking']:
-                return 0
-        for release_event_tuple in repeathandler:
-            gobject.source_remove(repeathandler[release_event_tuple][0])
-            del repeathandler[release_event_tuple]
-        return 1
 
     def _interpret_profiles(self):
         """
@@ -198,8 +192,7 @@ class UinputDispatcher(object):
                                           'repeat_func': self._const_key, 
                                           'repeat_commands': [[co.input['EV_KEY'], k, 0], [co.input['EV_KEY'], k, 1] ] , 
                                           'commands': [[co.input['EV_KEY'], k, 1]],
-                                          'blocking': 1}
-                    events[(int(key['keycode']),1)] = {'commands': [[co.input['EV_KEY'], k, 0]]}
+                                          'stop_commands': [[co.input['EV_KEY'], k, 0]]}
                     if k not in keys:
                         keys.append(k)
                 self.profiles[profile] = events
@@ -224,12 +217,19 @@ class UinputDispatcher(object):
         @type:  keycode:        int
         """
         repeathandler = self.repeathandler
+        cleanup = self.cleanup
         print "KeyCode: " + str(keycode)
         event_tuple = (keycode, mapping)
-        release_event_tuple = (keycode, mapping - 1)
+        if mapping == 0:
+            release_event_tuple = (keycode, 1)
+        elif mapping == 1:
+            release_event_tuple = (keycode, 0)
         if release_event_tuple in repeathandler:
             gobject.source_remove(repeathandler[release_event_tuple][0])
             del repeathandler[release_event_tuple]
+        if release_event_tuple in cleanup:
+            self._send_commands(cleanup[release_event_tuple], 0, 0)
+            del cleanup[release_event_tuple]
         if event_tuple in self.profiles[self.profile]:
             entry = self.profiles[self.profile][event_tuple];
             self._send_commands(entry['commands'], 0, 0)
@@ -238,6 +238,8 @@ class UinputDispatcher(object):
                 freq = entry['repeat_func'](entry['repeat_freq'], 0)
                 repeathandler[event_tuple].append(gobject.timeout_add(int(1000.0/freq), self._repeater, event_tuple))
                 repeathandler[event_tuple].append(0)
+            if 'stop_commands' in entry:
+                cleanup[event_tuple] = entry['stop_commands']
 
     @staticmethod
     def _guess_uinput_dev(self):
@@ -290,7 +292,7 @@ class UinputDispatcher(object):
         """
         length of stepps for mouse movement
         """
-        freq = self.lin_mouse_freq(x,n);
+        freq = self._lin_mouse_freq(x,n);
         if(freq < 500):
             return 2
         else:

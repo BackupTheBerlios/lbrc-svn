@@ -48,16 +48,6 @@ class CommandExecutor(object):
         """
         self.profile = profile
 
-    def switch_profile(self):
-        """
-        Method is called before a profile switch is issued. We could stop the switch,
-        but we are always ready to switch, as the commands are spawned asynchonously.
-
-        @return:    Always true
-        @rtype:     bool
-        """
-        return 1
-
     def _interpret_profiles(self):
         """
         Interpret the profile data from the profile.conf(s) and push the commands into
