@@ -3,6 +3,19 @@ import os.path as osp
 
 scriptpath = osp.dirname(osp.abspath(sys.argv[0]))
 
+def get_localedir():
+    """
+    Return path to directory, where out l10n files
+    are located.
+
+    @return:    path to locale dir
+    @rtype:     string
+    """
+    if scriptpath.startswith('/usr/bin'):
+        return "/usr/share/locale"
+    else:
+        return osp.join(scriptpath, "pot")
+
 def get_configfile(name):
     """
     Returns absolute path to configfile, with C{name} name
@@ -53,4 +66,4 @@ def get_binfile(name):
     else:
         return osp.join(scriptpath, name)
 
-__all__ = ["dbusinterface", "BTServer", "UinputDispatcher", "CommandExecutor", "get_binfile", "get_datafiles", "get_configfile"]
+__all__ = ["dbusinterface", "BTServer", "UinputDispatcher", "CommandExecutor", "get_binfile", "get_datafiles", "get_configfile", "get_localedir"]
