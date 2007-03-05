@@ -3,6 +3,7 @@
 # 
 # This script is inspired by the debian package python-chardet
 import glob
+import os
 import os.path as osp
 from distutils.core import setup
 
@@ -27,6 +28,18 @@ for afile in glob.glob('doc/mappings/*'):
     if osp.isfile(afile):
         mdoc.append(afile)
 
+data_files = []
+data_files.append(('/usr/share/lbrc', ['profiles.conf', 'LBRC.svg']))
+data_files.append(('/usr/share/dbus-1/services', ['LBRCdbus.service']))
+data_files.append(('/usr/share/doc/python-lbrc', doc))
+data_files.append(('/usr/share/doc/python-lbrc/includes', idoc))
+data_files.append(('/usr/share/doc/python-lbrc/mappings', mdoc))
+data_files.append(('/usr/share/lbrc/j2me/', ['j2me/bin/LBRC.jar', 'j2me/bin/LBRC.jad']))
+for (path, files, dir) in os.walk("./pot"):
+    if "LBRC.mo" in files:
+        target = osp.join(path, "LBRC.mo").replace("./pot", "/usr/share/locale", 1)
+        data_files.append((target, osp.join(path, "LBRC.mo")))
+
 setup(name='LBRC',
       description = 'Linux Bluetooth Remote Control',
       version='0.4',
@@ -36,13 +49,8 @@ setup(name='LBRC',
       license = 'GPLv2',
       platforms = ['linux'],
       keywords = ['remotecontrol', 'bluetooth', 'j2me'],
-      packages=['LBRC'],
-      scripts=['LBRCdbus.py', 'LBRCgui'],
-      data_files=[('/usr/share/lbrc', ['profiles.conf', 'LBRC.svg']),
-                  ('/usr/share/dbus-1/services', ['LBRCdbus.service']),
-                  ('/usr/share/doc/python-lbrc', doc),
-                  ('/usr/share/doc/python-lbrc/includes', idoc),
-                  ('/usr/share/doc/python-lbrc/mappings', mdoc),
-                  ],
+      packages=['LBRC', 'LBRC_gtk_gui'],
+      scripts=['LBRCdbus.py', 'LBRC-applet'],
+      data_files=data_files
       )
 

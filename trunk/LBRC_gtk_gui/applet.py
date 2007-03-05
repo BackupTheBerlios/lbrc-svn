@@ -9,7 +9,7 @@ import dbus
 import dbus.glib
 
 from LBRC import get_datafiles, get_binfile
-from LBRC.l18n import _
+from LBRC.l10n import _
 
 class applet(object):
     def __init__(self, lbrc, **kwds):

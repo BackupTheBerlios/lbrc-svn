@@ -5,7 +5,7 @@ pygtk.require("2.0")
 import dbus, dbus.glib
 import gtk
 from LBRC_gtk_gui.applet import applet
-from LBRC.l18n import _
+from LBRC.l10n import _
 
 count = 0
 ok = 0
