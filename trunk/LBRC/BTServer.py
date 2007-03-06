@@ -5,6 +5,7 @@ __extra_epydoc_fields__ = [('signal', 'Signal', 'Signals')]
 import pygtk
 pygtk.require("2.0")
 import bluetooth,os,math,gobject,re
+import dbus
 
 class BTServer(gobject.GObject):
     """
@@ -68,9 +69,11 @@ class BTServer(gobject.GObject):
     def _switch_connectable(self):
         if (self.connectable == 'yes' or self.connectable == 'filtered') and not self.server_io_watch:
             self.server_io_watch = gobject.io_add_watch(self.server_sock, gobject.IO_IN, self.handle_connection)
-            bluetooth.advertise_service(self.server_sock, self.name, self.serverid)
+            if BTServer.is_bluez_up():
+                bluetooth.advertise_service(self.server_sock, self.name, self.serverid)
         elif self.connectable == 'no' and not self.connected:
-            bluetooth.stop_advertising(self.server_sock)
+            if BTServer.is_bluez_up():
+                bluetooth.stop_advertising(self.server_sock)
             gobject.source_remove(self.server_io_watch)
             self.server_io_watch = None
         self.emit('connectable_event', self.connectable)
@@ -153,6 +156,7 @@ class BTServer(gobject.GObject):
         self.server_sock.bind(("", self.port))
         self.server_sock.listen(1)
 
+        self._register_bluez_signals()
         self._switch_connectable()
 
     def shutdown(self):
@@ -267,6 +271,36 @@ class BTServer(gobject.GObject):
                 bluetooth.advertise_service(self.server_sock, self.name, self.serverid)
             
         return False
+
+    def _register_bluez_signals(self):
+        if not BTServer.is_bluez_up():
+            return
+        bus = dbus.SystemBus()
+        manager = dbus.Interface(bus.get_object('org.bluez', '/org/bluez'),'org.bluez.Manager')
+        manager.connect_to_signal("AdapterAdded", self._adapter_added)
+        manager.connect_to_signal("AdapterRemoved", self._adapter_removed)
+ 
+    def _adapter_removed(self, adapter):
+        pass
+
+    def _adapter_added(self,adapter): 
+        self._switch_connectable()
+
+    @staticmethod
+    def is_bluez_up():
+        """
+        Verify if the bluetooth service is up
+ 
+        @rtype:     bool
+        @return:    True if bluez if bluez is up, False otherwise
+        """
+        bus = dbus.SystemBus()
+        manager = dbus.Interface(bus.get_object('org.bluez', '/org/bluez'),'org.bluez.Manager')
+        try:
+            manager.ListAdapters()
+            return True
+        except dbus.dbus_bindings.DBusException:
+            return False
 
     @staticmethod
     def byte_array_to_int(bytes):
