@@ -167,5 +167,7 @@ class LBRCdbus(dbus.service.Object):
 
 if __name__ == '__main__':
     brs = LBRCdbus()
-    brs.run()
-    sys.exit(0)
+    try:
+        brs.run()
+    except:
+        brs.shutdown()

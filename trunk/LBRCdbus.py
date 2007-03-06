@@ -2,7 +2,8 @@
 
 from LBRC.dbusinterface import LBRCdbus
 import sys
-
 brs = LBRCdbus()
-brs.run()
-sys.exit(0)
+try:
+    brs.run()
+except KeyboardInterrupt:
+    brs.shutdown()

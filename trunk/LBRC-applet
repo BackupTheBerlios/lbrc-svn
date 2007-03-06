@@ -37,4 +37,8 @@ if not ok:
     sys.exit(1)
 else:
     lbrc = applet(lbrc_interface)
-    gtk.main()
+    try:
+        gtk.main()
+    except KeyboardInterrupt:
+        lbrc.quit()
+        gtk.mainquit()
