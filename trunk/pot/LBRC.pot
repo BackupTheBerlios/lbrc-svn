@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2007-03-05 00:27+0100\n"
+"POT-Creation-Date: 2007-03-08 13:42+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,31 +16,43 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: LBRC-applet:35
+#: ../LBRC-applet:35
 msgid "Could not connect to DBUS component of LBRC"
 msgstr ""
 
-#: LBRC_gtk_gui/applet.py:46
+#: ../LBRC_gtk_gui/applet.py:45
 #, python-format
 msgid ""
 "Profile changed:\n"
 "%(profilename)s"
 msgstr ""
 
-#: LBRC_gtk_gui/applet.py:50
+#: ../LBRC_gtk_gui/applet.py:49
 #, python-format
 msgid ""
 "Connect from:\n"
 "%(btname)s (%(btaddress)s)"
 msgstr ""
 
-#: LBRC_gtk_gui/applet.py:53
+#: ../LBRC_gtk_gui/applet.py:52
 #, python-format
 msgid ""
 "Disconnect from:\n"
 "%(btname)s (%(btaddress)s)"
 msgstr ""
 
-#: LBRC_gtk_gui/applet.py:69
+#: ../LBRC_gtk_gui/applet.py:68
 msgid "Profiles"
+msgstr ""
+
+#: ../LBRC_gtk_gui/BlueZControl.py:62
+msgid "Bluetooth visible"
+msgstr ""
+
+#: ../LBRC_gtk_gui/BlueZControl.py:64
+msgid "Bluetooth visible (automatic hiding)"
+msgstr ""
+
+#: ../LBRC_gtk_gui/BlueZControl.py:66
+msgid "Bluetooth invisible"
 msgstr ""

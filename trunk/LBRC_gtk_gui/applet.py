@@ -10,11 +10,22 @@ import dbus.glib
 
 from LBRC import get_datafiles, get_binfile
 from LBRC.l10n import _
+from BlueZControl import BlueZControl
 
-class applet(object):
+class Applet(object):
     def __init__(self, lbrc, **kwds):
         self.lbrc = lbrc
         self.config = {}
+        try:
+            proxy_obj = dbus.SessionBus().get_object('org.freedesktop.Notifications', '/org/freedesktop/Notifications')
+            self.notify_interface = dbus.Interface(proxy_obj, 'org.freedesktop.Notifications')
+            self.notify_interface.GetServerInformation()
+        except:
+            self.notify_interface = None
+        try:
+            self.bluecontrol = BlueZControl()
+        except:
+            self.bluecontrol = None
         self.config['icon_size'] = 24
         self.icon = gtk.gdk.pixbuf_new_from_file(get_datafiles('LBRC.svg')[-1])
         self.trayicon = egg.trayicon.TrayIcon("LBRC")
@@ -32,12 +43,6 @@ class applet(object):
         self.lbrc.connect_to_signal("profile_change", self.profile_change_cb)
         self.pid_menu_map[self.lbrc.get_profile()[0]].set_active(1)
         self.trayicon.show_all()
-        try:
-            proxy_obj = dbus.SessionBus().get_object('org.freedesktop.Notifications', '/org/freedesktop/Notifications')
-            self.notify_interface = dbus.Interface(proxy_obj, 'org.freedesktop.Notifications')
-            self.notify_interface.GetServerInformation()
-        except:
-            self.notify_interface = None
 
     def profile_change_cb(self, id, name):
         self.notify(_("Profile changed:\n%(profilename)s") % {"profilename": name})
@@ -76,6 +81,16 @@ class applet(object):
             menuitem.show_all()
             self.pid_menu_map[id] = menuitem
             profilemenu.append(menuitem)
+        
+        if self.bluecontrol:
+            menuitem = gtk.SeparatorMenuItem()
+            self.traymenu.append(menuitem)
+            for menuitem in self.bluecontrol.get_menus():
+                menuitem.show_all()
+                self.traymenu.append(menuitem)
+
+        menuitem = gtk.SeparatorMenuItem()
+        self.traymenu.append(menuitem)
 
         menuitem = gtk.ImageMenuItem(stock_id=gtk.STOCK_QUIT)
         menuitem.connect('activate', self.quit)

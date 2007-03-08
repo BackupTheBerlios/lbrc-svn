@@ -7,16 +7,15 @@ import gtk
 import gobject
 import time
 import sys
-from LBRC import get_binfile
-from LBRC_gtk_gui.applet import applet
+from LBRC import get_binfile, dinterface
+from LBRC_gtk_gui.applet import Applet
 from LBRC.l10n import _
 
 count = 0
 ok = 0
 while count < 10:
     try:
-        proxy_obj = dbus.SessionBus().get_object('custom.LBRC', '/custom/LBRC')
-        lbrc_interface = dbus.Interface(proxy_obj, 'custom.LBRC')
+        lbrc_interface = dinterface(dbus.SessionBus(), 'custom.LBRC', '/custom/LBRC', 'custom.LBRC')
         lbrc_interface.get_profiles()
         ok = 1
         break
@@ -36,7 +35,7 @@ if not ok:
     print _("Could not connect to DBUS component of LBRC")
     sys.exit(1)
 else:
-    lbrc = applet(lbrc_interface)
+    lbrc = Applet(lbrc_interface)
     try:
         gtk.main()
     except KeyboardInterrupt:
