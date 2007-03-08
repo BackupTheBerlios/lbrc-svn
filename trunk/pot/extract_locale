@@ -1,0 +1,3 @@
+#!/bin/bash
+xgettext --language=Python --keyword=_ --keyword=N_  --output=LBRC.pot \
+         ../LBRC-applet ../LBRC_gtk_gui/applet.py ../LBRC_gtk_gui/BlueZControl.py
