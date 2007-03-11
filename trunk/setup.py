@@ -29,7 +29,10 @@ for afile in glob.glob('doc/mappings/*'):
         mdoc.append(afile)
 
 data_files = []
-data_files.append(('/usr/share/lbrc', ['profiles.conf', 'LBRC.svg']))
+data_files.append(('/usr/share/lbrc', ['profiles.conf', 
+                                       'LBRC.svg',
+                                       'LBRC_gtk_gui/config.glade']
+                 ))
 data_files.append(('/usr/share/dbus-1/services', ['LBRCdbus.service']))
 data_files.append(('/usr/share/doc/python-lbrc', doc))
 data_files.append(('/usr/share/doc/python-lbrc/includes', idoc))

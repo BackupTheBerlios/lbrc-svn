@@ -37,6 +37,19 @@ def get_localedir():
     else:
         return osp.join(scriptpath, "pot")
 
+def get_guidir():
+    """
+    Return path to directory where *.glade files 
+    are located.
+
+    @return:    path to gui dir
+    @rtype:     string
+    """
+    if scriptpath.startswith('/usr/bin'):
+        return "/usr/share/lbrc"
+    else:
+        return osp.join(scriptpath, "LBRC_gtk_gui")
+
 def get_configfile(name):
     """
     Returns absolute path to configfile, with C{name} name
@@ -87,4 +100,4 @@ def get_binfile(name):
     else:
         return osp.join(scriptpath, name)
 
-__all__ = ["dbusinterface", "BTServer", "UinputDispatcher", "CommandExecutor", "get_binfile", "get_datafiles", "get_configfile", "get_localedir"]
+__all__ = ["dbusinterface", "BTServer", "UinputDispatcher", "CommandExecutor", "get_binfile", "get_datafiles", "get_configfile", "get_localedir", "get_guidir"]

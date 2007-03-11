@@ -11,6 +11,7 @@ import dbus.glib
 from LBRC import get_datafiles, get_binfile
 from LBRC.l10n import _
 from BlueZControl import BlueZControl
+from config import ConfigWindow
 
 class Applet(object):
     def __init__(self, lbrc, **kwds):
@@ -88,6 +89,10 @@ class Applet(object):
             for menuitem in self.bluecontrol.get_menus():
                 menuitem.show_all()
                 self.traymenu.append(menuitem)
+        # Configuration editor 
+        menuitem = gtk.ImageMenuItem(stock_id=gtk.STOCK_PREFERENCES)
+        menuitem.connect("activate", self.show_config)
+        self.traymenu.append(menuitem)
 
         menuitem = gtk.SeparatorMenuItem()
         self.traymenu.append(menuitem)
@@ -99,6 +104,9 @@ class Applet(object):
 
     def quit(self, *args):
         self.lbrc.shutdown()
+    
+    def show_config(self, object):
+        self.config_window = ConfigWindow()
 
     def notify(self, message):
         if not self.notify_interface:
