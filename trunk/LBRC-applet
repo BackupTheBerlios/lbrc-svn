@@ -2,7 +2,7 @@
 
 import pygtk
 pygtk.require("2.0")
-import dbus, dbus.glib
+import dbus
 import gtk
 import gobject
 import time

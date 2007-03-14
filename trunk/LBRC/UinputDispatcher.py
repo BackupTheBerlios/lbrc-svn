@@ -32,8 +32,8 @@ class UinputDispatcher(object):
         self.repeathandler = {}
         self.cleanup = {}
 
-        if 'uinputdevice' in self.config:
-            device_file = self.config['uinputdevice']
+        if 'uinput-device' in self.config:
+            device_file = self.config['uinput-device']
         else:
             device_file = self._guess_uinput_dev(self)
         self.uinput_dev = os.open(device_file, os.O_RDWR)

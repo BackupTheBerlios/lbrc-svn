@@ -1,5 +1,6 @@
 import dbus
 import sys
+import json
 import os.path as osp
 
 scriptpath = osp.dirname(osp.abspath(sys.argv[0]))
@@ -32,6 +33,8 @@ def get_localedir():
     @return:    path to locale dir
     @rtype:     string
     """
+
+    #FIXME: must read it from instalation script
     if scriptpath.startswith('/usr/bin'):
         return "/usr/share/locale"
     else:
@@ -45,49 +48,85 @@ def get_guidir():
     @return:    path to gui dir
     @rtype:     string
     """
+
+    #FIXME: must read it from instalation script
     if scriptpath.startswith('/usr/bin'):
         return "/usr/share/lbrc"
     else:
         return osp.join(scriptpath, "LBRC_gtk_gui")
 
-def get_configfile(name):
+def get_userconfigfile(name):
     """
-    Returns absolute path to configfile, with C{name} name
+    Returns absolute path to a user config file with C{name} name
 
-    @param  name:   name of configfile
+    @param  name:   name of the config file
     @type   name:   string
-    @return:    path to configfile
+    @return:    path to the config file
     @rtype:     string
     """
+
+    #FIXME: must read it from instalation script
     if scriptpath.startswith('/usr/bin'):
         return osp.join(osp.expanduser("~"), ".lbrc", name)
     else:
         return osp.join(scriptpath, name)
 
-def get_datafiles(name):
-    """
-    Returns absolute path to datafiles, with C{name} name
 
-    @param  name:   name of datafile
+def get_systemconfigfile(name):
+    """
+    Returns absolute path to a system config file with C{name} name
+
+    @param name: name of config file
+    @type  name: string
+    @return:    absolute path for a config file
+    @rtype:     string
+    """
+    
+    #FIXME: must read it from instalation script
+    return osp.join('/usr/share/lbrc', name)
+
+def get_configfiles(name):
+    """
+    Returns a list of absolute paths to all config files with C{name} name and verify if the path is a file.
+
+    @param  name:   name of cofig file
     @type   name:   string
-    @return:    list of complete paths to datafiles
+    @return:    list of complete paths to config files
     @rtype:     list of strings
     """
     paths = []
-    dataprefix = []
-    dataprefix.append('/usr/share/lbrc/')
-    dataprefix.append(osp.expanduser("~/.lbrc/"))
-    if not scriptpath.startswith('/usr/bin'):
-        dataprefix[1] = scriptpath
-    for dp in dataprefix:
-        f = osp.join(dp, name)
+
+    # there's no more data prefix, but this cobe maybe util in futher
+    #dataprefix = []
+    #for dp in dataprefix:
+    #    f = osp.join(dp, name)
+    #    if osp.isfile(f):
+    #        paths.append(f)
+    for f in get_systemconfigfile(name),get_userconfigfile(name):
         if osp.isfile(f):
             paths.append(f)
+
     return paths
+
+def get_datafile(name):
+    """
+    Returns absolute path to a data file with C{name} name
+
+    @param  name:   name of data file
+    @type   name:   string
+    @return:    absolute path to data file
+    @rtype:     string
+    """
+
+    #FIXME: must read it from instalation script
+    if scriptpath.startswith('/usr/bin'):
+        return osp.join('/usr/share/lbrc', name)
+    else:
+        return osp.join(scriptpath, name)
 
 def get_binfile(name):
     """
-    Returns absolute path to executable, with C{name} name
+    Returns absolute path to executable with C{name} name
 
     @param  name:   name of executable
     @type   name:   string
@@ -95,9 +134,29 @@ def get_binfile(name):
     @rtype:     string
     """
 
+    #FIXME: must read it from instalation script
     if scriptpath.startswith('/usr/bin'):
         return osp.join('/usr/bin/', name)
     else:
         return osp.join(scriptpath, name)
 
-__all__ = ["dbusinterface", "BTServer", "UinputDispatcher", "CommandExecutor", "get_binfile", "get_datafiles", "get_configfile", "get_localedir", "get_guidir"]
+def write_config(absfilename, config):
+    config_file = open(absfilename, 'w')
+    json_writer = json.JsonWriter()
+    config_data = json_writer.write(config)
+    config_file.write(config_data)
+    config_file.close()
+
+def read_config(absfilename):
+    config = {}
+    config_file = open(absfilename)
+    config_data = config_file.read()
+    json_reader = json.JsonReader()
+    config = json_reader.read(config_data)
+    config_file.close()
+    return config
+
+
+
+__all__ = ["dbusinterface", "BTServer", "UinputDispatcher", "CommandExecutor", "get_binfile", "get_userconfigfile", "get_systemconfigfile", "get_configfiles", "get_guidir", "get_localedir", "write_config" , "read_config"]
+

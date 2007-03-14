@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2007-03-11 21:11+0100\n"
+"POT-Creation-Date: 2007-03-11 21:06-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -57,6 +57,34 @@ msgstr ""
 msgid "Bluetooth invisible"
 msgstr ""
 
+#: ../LBRC_gtk_gui/config.py:32
+msgid "KEYBOARD"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:32
+msgid "MOUSE BUTTON"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:32
+msgid "MOUSE WHEEL"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:32
+msgid "MOUSE AXIS"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:125
+msgid "Event type"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:126
+msgid "Event generated"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:127
+msgid "Cellphone keycode"
+msgstr ""
+
 #: ../LBRC_gtk_gui/config.glade.h:1
 msgid ""
 "<i>Path to UInput Device file please only fill, if you experience problems "
@@ -84,7 +112,7 @@ msgid "LBRC Configuration"
 msgstr ""
 
 #: ../LBRC_gtk_gui/config.glade.h:7
-msgid "Persistend profiles: "
+msgid "Persistent profiles: "
 msgstr ""
 
 #: ../LBRC_gtk_gui/config.glade.h:8
