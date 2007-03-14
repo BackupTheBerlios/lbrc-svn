@@ -8,31 +8,247 @@
 # This file is distributed under the same license as the LBRC package.
 #
 # TODO:
-# done this :-)
-#
+#   * Write to the config file
+#   * edit of profile
+#   * creation of a new profile
+#   * Document each method
+#  
 
 
 import os
 import sys
+import dbus
 
 import gtk
 import gtk.glade
 
-#from LBRC.l10n import _
-from LBRC import get_guidir, get_localedir
+import LBRC
+
+# setting the correct script path before use of _ 
+if __name__ == "__main__":
+    dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
+    LBRC.scriptpath = os.path.join(dirname, "..")
+
+from LBRC.l10n import _
+
+# Colors for each event type
+# see: 
+#   /etc/X11/rgb.txt, 
+#   /usr/lib/X11/rgb.txt, 
+#   /usr/share/X11/rgb.txt
+colors = { 'keys':'snow', 'mousebuttons':'bisque', 'mousewheel':'snow', 'mouseaxes':'bisque' }
+
+# More descriptive string for each event type
+types_detailed = { 'keys':_('KEYBOARD'), 'mousebuttons':_('MOUSE BUTTON'), 'mousewheel':_('MOUSE WHEEL'), 'mouseaxes':_('MOUSE AXIS') }
 
 
-# Command to get name of handlers 
+# TIP: Command to get name of handlers from config.glade
 # >grep handler LBRC_gtk_gui/config.glade | perl -pe 's/.*"(on_.*?)".*/$1/'
+
+class KeyMouseEditWindow:
+    def __init__(self, keycode=None, action=None, repeat=None, type=None):
+        # create widget tree ...
+        self.xml = gtk.glade.XML(os.path.join(LBRC.get_guidir(), "keymouseeditwindow.glade"))
+        # event types
+        i = 0
+        self.type = type
+        self.reverse_types = {}
+        for t in types_detailed:
+            self.widget("event-type-combobox").append_text(types_detailed[t])
+            self.reverse_types[types_detailed[t]] = t
+            if self.type != None and t == self.type:
+                self.widget("event-type-combobox").set_active(i)
+
+            i += 1
+        
+        self.action = action
+        if self.action != None:
+            self.widget("event-generated-entry").set_text(self.action)
+
+        self.repeat = repeat
+        if self.repeat != None:
+            self.widget("repeat-frequency-entry").set_text(self.repeat)
+        self.keycode = keycode
+        if self.keycode != None:
+            self.widget("cellphone-keycode-entry").set_text(self.keycode)
+
+        self.xml.signal_autoconnect(self)
+        # FIXME: doing by this way is horrible
+        self.close_cb = None
+        self.close_cb_kargs = None
+        # to sinalize the exit status
+        self.exit_ok = None
+
+    def widget(self, name):
+        return self.xml.get_widget(name)
+
+    def get_repeat(self):
+        return self.repeat
+
+    def get_keycode(self):
+        return self.keycode
+
+    def get_action(self):
+        return self.action
+
+    def get_type(self):
+        return self.type
+
+    # FIXME: doing by this way is horrible
+    def set_close_callback(self, cb, arg = None):
+        self.close_cb = cb;
+        self.close_cb_arg = arg
+
+    def on_key_mouse_edit_window_destroy(self, object):
+        print "destroy"
+        if self.exit_ok == None:
+            self.exit_ok = False
+
+        if self.close_cb != None:
+            self.close_cb(self, self.close_cb_arg)
+
+        return True
+
+    def on_event_type_combobox_changed(self, combobox):
+        text = combobox.get_active_text()
+        if text != None and len(text) > 0:
+            self.type = self.reverse_types[text]
+
+    def on_event_generated_entry_changed(self, entry):
+        text = entry.get_text()
+        if text != None and len(text) > 0:
+            self.action = text
+
+    def on_repeat_frequency_entry_changed(self, entry):
+        text = entry.get_text()
+        if text != None and len(text) > 0:
+            self.repeat = text
+
+    def on_cellphone_keycode_entry_changed(self, object):
+        text = entry.get_text()
+        if text != None and len(text) > 0:
+            self.keycode = text
+
+    def on_cancel_button_clicked(self, button):
+        print "cancel clicked"
+        self.exit_ok = False
+        self.widget("key-mouse-edit-window").destroy()
+
+    def on_ok_button_clicked(self, button):
+        print "ok clicked"
+        self.exit_ok = True
+        self.widget("key-mouse-edit-window").destroy()
 
 class ConfigWindow:
     def __init__(self):
         # create widget tree ...
-        gtk.glade.bindtextdomain("LBRC", get_localedir())
-        gtk.glade.textdomain("LBRC")
-        self.xml = gtk.glade.XML(os.path.join(get_guidir(), "config.glade"))
+        self.xml = gtk.glade.XML(os.path.join(LBRC.get_guidir(), "config.glade"))
         #self.control = ConfigWindowControl()
+        self.modified = False
+        self.config = {}
+        self.user_profiles = {}
+        self.system_profiles = {}
+        self.lbrc = LBRC.dinterface(dbus.SessionBus(), 'custom.LBRC', '/custom/LBRC', 'custom.LBRC')
+
+        self._load_config() 
+        self._fill_window()
+        #connnect signals
         self.xml.signal_autoconnect(self)
+
+    def widget(self, name):
+        return self.xml.get_widget(name)
+
+    def _load_config(self):
+        try:
+            self.config = LBRC.read_config(LBRC.get_userconfigfile('config.conf'))
+            
+        except IOError, e:
+            # no config file, first time configuration :-)
+            # force write
+            self.modified = True
+
+        try:
+            self.user_profiles = LBRC.read_config(LBRC.get_userconfigfile("profiles.conf"))
+        except IOError, e:
+            # no user defined profiles
+            #self.modified = True
+            pass
+
+        try:
+            self.system_profiles = LBRC.read_config(LBRC.get_systemconfigfile("profiles.conf"))
+        except IOError, e:
+            # no system profiles
+            pass
+    def _fill_treeview(self):
+        selected_profile = self.widget("profile-combobox").get_active_text()
+        profile = {}
+        # 0 => keycode, 1 => map_to, 2 => repeat_freq, 3 => EVENT TYPE, 4 => BACKGOROUND COLOR, 5 => EVENT TYPE DESCRIPTION
+        mylist = gtk.ListStore(str, str, str, str, str, str)
+        if selected_profile in self.user_profiles:
+            self.widget("key-mouse-add-button").set_sensitive(True)
+            self.widget("key-mouse-remove-button").set_sensitive(True)
+            self.widget("key-mouse-edit-button").set_sensitive(True)
+            self.widget("key-mouse-treeview").set_sensitive(True)
+            #self.widget("command-add-button").set_sensitive(True)
+            profile = self.user_profiles[selected_profile]
+        else:
+            self.widget("key-mouse-add-button").set_sensitive(False)
+            self.widget("key-mouse-treeview").set_sensitive(False)
+            self.widget("key-mouse-remove-button").set_sensitive(False)
+            self.widget("key-mouse-edit-button").set_sensitive(False)
+            #self.widget("command-add-button").set_sensitive(False)
+            profile = self.system_profiles[selected_profile]
+        
+        for type in 'keys', 'mousebuttons', 'mousewheel', 'mouseaxes':
+            for map in profile[type]:
+                mylist.append([
+                    map['keycode'], 
+                    map['map_to'], 
+                    map.get('repeat_freq', None),
+                    type,
+                    colors[type],
+                    types_detailed[type]
+                ])
+        self.widget("key-mouse-treeview").set_model(mylist)
+
+        
+    def _fill_window(self):
+        # Configuration notebook
+        save_current = self.widget("save-current-checkbutton")
+        show_bluetooth = self.widget("show-bluetooth-checkbutton")
+        uinput_device = self.widget("uinput-device-entry")
+        
+        save_current.set_active(self.config.get("persistent", True))
+        show_bluetooth.set_active(self.config.get("show-bluetooth", False))
+        uinput_device.set_text(self.config.get("uinput-device", ""))
+       
+        # Profiles
+        profile = self.widget("profile-combobox")
+
+        for i in self.system_profiles.keys() + self.user_profiles.keys():
+            profile.append_text(i)
+
+        # create the treeview's
+        for treeview in self.widget("key-mouse-treeview"), self.widget("command-treeview"):
+            treeview.insert_column_with_attributes(0, _("Event type"), gtk.CellRendererText(), text=5, background=4)
+            treeview.insert_column_with_attributes(1, _("Event generated"), gtk.CellRendererText(), text=1, background=4)
+            treeview.insert_column_with_attributes(2, _("Cellphone keycode"), gtk.CellRendererText(), text=0, background=4)
+            #treeview.set_model(gtk.ListStore(str, str))
+            #treeview.get_model().append(["example", "target"])
+
+    def _edit_key_mouse(self, pos):
+        print "Editing pos", pos
+        mylist = list(self.widget("key-mouse-treeview").get_model()[pos])
+        edit_window = KeyMouseEditWindow(mylist[0], mylist[1], mylist[2], mylist[3])
+        edit_window.set_close_callback(self.on_edit_window_close, pos)
+
+    def on_edit_window_close(self, edit_window, pos):
+        if edit_window.exit_ok == True:
+            print "pos: ", pos
+            print "repeat: ", edit_window.get_repeat()
+            print "keycode: ", edit_window.get_keycode()
+            print "action: ", edit_window.get_action()
+            print "type: ", edit_window.get_type()
 
     def on_config_window_destroy(self, destroy):
         print "config window destroy"
@@ -47,8 +263,19 @@ class ConfigWindow:
     def on_show_bluetooth_checkbutton_toggled(self, object):
         print "show bluetooth checkbutton toggled"
 
-    def on_profile_combobox_changed(self, object):
-        print "profile combobox changed"
+    def on_profile_combobox_changed(self, combobox):
+        #print "profile combobox changed"
+        #from pprint import pprint 
+        #pprint(*kargs)
+        selected_profile = combobox.get_active_text()
+        self.widget("profile-notebook").set_sensitive(True)
+        if selected_profile in self.user_profiles:
+            self.widget("profile-edit-button").set_sensitive(True)
+            self.widget("profile-delete-button").set_sensitive(True)
+        else:
+            self.widget("profile-edit-button").set_sensitive(False)
+            self.widget("profile-delete-button").set_sensitive(False)
+        self._fill_treeview()
 
     def on_profile_new_button_clicked(self, button):
         print "profile new button clicked"
@@ -60,13 +287,16 @@ class ConfigWindow:
         print "profile delete button clicked"
 
     def on_key_mouse_add_button_clicked(self, object):
-        print "keyboard/mouse add button clicked"
+        edit_window = KeyMouseEditWindow()
+        edit_window.set_close_callback(self.on_edit_window_close)
 
     def on_key_mouse_remove_button_clicked(self, object):
         print "keyboard/mouse remove button clicked"
 
     def on_key_mouse_edit_button_clicked(self, object):
-        print "keyboard/mouse edit button clicked"
+        path, column = self.widget("key-mouse-treeview").get_cursor()
+        if path != None:
+            self._edit_key_mouse(path[0])
 
     def on_command_add_button_clicked(self, object):
         print "commands add button clicked"
@@ -80,14 +310,17 @@ class ConfigWindow:
     def on_config_revert_button_clicked(self, object):
         print "config revert button clicked"
 
+    def on_key_mouse_treeview_row_activated(self, object, path, column):
+
+        if path != None:
+            self._edit_key_mouse(path[0])
+
     def on_config_close_button_clicked(self, object):
-        print "config close button clicked"
+        #print "config close button clicked"
+        self.widget('config-window').destroy()
 
 
 if __name__ == "__main__":
-    dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
-    get_guidir = lambda: dirname
-    get_localedir = lambda: os.path.join(dirname, "..", "pot")
     p = ConfigWindow()
-    p.xml.get_widget("config-window").connect('hide',lambda x: gtk.main_quit() )
+    p.widget("config-window").connect_after('destroy',lambda x: gtk.main_quit() )
     gtk.main()

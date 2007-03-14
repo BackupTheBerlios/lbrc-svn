@@ -9,6 +9,7 @@
   <property name="type">GTK_WINDOW_TOPLEVEL</property>
   <property name="window_position">GTK_WIN_POS_NONE</property>
   <property name="modal">False</property>
+  <property name="default_height">523</property>
   <property name="resizable">True</property>
   <property name="destroy_with_parent">False</property>
   <property name="icon_name">gtk-preferences</property>
@@ -49,7 +50,7 @@
 	      <child>
 		<widget class="GtkLabel" id="label3">
 		  <property name="visible">True</property>
-		  <property name="label" translatable="yes">Persistend profiles: </property>
+		  <property name="label" translatable="yes">Persistent profiles: </property>
 		  <property name="use_underline">False</property>
 		  <property name="use_markup">False</property>
 		  <property name="justify">GTK_JUSTIFY_LEFT</property>
@@ -301,6 +302,7 @@
 		  <child>
 		    <widget class="GtkButton" id="profile-edit-button">
 		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
 		      <property name="can_focus">True</property>
 		      <property name="label">gtk-edit</property>
 		      <property name="use_stock">True</property>
@@ -318,6 +320,7 @@
 		  <child>
 		    <widget class="GtkButton" id="profile-delete-button">
 		      <property name="visible">True</property>
+		      <property name="sensitive">False</property>
 		      <property name="can_focus">True</property>
 		      <property name="label">gtk-delete</property>
 		      <property name="use_stock">True</property>
@@ -340,8 +343,9 @@
 	      </child>
 
 	      <child>
-		<widget class="GtkNotebook" id="notebook2">
+		<widget class="GtkNotebook" id="profile-notebook">
 		  <property name="visible">True</property>
+		  <property name="sensitive">False</property>
 		  <property name="can_focus">True</property>
 		  <property name="show_tabs">True</property>
 		  <property name="show_border">True</property>
@@ -364,6 +368,7 @@
 			  <child>
 			    <widget class="GtkButton" id="key-mouse-add-button">
 			      <property name="visible">True</property>
+			      <property name="sensitive">False</property>
 			      <property name="can_default">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="label">gtk-add</property>
@@ -377,6 +382,7 @@
 			  <child>
 			    <widget class="GtkButton" id="key-mouse-remove-button">
 			      <property name="visible">True</property>
+			      <property name="sensitive">False</property>
 			      <property name="can_default">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="label">gtk-remove</property>
@@ -390,6 +396,7 @@
 			  <child>
 			    <widget class="GtkButton" id="key-mouse-edit-button">
 			      <property name="visible">True</property>
+			      <property name="sensitive">False</property>
 			      <property name="can_default">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="label">gtk-edit</property>
@@ -411,13 +418,13 @@
 			<widget class="GtkScrolledWindow" id="scrolledwindow1">
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
-			  <property name="hscrollbar_policy">GTK_POLICY_ALWAYS</property>
-			  <property name="vscrollbar_policy">GTK_POLICY_ALWAYS</property>
+			  <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
+			  <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
 			  <property name="shadow_type">GTK_SHADOW_IN</property>
 			  <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
 
 			  <child>
-			    <widget class="GtkTreeView" id="key-mouse-viewtree">
+			    <widget class="GtkTreeView" id="key-mouse-treeview">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="headers_visible">True</property>
@@ -427,6 +434,7 @@
 			      <property name="fixed_height_mode">False</property>
 			      <property name="hover_selection">False</property>
 			      <property name="hover_expand">False</property>
+			      <signal name="row_activated" handler="on_key_mouse_treeview_row_activated" last_modification_time="Tue, 13 Mar 2007 02:08:55 GMT"/>
 			    </widget>
 			  </child>
 			</widget>
@@ -481,6 +489,7 @@
 			  <child>
 			    <widget class="GtkButton" id="command-add-button">
 			      <property name="visible">True</property>
+			      <property name="sensitive">False</property>
 			      <property name="can_default">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="label">gtk-add</property>
@@ -494,6 +503,7 @@
 			  <child>
 			    <widget class="GtkButton" id="command-remove-button">
 			      <property name="visible">True</property>
+			      <property name="sensitive">False</property>
 			      <property name="can_default">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="label">gtk-remove</property>
@@ -507,6 +517,7 @@
 			  <child>
 			    <widget class="GtkButton" id="command-edit-button">
 			      <property name="visible">True</property>
+			      <property name="sensitive">False</property>
 			      <property name="can_default">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="label">gtk-edit</property>
@@ -528,13 +539,13 @@
 			<widget class="GtkScrolledWindow" id="scrolledwindow2">
 			  <property name="visible">True</property>
 			  <property name="can_focus">True</property>
-			  <property name="hscrollbar_policy">GTK_POLICY_ALWAYS</property>
-			  <property name="vscrollbar_policy">GTK_POLICY_ALWAYS</property>
+			  <property name="hscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
+			  <property name="vscrollbar_policy">GTK_POLICY_AUTOMATIC</property>
 			  <property name="shadow_type">GTK_SHADOW_IN</property>
 			  <property name="window_placement">GTK_CORNER_TOP_LEFT</property>
 
 			  <child>
-			    <widget class="GtkTreeView" id="command-view-tree">
+			    <widget class="GtkTreeView" id="command-treeview">
 			      <property name="visible">True</property>
 			      <property name="can_focus">True</property>
 			      <property name="headers_visible">True</property>
