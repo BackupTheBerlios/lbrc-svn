@@ -21,6 +21,7 @@ import dbus
 
 import gtk
 import gtk.glade
+import gobject
 
 import LBRC
 
@@ -45,8 +46,14 @@ types_detailed = { 'keys':_('KEYBOARD'), 'mousebuttons':_('MOUSE BUTTON'), 'mous
 # TIP: Command to get name of handlers from config.glade
 # >grep handler LBRC_gtk_gui/config.glade | perl -pe 's/.*"(on_.*?)".*/$1/'
 
-class KeyMouseEditWindow:
+class KeyMouseEditWindow(gobject.GObject):
+    
+    __gsignals__ = {
+        'close': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_BOOLEAN,))
+    }
+
     def __init__(self, keycode=None, action=None, repeat=None, type=None):
+        gobject.GObject.__init__(self)
         # create widget tree ...
         self.xml = gtk.glade.XML(os.path.join(LBRC.get_guidir(), "keymouseeditwindow.glade"))
         # event types
@@ -73,9 +80,6 @@ class KeyMouseEditWindow:
             self.widget("cellphone-keycode-entry").set_text(self.keycode)
 
         self.xml.signal_autoconnect(self)
-        # FIXME: doing by this way is horrible
-        self.close_cb = None
-        self.close_cb_kargs = None
         # to sinalize the exit status
         self.exit_ok = None
 
@@ -94,19 +98,11 @@ class KeyMouseEditWindow:
     def get_type(self):
         return self.type
 
-    # FIXME: doing by this way is horrible
-    def set_close_callback(self, cb, arg = None):
-        self.close_cb = cb;
-        self.close_cb_arg = arg
-
     def on_key_mouse_edit_window_destroy(self, object):
-        print "destroy"
         if self.exit_ok == None:
             self.exit_ok = False
 
-        if self.close_cb != None:
-            self.close_cb(self, self.close_cb_arg)
-
+        self.emit("close", self.exit_ok)
         return True
 
     def on_event_type_combobox_changed(self, combobox):
@@ -130,12 +126,10 @@ class KeyMouseEditWindow:
             self.keycode = text
 
     def on_cancel_button_clicked(self, button):
-        print "cancel clicked"
         self.exit_ok = False
         self.widget("key-mouse-edit-window").destroy()
 
     def on_ok_button_clicked(self, button):
-        print "ok clicked"
         self.exit_ok = True
         self.widget("key-mouse-edit-window").destroy()
 
@@ -240,10 +234,10 @@ class ConfigWindow:
         print "Editing pos", pos
         mylist = list(self.widget("key-mouse-treeview").get_model()[pos])
         edit_window = KeyMouseEditWindow(mylist[0], mylist[1], mylist[2], mylist[3])
-        edit_window.set_close_callback(self.on_edit_window_close, pos)
+        edit_window.connect("close", self.on_edit_window_close, pos)
 
-    def on_edit_window_close(self, edit_window, pos):
-        if edit_window.exit_ok == True:
+    def on_edit_window_close(self, edit_window, exit_ok, pos):
+        if exit_ok == True:
             print "pos: ", pos
             print "repeat: ", edit_window.get_repeat()
             print "keycode: ", edit_window.get_keycode()
@@ -288,7 +282,7 @@ class ConfigWindow:
 
     def on_key_mouse_add_button_clicked(self, object):
         edit_window = KeyMouseEditWindow()
-        edit_window.set_close_callback(self.on_edit_window_close)
+        edit_window.connect("close", self.on_edit_window_close, -1)
 
     def on_key_mouse_remove_button_clicked(self, object):
         print "keyboard/mouse remove button clicked"
@@ -311,12 +305,10 @@ class ConfigWindow:
         print "config revert button clicked"
 
     def on_key_mouse_treeview_row_activated(self, object, path, column):
-
         if path != None:
             self._edit_key_mouse(path[0])
 
     def on_config_close_button_clicked(self, object):
-        #print "config close button clicked"
         self.widget('config-window').destroy()
 
 
