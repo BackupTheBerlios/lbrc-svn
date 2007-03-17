@@ -1,7 +1,9 @@
 import os
 import gettext
 
-from LBRC import get_localedir
+from LBRC.path import path
+
+get_localedir = path().get_localedir
 
 gettext.bindtextdomain("LBRC", get_localedir())
 gettext.textdomain("LBRC")

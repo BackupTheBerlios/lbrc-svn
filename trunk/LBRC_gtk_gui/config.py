@@ -24,6 +24,7 @@ import gtk.glade
 import gobject
 
 import LBRC
+from LBRC.path import path
 
 # setting the correct script path before use of _ 
 if __name__ == "__main__":
@@ -55,7 +56,7 @@ class KeyMouseEditWindow(gobject.GObject):
     def __init__(self, keycode=None, action=None, repeat=None, type=None):
         gobject.GObject.__init__(self)
         # create widget tree ...
-        self.xml = gtk.glade.XML(os.path.join(LBRC.get_guidir(), "keymouseeditwindow.glade"))
+        self.xml = gtk.glade.XML(os.path.join(path().get_guidir(), "keymouseeditwindow.glade"))
         # event types
         i = 0
         self.type = type
@@ -136,7 +137,7 @@ class KeyMouseEditWindow(gobject.GObject):
 class ConfigWindow:
     def __init__(self):
         # create widget tree ...
-        self.xml = gtk.glade.XML(os.path.join(LBRC.get_guidir(), "config.glade"))
+        self.xml = gtk.glade.XML(os.path.join(path().get_guidir(), "config.glade"))
         #self.control = ConfigWindowControl()
         self.modified = False
         self.config = {}
@@ -154,7 +155,7 @@ class ConfigWindow:
 
     def _load_config(self):
         try:
-            self.config = LBRC.read_config(LBRC.get_userconfigfile('config.conf'))
+            self.config = LBRC.read_config(path().get_userconfigfile('config.conf'))
             
         except IOError, e:
             # no config file, first time configuration :-)
@@ -162,14 +163,14 @@ class ConfigWindow:
             self.modified = True
 
         try:
-            self.user_profiles = LBRC.read_config(LBRC.get_userconfigfile("profiles.conf"))
+            self.user_profiles = LBRC.read_config(path().get_userconfigfile("profiles.conf"))
         except IOError, e:
             # no user defined profiles
             #self.modified = True
             pass
 
         try:
-            self.system_profiles = LBRC.read_config(LBRC.get_systemconfigfile("profiles.conf"))
+            self.system_profiles = LBRC.read_config(path().get_systemconfigfile("profiles.conf"))
         except IOError, e:
             # no system profiles
             pass

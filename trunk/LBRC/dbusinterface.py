@@ -11,7 +11,8 @@ import dbus.glib
 import logging
 
 import LBRC.consts as co
-from LBRC import get_binfile, get_configfiles, get_userconfigfile, read_config, write_config
+from LBRC import read_config, write_config
+from LBRC.path import path
 from LBRC.UinputDispatcher import UinputDispatcher
 from LBRC.CommandExecutor import CommandExecutor
 from LBRC.BTServer import BTServer
@@ -19,6 +20,7 @@ from LBRC.l10n import _
 
 class LBRCdbus(dbus.service.Object):
     def __init__(self):
+        self.paths = path()
         bus_name = dbus.service.BusName('custom.LBRC', bus=dbus.SessionBus())
         dbus.service.Object.__init__(self, bus_name, "/custom/LBRC")
         self.btserver = BTServer()
@@ -132,21 +134,21 @@ class LBRCdbus(dbus.service.Object):
 
     def _write_config(self):
         try:
-            write_config(get_userconfigfile('config.conf'), self.config)
+            write_config(self.paths.get_userconfigfile('config.conf'), self.config)
         except Exception, e:
-            logging.error(_("Could not write config file: %s"), get_userconfigfile('config.conf'))
+            logging.error(_("Could not write config file: %s"), self.paths.get_userconfigfile('config.conf'))
 
     def _read_config(self):
         try:
-            self.config = read_config(get_userconfigfile('config.conf'))
+            self.config = read_config(self.paths.get_userconfigfile('config.conf'))
         except:
-            logging.debug(_("Could not open config file: %s"), get_userconfigfile('config.conf'))
+            logging.debug(_("Could not open config file: %s"), self.paths.get_userconfigfile('config.conf'))
             self.config = {}
     
     def _read_profiledata(self):
         self.profiledata = []
         self.profile_index = {}
-        for profile_file in get_configfiles('profiles.conf'):
+        for profile_file in self.paths.get_configfiles('profiles.conf'):
             data = read_config(profile_file)
             for pro in data:
                 self.profile_index[pro] = data[pro]['name']

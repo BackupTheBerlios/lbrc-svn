@@ -8,7 +8,7 @@ import egg.trayicon
 import dbus
 import dbus.glib
 
-from LBRC import get_binfile, get_datafile
+from LBRC.path import path
 from LBRC.l10n import _
 from BlueZControl import BlueZControl
 from config import ConfigWindow
@@ -17,6 +17,7 @@ class Applet(object):
     def __init__(self, lbrc, **kwds):
         self.lbrc = lbrc
         self.config = {}
+        self.paths = path()
         try:
             proxy_obj = dbus.SessionBus().get_object('org.freedesktop.Notifications', '/org/freedesktop/Notifications')
             self.notify_interface = dbus.Interface(proxy_obj, 'org.freedesktop.Notifications')
@@ -28,7 +29,7 @@ class Applet(object):
         except:
             self.bluecontrol = None
         self.config['icon_size'] = 24
-        self.icon = gtk.gdk.pixbuf_new_from_file(get_datafile('LBRC.svg'))
+        self.icon = gtk.gdk.pixbuf_new_from_file(self.paths.get_datafile('LBRC.svg'))
         self.trayicon = egg.trayicon.TrayIcon("LBRC")
         image = gtk.Image()
         image.set_from_pixbuf(self.icon.scale_simple(self.config['icon_size'],self.config['icon_size'], gtk.gdk.INTERP_BILINEAR))
@@ -114,7 +115,7 @@ class Applet(object):
         (x,y) = self.trayicon.window.get_origin()
         app_name = "LBRC"
         replaces_id = 0
-        app_icon = "file://" + get_datafile('LBRC.svg')
+        app_icon = "file://" + self.paths.get_datafile('LBRC.svg')
         summary = "Linux Bluetooth Remote Control"
         body = message
         actions = []
