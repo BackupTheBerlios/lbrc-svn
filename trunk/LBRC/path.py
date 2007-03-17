@@ -18,6 +18,7 @@
 # TODO:
 # - add "all in one detection and configuration"
 
+prefix = ""
 bin_dir = ""
 data_dir = ""
 config_dirs = []
@@ -32,8 +33,18 @@ class path(object):
     def _class_init(cls):
         cls._local = False
         if (not cls._init_fixed() and
+            not cls._init_prefix() and
             not cls._init_fhs()):
             cls._local = True
+
+    @classmethod
+    def _init_prefix(cls):
+        if prefix:
+            cls.bin_dir = osp.join(prefix, 'bin')
+            cls.data_dir = osp.join(data_dir, 'share')
+            cls.config_dir = ['/etc', osp.join(prefix, 'share', 'lbrc')]
+            return True
+        return False
 
     @classmethod
     def _init_fixed(cls):
