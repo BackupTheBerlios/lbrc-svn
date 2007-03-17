@@ -20,7 +20,7 @@
 
 bin_dir = ""
 data_dir = ""
-config_dir = []
+config_dirs = []
 
 import os.path as osp
 import sys
@@ -37,10 +37,10 @@ class path(object):
 
     @classmethod
     def _init_fixed(cls):
-        if bin_dir and data_dir and config_dir:
+        if bin_dir and data_dir and config_dirs:
             cls.bin_dir = bin_dir
             cls.data_dir = data_dir
-            cls.config_dir = config_dir
+            cls.config_dirs = config_dirs
             return True
         else:
             return False
@@ -61,7 +61,7 @@ class path(object):
         elif osp.isfile('/opt/lbrc/share/lbrc/j2me/LBRC.jar'):
             cls.bin_dir = '/opt/lbrc/bin'
             cls.data_dir = '/opt/lbrc/share'
-            cls.config_dir = ['/etc', '/opt/etc', '/opt/lbrc/share/lbrc']
+            cls.config_dirs = ['/etc', '/opt/etc', '/opt/lbrc/share/lbrc']
             return True
         return False
 
@@ -76,7 +76,7 @@ class path(object):
         if self._local:
             return osp.join(scriptpath, "pot")
         else:
-            return osp.join(self.data_dir, 'locale', 'LBRC')
+            print osp.join(self.data_dir, 'locale')
 
     def get_guidir(self):
         """
@@ -89,7 +89,7 @@ class path(object):
         if self._local:
             return osp.join(scriptpath, "LBRC_gtk_gui")
         else:
-            return self.data_dir
+            return osp.join(self.data_dir, 'lbrc')
 
     def get_userconfigfile(self, name):
         """
@@ -114,7 +114,7 @@ class path(object):
         if self._local:
             return osp.join(scriptpath, "profiles.conf")
         else:
-            for location in self.config_dir:
+            for location in self.config_dirs:
                 f = osp.join(location, name)
                 if osp.isfile(f):
                     return f
@@ -148,7 +148,7 @@ class path(object):
         if self._local:
             return osp.join(scriptpath, name)
         else:
-            return osp.join(self.data_dir, name)
+            return osp.join(self.data_dir, 'lbrc', name)
 
     def get_binfile(self, name):
         """

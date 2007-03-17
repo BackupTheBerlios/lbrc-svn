@@ -29,24 +29,26 @@ for afile in glob.glob('doc/mappings/*'):
         mdoc.append(afile)
 
 data_files = []
-data_files.append(('/usr/share/lbrc', ['profiles.conf', 
+data_files.append(('share/lbrc', ['profiles.conf', 
                                        'LBRC.svg',
-                                       'LBRC_gtk_gui/config.glade']
+                                       'LBRC_gtk_gui/config.glade',
+                                       'LBRC_gtk_gui/keymouseeditwindow.glade',
+                                       ]
                  ))
-data_files.append(('/usr/share/dbus-1/services', ['LBRCdbus.service']))
-data_files.append(('/usr/share/doc/python-lbrc', doc))
-data_files.append(('/usr/share/doc/python-lbrc/includes', idoc))
-data_files.append(('/usr/share/doc/python-lbrc/mappings', mdoc))
-data_files.append(('/usr/share/lbrc/j2me/', ['j2me/bin/LBRC.jar', 'j2me/bin/LBRC.jad']))
-for (path, files, dir) in os.walk("./pot"):
+data_files.append(('share/dbus-1/services', ['LBRCdbus.service']))
+data_files.append(('share/doc/python-lbrc', doc))
+data_files.append(('share/doc/python-lbrc/includes', idoc))
+data_files.append(('share/doc/python-lbrc/mappings', mdoc))
+data_files.append(('share/lbrc/j2me/', ['j2me/bin/LBRC.jar', 'j2me/bin/LBRC.jad']))
+for (path, dirs, files) in os.walk("pot"):
     if "LBRC.mo" in files:
-        target = osp.join(path, "LBRC.mo").replace("./pot", "/usr/share/locale", 1)
-        data_files.append((target, osp.join(path, "LBRC.mo")))
+        target = path.replace("pot", "share/locale", 1)
+        data_files.append((target, [osp.join(path, "LBRC.mo")]))
 
 setup(name='LBRC',
       description = 'Linux Bluetooth Remote Control',
       version='0.4',
-      author = 'Matthias Bläsing',
+      author = 'Matthias Blaesing',
       author_email = 'matthias.blaesing@rwth-aachen.de',
       url = 'http://lbrc.berlios.de/',
       license = 'GPLv2',
