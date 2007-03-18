@@ -40,6 +40,15 @@ class config(object):
     def set_config_item(self, name, value):
         self.user['generic-config'][name] = value
 
+    def get_config_item_fb(self, name, default):
+        try:
+            return self.user['generic-config'][name]
+        except:
+            try:
+                return self.system['generic-config'][name]
+            except:
+                return default
+
     def get_config_item(self, name):
         result = {}
         try:

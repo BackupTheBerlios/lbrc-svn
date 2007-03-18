@@ -25,6 +25,7 @@ import gobject
 
 import LBRC
 from LBRC.path import path
+from LBRC.config import config
 
 # setting the correct script path before use of _ 
 if __name__ == "__main__":
@@ -32,16 +33,17 @@ if __name__ == "__main__":
     LBRC.scriptpath = os.path.join(dirname, "..")
 
 from LBRC.l10n import _
+LBRC.l10n.init_glade_gettext()
 
 # Colors for each event type
 # see: 
 #   /etc/X11/rgb.txt, 
 #   /usr/lib/X11/rgb.txt, 
 #   /usr/share/X11/rgb.txt
-colors = { 'keys':'snow', 'mousebuttons':'bisque', 'mousewheel':'snow', 'mouseaxes':'bisque' }
+colors = { 'key':'snow', 'mousebutton':'bisque', 'mousewheel':'snow', 'mouseaxis':'bisque' }
 
 # More descriptive string for each event type
-types_detailed = { 'keys':_('KEYBOARD'), 'mousebuttons':_('MOUSE BUTTON'), 'mousewheel':_('MOUSE WHEEL'), 'mouseaxes':_('MOUSE AXIS') }
+types_detailed = { 'key':_('KEYBOARD'), 'mousebutton':_('MOUSE BUTTON'), 'mousewheel':_('MOUSE WHEEL'), 'mouseaxis':_('MOUSE AXIS') }
 
 
 # TIP: Command to get name of handlers from config.glade
@@ -140,12 +142,9 @@ class ConfigWindow:
         self.xml = gtk.glade.XML(os.path.join(path().get_guidir(), "config.glade"))
         #self.control = ConfigWindowControl()
         self.modified = False
-        self.config = {}
-        self.user_profiles = {}
-        self.system_profiles = {}
         self.lbrc = LBRC.dinterface(dbus.SessionBus(), 'custom.LBRC', '/custom/LBRC', 'custom.LBRC')
 
-        self._load_config() 
+        self._load_config()
         self._fill_window()
         #connnect signals
         self.xml.signal_autoconnect(self)
@@ -154,26 +153,10 @@ class ConfigWindow:
         return self.xml.get_widget(name)
 
     def _load_config(self):
-        try:
-            self.config = LBRC.read_config(path().get_userconfigfile('config.conf'))
-            
-        except IOError, e:
-            # no config file, first time configuration :-)
-            # force write
-            self.modified = True
+        self.config = config()    
+        self.user_profiles = self.config.user['profiles']
+        self.system_profiles = self.config.system['profiles']
 
-        try:
-            self.user_profiles = LBRC.read_config(path().get_userconfigfile("profiles.conf"))
-        except IOError, e:
-            # no user defined profiles
-            #self.modified = True
-            pass
-
-        try:
-            self.system_profiles = LBRC.read_config(path().get_systemconfigfile("profiles.conf"))
-        except IOError, e:
-            # no system profiles
-            pass
     def _fill_treeview(self):
         selected_profile = self.widget("profile-combobox").get_active_text()
         profile = {}
@@ -194,16 +177,16 @@ class ConfigWindow:
             #self.widget("command-add-button").set_sensitive(False)
             profile = self.system_profiles[selected_profile]
         
-        for type in 'keys', 'mousebuttons', 'mousewheel', 'mouseaxes':
-            for map in profile[type]:
-                mylist.append([
-                    map['keycode'], 
-                    map['map_to'], 
-                    map.get('repeat_freq', None),
-                    type,
-                    colors[type],
-                    types_detailed[type]
-                ])
+        for map in profile['UinputDispatcher']['actions']:
+            type = map['type']
+            mylist.append([
+                map['keycode'], 
+                map['map_to'], 
+                map.get('repeat_freq', None),
+                type,
+                colors[type],
+                types_detailed[type]
+            ])
         self.widget("key-mouse-treeview").set_model(mylist)
 
         
@@ -213,9 +196,9 @@ class ConfigWindow:
         show_bluetooth = self.widget("show-bluetooth-checkbutton")
         uinput_device = self.widget("uinput-device-entry")
         
-        save_current.set_active(self.config.get("persistent", True))
-        show_bluetooth.set_active(self.config.get("show-bluetooth", False))
-        uinput_device.set_text(self.config.get("uinput-device", ""))
+        save_current.set_active(self.config.get_config_item_fb("persistent", True))
+        show_bluetooth.set_active(self.config.get_config_item_fb("show-bluetooth", False))
+        uinput_device.set_text(self.config.get_config_item_fb("uinput-device", ""))
        
         # Profiles
         profile = self.widget("profile-combobox")
