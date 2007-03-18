@@ -158,24 +158,26 @@ class ConfigWindow:
         self.system_profiles = self.config.system['profiles']
 
     def _fill_treeview(self):
-        selected_profile = self.widget("profile-combobox").get_active_text()
+        iter = self.widget("profile-combobox").get_active_iter()
+        model = self.widget("profile-combobox").get_model()
+        (profileid, config) = model.get(iter, 1, 2)
         profile = {}
         # 0 => keycode, 1 => map_to, 2 => repeat_freq, 3 => EVENT TYPE, 4 => BACKGOROUND COLOR, 5 => EVENT TYPE DESCRIPTION
         mylist = gtk.ListStore(str, str, str, str, str, str)
-        if selected_profile in self.user_profiles:
+        if config == 'user':
             self.widget("key-mouse-add-button").set_sensitive(True)
             self.widget("key-mouse-remove-button").set_sensitive(True)
             self.widget("key-mouse-edit-button").set_sensitive(True)
             self.widget("key-mouse-treeview").set_sensitive(True)
             #self.widget("command-add-button").set_sensitive(True)
-            profile = self.user_profiles[selected_profile]
+            profile = self.user_profiles[profileid]
         else:
             self.widget("key-mouse-add-button").set_sensitive(False)
             self.widget("key-mouse-treeview").set_sensitive(False)
             self.widget("key-mouse-remove-button").set_sensitive(False)
             self.widget("key-mouse-edit-button").set_sensitive(False)
             #self.widget("command-add-button").set_sensitive(False)
-            profile = self.system_profiles[selected_profile]
+            profile = self.system_profiles[profileid]
         
         for map in profile['UinputDispatcher']['actions']:
             type = map['type']
@@ -203,8 +205,16 @@ class ConfigWindow:
         # Profiles
         profile = self.widget("profile-combobox")
 
-        for i in self.system_profiles.keys() + self.user_profiles.keys():
-            profile.append_text(i)
+        # 1 => Displayname, 2 => profile, 3 => config
+        profile_model = gtk.ListStore(str, str, str)
+
+        for i in self.system_profiles.keys():
+            profile_model.append((_('%(profile)s (System)') % {'profile': i}, i, "system"))
+        
+        for i in self.user_profiles.keys():
+            profile_model.append((i, i, "user"))
+            
+        profile.set_model(profile_model)
 
         # create the treeview's
         for treeview in self.widget("key-mouse-treeview"), self.widget("command-treeview"):
