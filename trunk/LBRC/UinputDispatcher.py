@@ -6,13 +6,11 @@ import logging
 import gobject
 import LBRC.consts as co
 
-
-
 class UinputDispatcher(object):
     """
     Class to handle keycodes received by BTServer and issue commands according to them
     """
-    def __init__(self, config, profiledata):
+    def __init__(self, config):
         """
         The method initialises the uinput device and prior to that creates the eventsmap
         from the profiledata. In this process all uinput events are recorded and the
@@ -21,19 +19,26 @@ class UinputDispatcher(object):
 
         @param  config:         configuration data
         @type   config:         dictionary
-        @param  profiledata:    profile data
-        @type   profiledata:    dictionary
-        """        
-        self.config = config
-        self.profiledata = profiledata
-        self.profile = None
-        # (keycode,mapping) => [callback_id, calls]
-        # dictionaries, for handling repeats and cleanups of repeats
-        self.repeathandler = {}
-        self.cleanup = {}
+        """
+        self.invoked = {}
 
-        if 'uinput-device' in self.config:
-            device_file = self.config['uinput-device']
+        self.config = config
+        
+        self.uinput_dev = None
+        
+        self.open_uinput_dev()
+        
+        Event.set_uinput_dev(self.uinput_dev)
+
+        self.init = []
+        self.actions = {}
+        self.destruct = []
+
+    def open_uinput_dev(self):
+        if 'uinput-device' in self.config['user']['generic-config']:
+            device_file = self.config['user']['generic-config']['uinput-device']
+        elif 'uinput-device' in self.config['system']['generic-config']:
+            device_file = self.config['system']['generic-config']['uinput-device']
         else:
             device_file = self._guess_uinput_dev(self)
         self.uinput_dev = os.open(device_file, os.O_RDWR)
@@ -52,169 +57,77 @@ class UinputDispatcher(object):
         #for f in range(64*2):  #absfuzz,absflat
         #  dev.append(0x00)
         device_structure = struct.pack("80sHHHHi" + 64*4*'I', *dev)
+
+        fcntl.ioctl(self.uinput_dev, co.uinput['UI_SET_EVBIT'], co.input['EV_KEY'])
+        fcntl.ioctl(self.uinput_dev, co.uinput['UI_SET_EVBIT'], co.input['EV_REL'])
+        fcntl.ioctl(self.uinput_dev, co.uinput['UI_SET_RELBIT'], co.input['REL_X'])
+        fcntl.ioctl(self.uinput_dev, co.uinput['UI_SET_RELBIT'], co.input['REL_Y'])
+        fcntl.ioctl(self.uinput_dev, co.uinput['UI_SET_RELBIT'], co.input['REL_Z'])
+        fcntl.ioctl(self.uinput_dev, co.uinput['UI_SET_RELBIT'], co.input['REL_WHEEL'])
+        for i in xrange(0,256):
+            fcntl.ioctl(self.uinput_dev, co.uinput['UI_SET_KEYBIT'], i)
+        fcntl.ioctl(self.uinput_dev, co.uinput['UI_SET_KEYBIT'], co.input['BTN_MOUSE'])
+        fcntl.ioctl(self.uinput_dev, co.uinput['UI_SET_KEYBIT'], co.input['BTN_TOUCH'])
+        fcntl.ioctl(self.uinput_dev, co.uinput['UI_SET_KEYBIT'], co.input['BTN_MOUSE'])
+        fcntl.ioctl(self.uinput_dev, co.uinput['UI_SET_KEYBIT'], co.input['BTN_LEFT'])
+        fcntl.ioctl(self.uinput_dev, co.uinput['UI_SET_KEYBIT'], co.input['BTN_MIDDLE'])
+        fcntl.ioctl(self.uinput_dev, co.uinput['UI_SET_KEYBIT'], co.input['BTN_RIGHT'])
+        fcntl.ioctl(self.uinput_dev, co.uinput['UI_SET_KEYBIT'], co.input['BTN_FORWARD'])
+        fcntl.ioctl(self.uinput_dev, co.uinput['UI_SET_KEYBIT'], co.input['BTN_BACK'])
+        
         os.write(self.uinput_dev, device_structure)
-
-        self._interpret_profiles()
-
         fcntl.ioctl(self.uinput_dev, co.uinput['UI_DEV_CREATE'])
  
-    def set_profile(self, profile):
+    def set_profile(self, config, profile):
         """
         Switch to new profile
 
         @param  profile:    the profile we switch to
         @type   profile:    string
         """
-        repeathandler = self.repeathandler
-        cleanup = self.cleanup
-        # Remove the repeater timeouts
-        for release_event_tuple in repeathandler:
-            gobject.source_remove(repeathandler[release_event_tuple][0])
-        # Cleanup, where necessary
-        for release_event_tuple in cleanup:
-            self._send_commands(cleanup[release_event_tuple], 0, 0)
-        # Set new profile
-        self.repeathandler  = {}
-        self.cleanup = {}
-        self.profile = profile
+        logging.debug("UinputDispatcher: set_profile(%s, %s)" % (config, profile))
+        # Stop pending events
+        for invoked in self.invoked.values():
+            for i in invoked:
+                i.stop()
+        # Set new profile up
+        self.invoked  = {}
+        self._interpret_profile(config, profile)
+    
+    def shutdown(self):
+        for invoked in self.invoked.values():
+            for i in invoked:
+                i.stop()
 
-    def _send_commands(self, commands, freq, calls):
-        """
-        Issue the output of the configured events. From the configured frequency,
-        passed as C{freq} and the number of calls C{calls}, the param for part
-        of the event is calculated, if it is not static.
-
-        The commands are all send into the device and avert that a SYN_REPORT
-        event is issued, which flushes the events out.
-
-        @param  commands:   Events to be issued
-        @type   commands:   list of list of ints/callables
-        @param  freq:       calls per second
-        @type   freq:       int
-        @param  calls:      calls in this repeat cycle
-        @type   calls:      int
-        """
-        for command in commands:
-            param = command[2]
-            if callable(param):
-                param = param(freq, calls)
-            self.send_event(command[0], command[1], param)
-        self.send_event(co.input['EV_SYN'], co.input['SYN_REPORT'], 0)
-
-    def send_event(self, event, descriptor, param):
-        """
-        Output event to the uinput device => pack the correct structure and write to open device
-        For the relevant event ids and types please refer to consts.py
-
-        @param  event:      event type
-        @type   event:      int
-        @param  descriptor: event id
-        @type   descriptor: int
-        @param  param:      parameter for the event
-        @type   param:      int
-        """
-        os.write(self.uinput_dev, struct.pack("LLHHl", time.time(), 0, event, descriptor, param))
-
-    def _repeater(self, event_tuple):
-        """
-        Handle repeats of keystrokes
-
-        @param  event_tuple:    Event tuple
-        @type   event_tuple:    tuple of mapping and keycode
-        """
-        repeathandler = self.repeathandler
-        entry = self.profiles[self.profile][event_tuple];
-        repeathandler[event_tuple][1] += 1
-        if 'repeat_commands' in entry:
-            self._send_commands(entry['repeat_commands'], entry['repeat_freq'], repeathandler[event_tuple][1])
-        else:
-            self._send_commands(entry['commands'], entry['repeat_freq'], repeathandler[event_tuple][1])
-        freq = entry['repeat_func'](entry['repeat_freq'], repeathandler[event_tuple][1])
-        repeathandler[event_tuple][0] = gobject.timeout_add(int(1000.0/freq), self._repeater, event_tuple)
-        return False
-
-    def _interpret_profiles(self):
+    def _interpret_profile(self, config, profile):
         """
         Interpret the data from the profile and create appropriate uinput events
         additionally record the Events, that will be passed, to set the appropriate
         eventmasks on the uinputdevice
         """
-        self.profiles = {}
-        keys = []
-        relative_axes = []
-
-        for profile_file in self.profiledata:
-            for profile in profile_file.keys():
-                pd = profile_file[profile]
-                events = {}
-                commands = {}
-                if not 'mouseaxes' in pd:
-                    pd['mouseaxes'] = {}
-                for axis in pd['mouseaxes']:
-                    ax = co.input["REL_" + axis['map_to'][1:2]]
-                    if axis['map_to'][0:1] == "-":
-                        events[(int(axis['keycode']), 0)] = {'repeat_freq': 10, 
-                                                             'repeat_func': self._lin_mouse_freq,
-                                                             'commands': [[co.input['EV_REL'], ax, lambda x,y: -1 * self._lin_mouse_step(x,y)]]}
-                    else:
-                        events[(int(axis['keycode']), 0)] = {'repeat_freq': 10, 
-                                                             'repeat_func': self._lin_mouse_freq,
-                                                             'commands': [[co.input['EV_REL'], ax, lambda x,y: self._lin_mouse_step(x,y)]]}
-                    if ax not in relative_axes:
-                        relative_axes.append(ax)
-                if not 'mousewheel' in pd:
-                    pd['mousewheel'] = {}
-                for axis in pd['mousewheel']:
-                    ax = co.input["REL_" + axis['map_to'][1:]]
-                    if axis['map_to'][0:1] == "-":
-                        events[(int(axis['keycode']),0)] = {'repeat_freq': int(axis['repeat_freq']), 
-                                                            'repeat_func': lambda x,n: x,
-                                                            'commands': [[co.input['EV_REL'], ax, -1]]}
-                    else:
-                        events[(int(axis['keycode']),0)] = {'repeat_freq': int(axis['repeat_freq']), 
-                                                            'repeat_func': lambda x,n: x,
-                                                            'commands': [[co.input['EV_REL'], ax, 1]]}
-                    if ax not in relative_axes:
-                        relative_axes.append(ax)
-                if not 'mousebuttons' in pd:
-                    pd['mousebuttons'] = {}
-                for button in pd['mousebuttons']:
-                    bt = co.input["BTN_" + button['map_to']]
-                    events[(int(button['keycode']),0)] = {'commands': [[co.input['EV_KEY'], bt, 1]]}
-                    events[(int(button['keycode']),1)] = {'commands': [[co.input['EV_KEY'], bt, 0]]}
-                    if bt not in keys:
-                        keys.append(bt)
-                if not 'keys' in pd:
-                    pd['keys'] = {}
-                for key in pd['keys']:
-                    events[(int(key['keycode']),0)] = {}
-                    rc = events[(int(key['keycode']),0)]['repeat_commands'] = []
-                    c = events[(int(key['keycode']),0)]['commands'] = []
-                    sc = events[(int(key['keycode']),0)]['stop_commands'] = []
-
-                    for part in key['map_to'].split("+"):
-                        k =  co.input["KEY_" + part]
-                        if k not in keys:
-                            keys.append(k)
-                        c.append([co.input['EV_KEY'], k, 1])
-                        rc.append([co.input['EV_KEY'], k, 1])
-                        rc.insert(0,[co.input['EV_KEY'], k, 0])
-                        sc.insert(0, [co.input['EV_KEY'], k, 0])
-                        
-                    if 'repeat_freq' in key:
-                         events[(int(key['keycode']),0)]['repeat_freq'] = int(key['repeat_freq'])
-                         events[(int(key['keycode']),0)]['repeat_func'] = self._const_key
-
-                self.profiles[profile] = events
+        logging.debug("UinputDispatcher: _interpret_profile(%s, %s)" % (config, profile))
         
-        if len(relative_axes) > 0:
-            fcntl.ioctl(self.uinput_dev, co.uinput['UI_SET_EVBIT'], co.input['EV_REL'])
-            for axis in relative_axes:
-                fcntl.ioctl(self.uinput_dev, co.uinput['UI_SET_RELBIT'], axis)
-        if len(keys) > 0:
-            fcntl.ioctl(self.uinput_dev, co.uinput['UI_SET_EVBIT'], co.input['EV_KEY'])
-            for key in keys:
-                fcntl.ioctl(self.uinput_dev, co.uinput['UI_SET_KEYBIT'], key)
+        self.init = []
+        self.actions = {}
+        self.destruct = []
+
+        try:
+            for action in self.config[config]['profiles'][profile]['UinputDispatcher']['actions']:
+                logging.debug(str(action))
+                event_tuple = (int(action['keycode']), 0)
+                if not self.actions.has_key(event_tuple):
+                    self.actions[event_tuple] = []
+                if action['type'] == 'mouseaxis':
+                    self.actions[event_tuple].append(MouseAxisEvent(action))
+                if action['type'] == 'mousewheel':
+                    self.actions[event_tuple].append(MouseWheelEvent(action))
+                if action['type'] == 'mousebutton':
+                    self.actions[event_tuple].append(MouseButtonEvent(action))
+                if action['type'] == 'key':
+                    self.actions[event_tuple].append(KeyPressEvent(action))
+        except:
+            logging.debug("UinputDispatcher: Error when interpreting action clause")
+            pass
 
     def keycode(self, mapping, keycode):
         """
@@ -226,30 +139,27 @@ class UinputDispatcher(object):
         @param  keycode:        keycode received
         @type:  keycode:        int
         """
-        repeathandler = self.repeathandler
-        cleanup = self.cleanup
-        print "KeyCode: " + str(keycode)
+        logging.debug('Keycode: %i, Mapping: %i' % (keycode, mapping))
         event_tuple = (keycode, mapping)
+
         if mapping == 0:
             release_event_tuple = (keycode, 1)
         elif mapping == 1:
             release_event_tuple = (keycode, 0)
-        if release_event_tuple in repeathandler:
-            gobject.source_remove(repeathandler[release_event_tuple][0])
-            del repeathandler[release_event_tuple]
-        if release_event_tuple in cleanup:
-            self._send_commands(cleanup[release_event_tuple], 0, 0)
-            del cleanup[release_event_tuple]
-        if event_tuple in self.profiles[self.profile]:
-            entry = self.profiles[self.profile][event_tuple];
-            self._send_commands(entry['commands'], 0, 0)
-            if 'repeat_freq' in entry:
-                repeathandler[event_tuple] = []
-                freq = entry['repeat_func'](entry['repeat_freq'], 0)
-                repeathandler[event_tuple].append(gobject.timeout_add(int(1000.0/freq), self._repeater, event_tuple))
-                repeathandler[event_tuple].append(0)
-            if 'stop_commands' in entry:
-                cleanup[event_tuple] = entry['stop_commands']
+
+        if release_event_tuple in self.invoked:
+            logging.debug('Stopping invoked UinputEvents')
+            for event in self.invoked[release_event_tuple]:
+                event.stop()
+            del self.invoked[release_event_tuple]
+
+        if event_tuple in self.actions:
+            logging.debug('Invoked UinputEvents')
+            for entry in self.actions[event_tuple]:
+                if not event_tuple in self.invoked:
+                    self.invoked[event_tuple] = []
+                self.invoked[event_tuple].append(entry)
+                entry.activate()
 
     @staticmethod
     def _guess_uinput_dev(self):
@@ -288,6 +198,23 @@ class UinputDispatcher(object):
                     return place
         logging.error('No device node found, that looks like a uinput device node - is the kernel module loaded?')
 
+class Event(object):
+    uinput_dev = None
+
+    def __init__(self):
+        # (keycode,mapping) => [callback_id, calls]
+        # dictionaries, for handling repeats and cleanups of repeats
+        self.repeathandler = []
+        self.cleanup = []
+        self.commands = []
+        self.repeat_freq = 0
+        self.repeat_func = None
+        self.repeat_commands = []
+        self.type = 'Generic Event'
+
+    @classmethod
+    def set_uinput_dev(cls, uinput_dev):
+        cls.uinput_dev = uinput_dev
 
     def _lin_mouse_freq(self, x,n):
         """
@@ -317,3 +244,118 @@ class UinputDispatcher(object):
             return 2
         return 20
 
+    def _repeater(self):
+        """
+        Handle repeats of keystrokes
+        """
+        repeathandler = self.repeathandler
+        repeathandler[1] += 1
+        if self.repeat_commands:
+            self._send_commands(self.repeat_commands, self.repeat_freq, repeathandler[1])
+        else:
+            self._send_commands(self.commands, self.repeat_freq, repeathandler[1])
+        freq = self.repeat_func(self.repeat_freq, repeathandler[1])
+        repeathandler[0] = gobject.timeout_add(int(1000.0/freq), self._repeater)
+        return False
+
+    def _send_commands(self, commands, freq, calls):
+        """
+        Issue the output of the configured events. From the configured frequency,
+        passed as C{freq} and the number of calls C{calls}, the param for part
+        of the event is calculated, if it is not static.
+
+        The commands are all send into the device and avert that a SYN_REPORT
+        event is issued, which flushes the events out.
+
+        @param  commands:   Events to be issued
+        @type   commands:   list of list of ints/callables
+        @param  freq:       calls per second
+        @type   freq:       int
+        @param  calls:      calls in this repeat cycle
+        @type   calls:      int
+        """
+        for command in commands:
+            param = command[2]
+            if callable(param):
+                param = param(freq, calls)
+            self.send_event(command[0], command[1], param)
+        self.send_event(co.input['EV_SYN'], co.input['SYN_REPORT'], 0)
+
+    def send_event(self, event, descriptor, param):
+        """
+        Output event to the uinput device => pack the correct structure and write to open device
+        For the relevant event ids and types please refer to consts.py
+
+        @param  event:      event type
+        @type   event:      int
+        @param  descriptor: event id
+        @type   descriptor: int
+        @param  param:      parameter for the event
+        @type   param:      int
+        """
+        logging.debug("Event: %i, %i, %i" % (event,descriptor,param))
+        os.write(self.uinput_dev, struct.pack("LLHHl", time.time(), 0, event, descriptor, param))
+
+    def activate(self):
+        logging.debug("Event activated: " + self.type)
+        self._send_commands(self.commands, 0, 0)
+        if self.repeat_freq:
+            self.repeathandler = []
+            freq = self.repeat_func(self.repeat_freq, 0)
+            self.repeathandler.append(gobject.timeout_add(int(1000.0/freq), self._repeater))
+            self.repeathandler.append(0)
+
+    def stop(self):
+        if self.repeathandler:
+            gobject.source_remove(self.repeathandler[0])
+        if self.cleanup:
+            self._send_commands(self.cleanup, 0, 0)
+
+class MouseAxisEvent(Event):
+    def __init__(self, action):
+        Event.__init__(self)
+        self.type = 'MouseAxisEvent'
+        axis = co.input["REL_" + action['map_to'][1:2]]
+        direction = action['map_to'][0:1]
+        self.repeat_freq = 10
+        self.repeat_func = self._lin_mouse_freq
+        if direction == "-":
+            self.commands = [(co.input['EV_REL'], axis, lambda x,y: -1 * self._lin_mouse_step(x,y))]
+        else:
+            self.commands = [(co.input['EV_REL'], axis, lambda x,y: self._lin_mouse_step(x,y))]
+
+class MouseWheelEvent(Event):
+    def __init__(self, action):
+        Event.__init__(self)
+        self.type = 'MouseWheelEvent'
+        axis = co.input["REL_" + action['map_to'][1:]]
+        direction = action['map_to'][0:1]
+        self.repeat_freq = int(action['repeat_freq'])
+        self.repeat_func = lambda x,n: x
+        if direction == "-":
+            self.commands = [(co.input['EV_REL'], axis, -1)]
+        else:
+            self.commands = [(co.input['EV_REL'], axis, 1)]
+
+class MouseButtonEvent(Event):
+    def __init__(self, action):
+        Event.__init__(self)
+        self.type = 'MouseButtonEvent'
+        bt = co.input["BTN_" + action['map_to']]
+        self.commands = [(co.input['EV_KEY'], bt, 1)]
+        self.cleanup = [(co.input['EV_KEY'], bt, 0)]
+
+class KeyPressEvent(Event):
+    def __init__(self, action):
+        Event.__init__(self)
+        self.type = 'KeyPressEvent'
+        for part in action['map_to'].split("+"):
+            k =  co.input["KEY_" + part]
+            self.commands.append((co.input['EV_KEY'], k, 1))
+            self.repeat_commands.append((co.input['EV_KEY'], k, 1))
+            self.repeat_commands.insert(0, (co.input['EV_KEY'], k, 0))
+            self.cleanup.insert(0, (co.input['EV_KEY'], k, 0))
+            
+        if 'repeat_freq' in action:
+             self.repeat_freq = int(action['repeat_freq'])
+             self.repeat_func = self._const_key

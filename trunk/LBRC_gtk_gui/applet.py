@@ -43,12 +43,12 @@ class Applet(object):
         self.lbrc.connect_to_signal("connect_cb", self.connect_cb)
         self.lbrc.connect_to_signal("disconnect_cb", self.disconnect_cb)
         self.lbrc.connect_to_signal("profile_change", self.profile_change_cb)
-        self.pid_menu_map[self.lbrc.get_profile()[0]].set_active(1)
+        self.pid_menu_map[self.lbrc.get_profile()].set_active(1)
         self.trayicon.show_all()
 
-    def profile_change_cb(self, id, name):
-        self.notify(_("Profile changed:\n%(profilename)s") % {"profilename": name})
-        self.pid_menu_map[id].set_active(1)
+    def profile_change_cb(self, config, profile):
+        self.notify(_("Profile changed:\n%(profilename)s") % {"profilename": profile})
+        self.pid_menu_map[(config, profile)].set_active(1)
 
     def connect_cb(self, btname, btaddress, port):
         self.notify(_("Connect from:\n%(btname)s (%(btaddress)s)") % {"btname": btname, "btaddress": btaddress})
@@ -63,8 +63,9 @@ class Applet(object):
 
     def profile_change(self, item):
         if item.active:
-            self.lbrc.set_profile(item.pid)
-            self.pid_menu_map[self.lbrc.get_profile()[0]].set_active(0)
+            self.lbrc.set_profile(item.config, item.pid)
+            cp = self.lbrc.get_profile()
+            self.pid_menu_map[cp].set_active(0)
 
     def __create_menu(self):
         self.traymenu = gtk.Menu()
@@ -75,13 +76,26 @@ class Applet(object):
         self.traymenu.add(menuitem)
         self.pid_menu_map = {}
         group = None
-        for (id, name) in self.lbrc.get_profiles():
-            menuitem = gtk.RadioMenuItem(group, name)
+
+        def sort_func(first, second):
+            if first[0] == second[0]:
+                return cmp(first[1], second[1])
+            elif first[0] == 'system':
+                return -1
+            else:
+                return 1
+
+        for (config, profile) in sorted(self.lbrc.get_profiles(), cmp=sort_func):
+            if config == 'system':
+                menuitem = gtk.RadioMenuItem(group, profile + " (System)")
+            else:
+                menuitem = gtk.RadioMenuItem(group, profile)
             group = menuitem
-            menuitem.pid = id
+            menuitem.config = config
+            menuitem.pid = profile
             menuitem.connect("toggled", self.profile_change)
             menuitem.show_all()
-            self.pid_menu_map[id] = menuitem
+            self.pid_menu_map[(config, profile)] = menuitem
             profilemenu.append(menuitem)
         
         if self.bluecontrol:
@@ -90,6 +104,10 @@ class Applet(object):
             for menuitem in self.bluecontrol.get_menus():
                 menuitem.show_all()
                 self.traymenu.append(menuitem)
+
+        menuitem = gtk.SeparatorMenuItem()
+        self.traymenu.append(menuitem)
+
         # Configuration editor 
         menuitem = gtk.ImageMenuItem(stock_id=gtk.STOCK_PREFERENCES)
         menuitem.connect("activate", self.show_config)

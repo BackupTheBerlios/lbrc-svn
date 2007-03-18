@@ -58,7 +58,6 @@ class BlueZControl(object):
         self.menu = {}
         self.bluez_manager.connect_to_signal("AdapterAdded", self._bluez_adapter_added)
         self.bluez_manager.connect_to_signal("AdapterRemoved", self._bluez_adapter_removed)
-        self._bluez_init_adapter()
         self.menu["bz_visible"] = {'title': _("Bluetooth visible"),
                                    'callback': (self._bluez_switch_visible, 0)}
         self.menu["bz_shorttime"] = {'title': _("Bluetooth visible (automatic hiding)"), 
@@ -71,6 +70,7 @@ class BlueZControl(object):
             menuitem.set_sensitive(0)
             menu['handler'] = menuitem.connect("toggled", *menu['callback'])
             menu['menuitem'] = menuitem
+        self._bluez_init_adapter()
 
     def get_menus(self):
         """

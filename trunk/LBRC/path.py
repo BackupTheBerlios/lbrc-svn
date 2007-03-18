@@ -102,7 +102,7 @@ class path(object):
         else:
             return osp.join(self.data_dir, 'lbrc')
 
-    def get_userconfigfile(self, name):
+    def get_userconfigfile(self):
         """
         Returns absolute path to a user config file with C{name} name
 
@@ -111,9 +111,9 @@ class path(object):
         @return:    path to the config file
         @rtype:     string
         """
-        return osp.join(osp.expanduser("~"), ".lbrc", name)
+        return osp.join(osp.expanduser("~"), ".lbrc.conf")
 
-    def get_systemconfigfile(self, name):
+    def get_systemconfigfile(self):
         """
         Returns absolute path to a system config file with C{name} name
 
@@ -123,14 +123,14 @@ class path(object):
         @rtype:     string
         """
         if self._local:
-            return osp.join(scriptpath, "profiles.conf")
+            return osp.join(scriptpath, "lbrc.conf")
         else:
             for location in self.config_dirs:
-                f = osp.join(location, name)
+                f = osp.join(location, "lbrc.conf")
                 if osp.isfile(f):
                     return f
 
-    def get_configfiles(self, name):
+    def get_configfiles(self):
         """
         Returns a list of absolute paths to all config files with C{name} name and verify if the path is a file.
 
@@ -141,7 +141,7 @@ class path(object):
         """
         paths = []
 
-        for f in self.get_systemconfigfile(name),self.get_userconfigfile(name):
+        for f in self.get_systemconfigfile(),self.get_userconfigfile():
             if osp.isfile(f):
                 paths.append(f)
 

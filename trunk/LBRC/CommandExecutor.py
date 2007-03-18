@@ -2,21 +2,34 @@
 
 import gobject
 
+class Command(object):
+    def __init__(self, description):
+        self.description = description
+
+    def _to_array(self):
+        command_line = []
+        command_line.append(self.description['command'])
+        command_line.extend([str(arg) for arg in self.description['arguments']])
+        return command_line
+    
+    def call(self):
+        gobject.spawn_async( self._to_array(), 
+                             flags= gobject.SPAWN_STDOUT_TO_DEV_NULL | 
+                                    gobject.SPAWN_STDERR_TO_DEV_NULL )
+
 class CommandExecutor(object):
     """
     Class to handle keycodes received by BTServer and issue commands according to them
     """
-    def __init__(self, config, profiledata):
+    def __init__(self, config):
         """
         @param  config:         configuration data
         @type   config:         dictionary
-        @param  profiledata:    profile data
-        @type   profiledata:    dictionary
         """
         self.config = config
-        self.profiledata = profiledata
-        self.profile = None
-        self._interpret_profiles()
+        self.init = []
+        self.actions = {}
+        self.destruct = []
 
     def keycode(self, mapping, keycode):
         """
@@ -29,49 +42,57 @@ class CommandExecutor(object):
         @type:  keycode:        int
         """
         event_tuple = (keycode, mapping)
-        if event_tuple in self.profiles[self.profile]:
-            for command in self.profiles[self.profile][event_tuple]:
-                command_line = []
-                command_line.append(command['command'])
-                command_line.extend(command['argv'])
-                gobject.spawn_async( command_line, 
-                                     flags= gobject.SPAWN_STDOUT_TO_DEV_NULL | 
-                                            gobject.SPAWN_STDERR_TO_DEV_NULL )
-
+        if event_tuple in self.actions:
+            for command in self.actions[event_tuple]:
+                command.call()
     
-    def set_profile(self, profile):
+    def set_profile(self, config, profile):
         """
         Switch to new profile
 
         @param  profile:    the profile we switch to
         @type   profile:    string
         """
-        self.profile = profile
-
-    def _interpret_profiles(self):
+        for command in self.destruct:
+            command.call()
+        self._interpret_profile(config, profile)
+        for command in self.init:
+            command.call()
+                                
+    def _interpret_profile(self, config, profile):
         """
         Interpret the profile data from the profile.conf(s) and push the commands into
         an array and call it, when the appropriate keycodes and mappings are received.
 
         If no mapping is provided, we assume mapping = 0 => keypress
         """
-        self.profiles = {}
-        for profile_file in self.profiledata:
-            for profile in profile_file.keys():
-                pd = profile_file[profile]
-                commands = {}
-                if not 'commands' in pd:
-                    pd['commands'] = {}
-                for command in pd['commands']:
-                    try:
-                        mapping = int(command['mapping'])
-                    except:
-                        mapping = 0
-                    event_tuple = (int(command['keycode']), mapping)
-                    if not event_tuple in commands:
-                        commands[event_tuple] = []
-                    new_command = {}
-                    new_command['command'] = command['command']
-                    new_command['argv'] = command['argv']
-                    commands[event_tuple].append(new_command)
-                self.profiles[profile] = commands
+        self.init = []
+        self.actions = {}
+        self.destruct = []
+        try:
+            for init in self.config[config]['profiles'][profile]['CommandExecutor']['init']:
+                self.init.append(Command(init))
+        except:
+            pass
+        try:
+            for destruct in self.config[config]['profiles'][profile]['CommandExecutor']['destruct']:
+                self.destruct.append(Command(destruct))
+        except:
+            pass
+       
+        try:
+            for action in self.config[config]['profiles'][profile]['CommandExecutor']['actions']:
+                try:
+                    mapping = int(action['mapping'])
+                except:
+                    mapping = 0
+                event_tuple = (int(action['keycode']), mapping)
+                if not event_tuple in self.actions:
+                    self.actions[event_tuple] = []
+                self.actions[event_tuple].append(Command(action))
+        except:
+            pass
+
+    def shutdown(self):
+        for command in self.destruct:
+            command.call()
