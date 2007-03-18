@@ -14,6 +14,7 @@ from LBRC.path import path
 from LBRC.config import config
 from LBRC.UinputDispatcher import UinputDispatcher
 from LBRC.CommandExecutor import CommandExecutor
+from LBRC.DBUSCaller import DBUSCaller
 from LBRC.BTServer import BTServer
 from LBRC.l10n import _
 
@@ -29,6 +30,7 @@ class LBRCdbus(dbus.service.Object):
         self.event_listener = []
         self.event_listener.append(UinputDispatcher(self.config))
         self.event_listener.append(CommandExecutor(self.config))
+        self.event_listener.append(DBUSCaller(self.config))
 
         #load of config data 
         self.cur_profile = None
