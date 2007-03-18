@@ -70,18 +70,18 @@ class CommandExecutor(object):
         self.actions = {}
         self.destruct = []
         try:
-            for init in self.config[config]['profiles'][profile]['CommandExecutor']['init']:
+            for init in self.config.get_profile(config, profile, 'CommandExecutor')['init']:
                 self.init.append(Command(init))
         except:
             pass
         try:
-            for destruct in self.config[config]['profiles'][profile]['CommandExecutor']['destruct']:
+            for destruct in self.config.get_profile(config, profile, 'CommandExecutor')['destruct']:
                 self.destruct.append(Command(destruct))
         except:
             pass
        
         try:
-            for action in self.config[config]['profiles'][profile]['CommandExecutor']['actions']:
+            for action in self.config.get_profile(config, profile, 'CommandExecutor')['actions']:
                 try:
                     mapping = int(action['mapping'])
                 except:

@@ -10,13 +10,15 @@ import dbus.glib
 
 from LBRC.path import path
 from LBRC.l10n import _
+from LBRC.config import config
 from BlueZControl import BlueZControl
 from config import ConfigWindow
 
 class Applet(object):
     def __init__(self, lbrc, **kwds):
         self.lbrc = lbrc
-        self.config = {}
+        self._config = {}
+        self.config = config()
         self.paths = path()
         try:
             proxy_obj = dbus.SessionBus().get_object('org.freedesktop.Notifications', '/org/freedesktop/Notifications')
@@ -28,11 +30,11 @@ class Applet(object):
             self.bluecontrol = BlueZControl()
         except:
             self.bluecontrol = None
-        self.config['icon_size'] = 24
+        self._config['icon_size'] = 24
         self.icon = gtk.gdk.pixbuf_new_from_file(self.paths.get_datafile('LBRC.svg'))
         self.trayicon = egg.trayicon.TrayIcon("LBRC")
         image = gtk.Image()
-        image.set_from_pixbuf(self.icon.scale_simple(self.config['icon_size'],self.config['icon_size'], gtk.gdk.INTERP_BILINEAR))
+        image.set_from_pixbuf(self.icon.scale_simple(self._config['icon_size'],self._config['icon_size'], gtk.gdk.INTERP_BILINEAR))
         self.__create_menu()
         eventbox = gtk.EventBox()
         self.trayicon.add(eventbox)
@@ -138,6 +140,6 @@ class Applet(object):
         body = message
         actions = []
         hints = {}
-        hints = {"x": x + self.config['icon_size'] / 2, "y": y + self.config['icon_size'] / 2}
+        hints = {"x": x + self._config['icon_size'] / 2, "y": y + self._config['icon_size'] / 2}
         expire_timeout = -1
         self.notify_interface.Notify(app_name, 0, app_icon, summary, body, actions, hints, expire_timeout)

@@ -2,6 +2,8 @@
 
 from LBRC.dbusinterface import LBRCdbus
 import sys
+import logging
+#logging.basicConfig(level=logging.DEBUG)
 brs = LBRCdbus()
 try:
     brs.run()

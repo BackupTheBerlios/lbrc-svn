@@ -49,6 +49,15 @@ class BlueZAdapter(gobject.GObject):
         gobject.source_remove(self.timeout_poll) 
         # Prepare for 0.8 bindings, where we can go out of scope...
         pass
+    
+    def set_timeout(self, timeout=180):
+        self.diface.SetDiscoverableTimeout(dbus.UInt32(timeout))
+    
+    def set_discoverable(self, discoverable):
+        if discoverable:
+            self.diface.SetMode("discoverable")
+        else:
+            self.diface.SetMode("connectable")
 
 class BlueZControl(object):
     def __init__(self):
@@ -159,9 +168,9 @@ class BlueZControl(object):
         @type   timeout:    int
         """
         for adapter in self.adapter.values():
-            interface = adapter['interface']
+            interface = adapter.diface
             if timeout == -1:
-                interface.SetMode("connectable")
+                adapter.set_discoverable(False)
             elif timeout >= 0:
-                interface.SetMode("discoverable")
-                interface.SetDiscoverableTimeout(dbus.UInt32(timeout))
+                adapter.set_discoverable(True)
+                adapter.set_timeout(timeout)
