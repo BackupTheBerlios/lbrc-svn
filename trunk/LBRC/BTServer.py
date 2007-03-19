@@ -1,11 +1,12 @@
 #!/usr/bin/python
 #
-# TODO: make pairing configurable (required, remove bonding on disconnect)
 # TODO: check pairing - maybe rework connection handling ...
+# TODO: react to config changes (currently the configs are checked on demand, so no problem - currently!)
 
 __extra_epydoc_fields__ = [('signal', 'Signal', 'Signals')]
 
 from LBRC import dinterface
+from LBRC.config import config
 import pygtk
 pygtk.require("2.0")
 import bluetooth
@@ -155,6 +156,8 @@ class BTServer(gobject.GObject):
         self.filter = {}
         self.port = bluetooth.get_available_port( bluetooth.L2CAP )
         self.connected = None
+        self.config = config()
+        self.paired_by_us = {}
 
         self.client_sock = None
         self.server_sock = None
@@ -222,10 +225,17 @@ class BTServer(gobject.GObject):
         @rtype:         bool
         @return:        always False, as we only allow one concurrent connection
         """
+        logging.debug('BTServer: %s disconnected' % (self.connected[0],))
         gobject.source_remove(self.client_io_watch)
         self.server_io_watch = None
         self.client_io_watch = None
         self.client_sock = None
+        if self.connected[0] in self.paired_by_us:
+            logging.debug('BTServer: We paired this device')
+            if self.config.get_config_item_fb("remove-pairing", False):
+                logging.debug('BTServer: We remove the pairing for this device')
+                self.paired_by_us[self.connected[0]].RemoveBonding(self.connected[0])
+            del self.paired_by_us[self.connected[0]]
         self.emit("disconnect", self.connected[0], self.connected[1])
         self.connected = None
         if self.connectable == 'yes' or self.connectable == 'filtered':
@@ -263,10 +273,34 @@ class BTServer(gobject.GObject):
         """
         bluetooth.stop_advertising(self.server_sock)
 
-        self.client_sock,client_address = self.server_sock.accept()
-        
+        self.client_sock,client_address = self.server_sock.accept()        
         logging.debug("Serversocket: " + str(self.server_sock.getsockname()))
-        
+
+        if ( self._check_pairing(client_address) and
+            (self.connectable == 'yes' or 
+            (self.connectable == 'filtered' and client_address[0] in self.filter))):
+
+            self.connected = client_address
+            self.emit("connect", client_address[0], client_address[1])
+
+            self.client_io_watch = gobject.io_add_watch(self.client_sock, gobject.IO_IN, self.handle_incoming_data)
+            self.server_io_watch = gobject.io_add_watch(self.client_sock, gobject.IO_HUP, self.handle_disconnection)
+        else:
+            logging.debug("BTServer: Closing remote connection")
+            self.client_sock.close()
+            self.client_sock = None
+            if self.connectable == 'filtered':
+                self.server_io_watch = gobject.io_add_watch(self.server_sock, gobject.IO_IN, self.handle_connection)
+                bluetooth.advertise_service(self.server_sock, self.name, self.serverid)
+            
+        return False
+
+    def _check_pairing(self, client_address):
+        # Check whether we need pairing!
+        if not self.config.get_config_item_fb("require-pairing", True):
+            logging.debug('BTServer: Pairing not required')
+            return True
+        logging.debug('BTServer: Check for pairing')
         manager = dinterface(dbus.SystemBus(), 'org.bluez', '/org/bluez', 'org.bluez.Manager')
         adapters = manager.ListAdapters()
         paired = False
@@ -290,30 +324,14 @@ class BTServer(gobject.GObject):
                     if adapter.HasBonding(client_address[0]):
                         logging.debug('Bonding successfull')
                         paired = True
+                        self.paired_by_us[client_address[0]] = adapter
                     else:
                         logging.debug('Bonding failed')
                     break
                 except:
                     logging.debug('Exception in BondingCreation (DBUS Methods)')
                     pass
-
-        if ( paired and ( self.connectable == 'yes' or 
-            (self.connectable == 'filtered' and client_address[0] in self.filter))):
-
-            self.connected = client_address
-            self.emit("connect", client_address[0], client_address[1])
-
-            self.client_io_watch = gobject.io_add_watch(self.client_sock, gobject.IO_IN, self.handle_incoming_data)
-            self.server_io_watch = gobject.io_add_watch(self.client_sock, gobject.IO_HUP, self.handle_disconnection)
-        else:
-            logging.debug("BTServer: Closing remote connection")
-            self.client_sock.close()
-            self.client_sock = None
-            if self.connectable == 'filtered':
-                self.server_io_watch = gobject.io_add_watch(self.server_sock, gobject.IO_IN, self.handle_connection)
-                bluetooth.advertise_service(self.server_sock, self.name, self.serverid)
-            
-        return False
+        return paired
 
     def _register_bluez_signals(self):
         if not BTServer.is_bluez_up():
