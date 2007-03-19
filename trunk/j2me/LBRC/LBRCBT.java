@@ -1,3 +1,5 @@
+package LBRC;
+
 import javax.bluetooth.LocalDevice;
 import javax.microedition.io.Connector;
 import javax.microedition.io.StreamConnection;

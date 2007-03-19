@@ -1,3 +1,5 @@
+package LBRC;
+
 import javax.microedition.lcdui.*;
 
 class LBRCFrame extends Canvas {
