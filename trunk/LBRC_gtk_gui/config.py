@@ -136,13 +136,17 @@ class KeyMouseEditWindow(gobject.GObject):
         self.exit_ok = True
         self.widget("key-mouse-edit-window").destroy()
 
-class ConfigWindow:
+class ConfigWindow(gobject.GObject):
+    __gsignals__ = {
+        'close': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_BOOLEAN,))
+    }
+
     def __init__(self):
+        gobject.GObject.__init__(self)
         # create widget tree ...
         self.xml = gtk.glade.XML(os.path.join(path().get_guidir(), "config.glade"))
         #self.control = ConfigWindowControl()
         self.modified = False
-        self.lbrc = LBRC.dinterface(dbus.SessionBus(), 'custom.LBRC', '/custom/LBRC', 'custom.LBRC')
 
         self._load_config()
         self._fill_window()
@@ -239,7 +243,7 @@ class ConfigWindow:
             print "type: ", edit_window.get_type()
 
     def on_config_window_destroy(self, destroy):
-        print "config window destroy"
+        self.emit("close", self.modified)
         return True
 
     def on_save_current_checkbutton_toggled(self, object):
