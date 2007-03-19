@@ -1,11 +1,21 @@
 #!/usr/bin/python
+#
+# TODO: make pairing configurable (required, remove bonding on disconnect)
+# TODO: check pairing - maybe rework connection handling ...
 
 __extra_epydoc_fields__ = [('signal', 'Signal', 'Signals')]
 
+from LBRC import dinterface
 import pygtk
 pygtk.require("2.0")
-import bluetooth,os,math,gobject,re
+import bluetooth
+import os
+import math
+import re
+import logging
+import gobject
 import dbus
+import dbus.glib
 
 class BTServer(gobject.GObject):
     """
@@ -254,9 +264,41 @@ class BTServer(gobject.GObject):
         bluetooth.stop_advertising(self.server_sock)
 
         self.client_sock,client_address = self.server_sock.accept()
+        
+        logging.debug("Serversocket: " + str(self.server_sock.getsockname()))
+        
+        manager = dinterface(dbus.SystemBus(), 'org.bluez', '/org/bluez', 'org.bluez.Manager')
+        adapters = manager.ListAdapters()
+        paired = False
+        for adapter in adapters:
+            adapter = dinterface(dbus.SystemBus(), 'org.bluez', adapter, 'org.bluez.Adapter')
+            if adapter.HasBonding(client_address[0]):
+                paired = True
+                break
+            
+        if not paired:
+            logging.debug('We see a new device, that was not yet allowed to connect. Beginning pairing!')
+            logging.debug('Search for adapter, that reaches the phone')
+            for adapter in adapters:
+                adapter = dinterface(dbus.SystemBus(), 'org.bluez', adapter, 'org.bluez.Adapter')
+                # We asume that an adapter that can resolve the name is the "right" adapter
+                try:
+                    name = adapter.GetRemoteName(client_address[0])
+                    logging.debug('Got name %s - will try to create bonding' % (name, ))
+                    adapter.CreateBonding(client_address[0])
+                    logging.debug('Bonding returned')
+                    if adapter.HasBonding(client_address[0]):
+                        logging.debug('Bonding successfull')
+                        paired = True
+                    else:
+                        logging.debug('Bonding failed')
+                    break
+                except:
+                    logging.debug('Exception in BondingCreation (DBUS Methods)')
+                    pass
 
-        if ( self.connectable == 'yes' or 
-            (self.connectable == 'filtered' and client_address[0] in self.filter)):
+        if ( paired and ( self.connectable == 'yes' or 
+            (self.connectable == 'filtered' and client_address[0] in self.filter))):
 
             self.connected = client_address
             self.emit("connect", client_address[0], client_address[1])
@@ -264,6 +306,7 @@ class BTServer(gobject.GObject):
             self.client_io_watch = gobject.io_add_watch(self.client_sock, gobject.IO_IN, self.handle_incoming_data)
             self.server_io_watch = gobject.io_add_watch(self.client_sock, gobject.IO_HUP, self.handle_disconnection)
         else:
+            logging.debug("BTServer: Closing remote connection")
             self.client_sock.close()
             self.client_sock = None
             if self.connectable == 'filtered':
