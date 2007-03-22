@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2007-03-11 21:06-0300\n"
+"POT-Creation-Date: 2007-03-22 00:28-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,73 +16,82 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../LBRC-applet:35
+#: ../LBRC-applet:36
 msgid "Could not connect to DBUS component of LBRC"
 msgstr ""
 
-#: ../LBRC_gtk_gui/applet.py:49
+#: ../LBRC_gtk_gui/applet.py:52
 #, python-format
 msgid ""
 "Profile changed:\n"
 "%(profilename)s"
 msgstr ""
 
-#: ../LBRC_gtk_gui/applet.py:53
+#: ../LBRC_gtk_gui/applet.py:56
 #, python-format
 msgid ""
 "Connect from:\n"
 "%(btname)s (%(btaddress)s)"
 msgstr ""
 
-#: ../LBRC_gtk_gui/applet.py:56
+#: ../LBRC_gtk_gui/applet.py:59
 #, python-format
 msgid ""
 "Disconnect from:\n"
 "%(btname)s (%(btaddress)s)"
 msgstr ""
 
-#: ../LBRC_gtk_gui/applet.py:72
+#: ../LBRC_gtk_gui/applet.py:76
 msgid "Profiles"
 msgstr ""
 
-#: ../LBRC_gtk_gui/BlueZControl.py:62
+#: ../LBRC_gtk_gui/BlueZControl.py:70
 msgid "Bluetooth visible"
 msgstr ""
 
-#: ../LBRC_gtk_gui/BlueZControl.py:64
+#: ../LBRC_gtk_gui/BlueZControl.py:72
 msgid "Bluetooth visible (automatic hiding)"
 msgstr ""
 
-#: ../LBRC_gtk_gui/BlueZControl.py:66
+#: ../LBRC_gtk_gui/BlueZControl.py:74
 msgid "Bluetooth invisible"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:32
+#: ../LBRC_gtk_gui/config.py:47
 msgid "KEYBOARD"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:32
+#: ../LBRC_gtk_gui/config.py:47
 msgid "MOUSE BUTTON"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:32
+#: ../LBRC_gtk_gui/config.py:47
 msgid "MOUSE WHEEL"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:32
+#: ../LBRC_gtk_gui/config.py:47
 msgid "MOUSE AXIS"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:125
+#: ../LBRC_gtk_gui/config.py:303 ../LBRC_gtk_gui/keymouseeditwindow.glade.h:3
 msgid "Event type"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:126
+#: ../LBRC_gtk_gui/config.py:308 ../LBRC_gtk_gui/keymouseeditwindow.glade.h:2
 msgid "Event generated"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:127
+#: ../LBRC_gtk_gui/config.py:313 ../LBRC_gtk_gui/keymouseeditwindow.glade.h:1
 msgid "Cellphone keycode"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:328
+#, python-format
+msgid "%(profile)s (System)"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:397
+msgid "What is the name for the new profile?"
 msgstr ""
 
 #: ../LBRC_gtk_gui/config.glade.h:1
@@ -108,6 +117,7 @@ msgid "Keyboard/Mouse"
 msgstr ""
 
 #: ../LBRC_gtk_gui/config.glade.h:6
+#: ../LBRC_gtk_gui/keymouseeditwindow.glade.h:4
 msgid "LBRC Configuration"
 msgstr ""
 
@@ -129,4 +139,8 @@ msgstr ""
 
 #: ../LBRC_gtk_gui/config.glade.h:11
 msgid "UInput Device:"
+msgstr ""
+
+#: ../LBRC_gtk_gui/keymouseeditwindow.glade.h:5
+msgid "Repeat frequency"
 msgstr ""
