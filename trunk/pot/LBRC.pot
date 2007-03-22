@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2007-03-22 00:28-0300\n"
+"POT-Creation-Date: 2007-03-22 00:49-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -43,6 +43,10 @@ msgstr ""
 
 #: ../LBRC_gtk_gui/applet.py:76
 msgid "Profiles"
+msgstr ""
+
+#: ../LBRC_gtk_gui/applet.py:93 ../LBRC_gtk_gui/config.py:328
+msgid "System"
 msgstr ""
 
 #: ../LBRC_gtk_gui/BlueZControl.py:70
@@ -85,12 +89,7 @@ msgstr ""
 msgid "Cellphone keycode"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:328
-#, python-format
-msgid "%(profile)s (System)"
-msgstr ""
-
-#: ../LBRC_gtk_gui/config.py:397
+#: ../LBRC_gtk_gui/config.py:398
 msgid "What is the name for the new profile?"
 msgstr ""
 

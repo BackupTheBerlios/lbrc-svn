@@ -325,7 +325,8 @@ class ConfigWindow(gobject.GObject):
         profile_model = gtk.ListStore(str, str, str)
 
         for i in self.system_profiles.keys():
-            profile_model.append((_('%(profile)s (System)') % {'profile': i}, i, "system"))
+            itemname = '%s (%s)' % (i, _("System"))
+            profile_model.append((itemname, i, "system"))
         
         for i in self.user_profiles.keys():
             profile_model.append((i, i, "user"))

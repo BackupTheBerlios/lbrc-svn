@@ -88,10 +88,13 @@ class Applet(object):
                 return 1
 
         for (config, profile) in sorted(self.lbrc.get_profiles(), cmp=sort_func):
+            itemname = None
             if config == 'system':
-                menuitem = gtk.RadioMenuItem(group, profile + " (System)")
+                itemname = "%s (%s)" % (profile, _("System"))
             else:
-                menuitem = gtk.RadioMenuItem(group, profile)
+                itemname = profile
+
+            menuitem = gtk.RadioMenuItem(group, itemname)
             group = menuitem
             menuitem.config = config
             menuitem.pid = profile

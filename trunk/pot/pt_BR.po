@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: LBRC 0.3\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2007-03-10 14:58-0300\n"
-"PO-Revision-Date: 2007-03-22 00:30-0300\n"
+"PO-Revision-Date: 2007-03-22 00:51-0300\n"
 "Last-Translator: Iuri Gomes Diniz <iuri@digizap.com.br>\n"
 "Language-Team: pt_BR <pt_BR@li.org>\n"
 "MIME-Version: 1.0\n"
@@ -46,18 +46,22 @@ msgstr "%(btname)s (%(btaddress)s) desconectou"
 msgid "Profiles"
 msgstr "Perfis"
 
+#: ../LBRC_gtk_gui/applet.py:93
+#: ../LBRC_gtk_gui/config.py:328
+msgid "System"
+msgstr "Sistema"
+
 #: ../LBRC_gtk_gui/BlueZControl.py:70
 msgid "Bluetooth visible"
-msgstr "Dispositivo Bluetooth visível"
+msgstr "Tornar dispositivo bluetooth visível"
 
 #: ../LBRC_gtk_gui/BlueZControl.py:72
-#, fuzzy
 msgid "Bluetooth visible (automatic hiding)"
-msgstr "Dispositivo Bluetooth visível (auto-hide)"
+msgstr "Tornar dispositivo bluetooth visível (auto-hide)"
 
 #: ../LBRC_gtk_gui/BlueZControl.py:74
 msgid "Bluetooth invisible"
-msgstr "Dispositivo Bluetooth invisível"
+msgstr "Tornar dispositivo bluetooth invisível"
 
 #: ../LBRC_gtk_gui/config.py:47
 msgid "KEYBOARD"
@@ -90,12 +94,7 @@ msgstr "Evento gerado"
 msgid "Cellphone keycode"
 msgstr "Código da tecla do celular"
 
-#: ../LBRC_gtk_gui/config.py:328
-#, python-format
-msgid "%(profile)s (System)"
-msgstr "%(profile)s (Sistema)"
-
-#: ../LBRC_gtk_gui/config.py:397
+#: ../LBRC_gtk_gui/config.py:398
 msgid "What is the name for the new profile?"
 msgstr "Qual o nome para o novo perfil?"
 
@@ -104,7 +103,6 @@ msgid "<i>Path to UInput Device file please only fill, if you experience problem
 msgstr "<i>Caminho para o dispositivo Uinput (ex: /dev/event/uinput), apenas preencha se a auto-detecção não estiver funcionando corretamente</i>"
 
 #: ../LBRC_gtk_gui/config.glade.h:2
-#, fuzzy
 msgid "Bluetooth Control:"
 msgstr "Controle Bluetooth:"
 
@@ -138,7 +136,6 @@ msgid "Save current profile for next start"
 msgstr "Lembrar o perfil atual para a próxima execução."
 
 #: ../LBRC_gtk_gui/config.glade.h:10
-#, fuzzy
 msgid "Show bluetooth controls"
 msgstr "Mostrar controles bluetooth"
 
