@@ -7,7 +7,6 @@ import javax.bluetooth.*;
 public class LBRC extends MIDlet implements CommandListener,DiscoveryListener  {
     List main_list;
     List dev_list;
-    List serv_list;
     Command exit;
     Command back;
     Display display;
@@ -21,7 +20,6 @@ public class LBRC extends MIDlet implements CommandListener,DiscoveryListener  {
     public void startApp() {
         main_list = new List("Select Operation",Choice.IMPLICIT);   //the main menu
         dev_list  = new List("Select Device",Choice.IMPLICIT);      //the list of devices
-        serv_list = new List("Available Services",Choice.IMPLICIT); //the list of services
         exit      = new Command("Exit",Command.EXIT,1);
         back      = new Command("Back",Command.BACK,1);
         display   = Display.getDisplay(this);
@@ -30,9 +28,6 @@ public class LBRC extends MIDlet implements CommandListener,DiscoveryListener  {
         main_list.setCommandListener(this);
         dev_list.addCommand(exit);
         dev_list.setCommandListener(this);
-        serv_list.addCommand(exit);
-        serv_list.addCommand(back);
-        serv_list.setCommandListener(this);
 
         main_list.append("Find Devices",null);
         display.setCurrent(main_list);
@@ -66,12 +61,6 @@ public class LBRC extends MIDlet implements CommandListener,DiscoveryListener  {
             }
 
          }
-        if (com == back){
-            if (dis == serv_list){                                    //back button is pressed in devices list
-                display.setCurrent(dev_list);
-            }
-        }
-
     }
     public void FindDevices(){
         try {
@@ -89,8 +78,6 @@ public class LBRC extends MIDlet implements CommandListener,DiscoveryListener  {
             services = new java.util.Vector();
             local    = LocalDevice.getLocalDevice();
             agent    = local.getDiscoveryAgent();
-            serv_list.deleteAll();                                 //empty the list of services
-                                                                   //in case user has pressed back
             agent.searchServices(attributes,uuids,device,this);            
         } catch(Exception e) {
             this.do_alert("Error in initiating search" , 4000);
