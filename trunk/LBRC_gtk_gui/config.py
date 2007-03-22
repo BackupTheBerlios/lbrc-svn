@@ -8,12 +8,12 @@
 # This file is distributed under the same license as the LBRC package.
 #
 # TODO:
-#   * Write to the config file
-#   * edit of profile
-#   * creation of a new profile
+#   * Write to the config file at end
 #   * Document each method
-#  
-
+#   * Merge config.glade and keymouseeditwindow in one file
+#   * Delete a profile
+#   * Change a profile name
+#   * Edition of profiles
 
 import os
 import sys
@@ -29,8 +29,9 @@ from LBRC.config import config
 
 # setting the correct script path before use of _ 
 if __name__ == "__main__":
+    import LBRC.path
     dirname = os.path.dirname(os.path.abspath(sys.argv[0]))
-    LBRC.scriptpath = os.path.join(dirname, "..")
+    LBRC.path.scriptpath = os.path.join(dirname, "..")
 
 from LBRC.l10n import _
 LBRC.l10n.init_glade_gettext()
@@ -49,8 +50,65 @@ types_detailed = { 'key':_('KEYBOARD'), 'mousebutton':_('MOUSE BUTTON'), 'mousew
 # TIP: Command to get name of handlers from config.glade
 # >grep handler LBRC_gtk_gui/config.glade | perl -pe 's/.*"(on_.*?)".*/$1/'
 
+
+class InputWindow(gobject.GObject):
+    #I want to use close signal with the same interface of the others class, so I'm not inheriting from Gtk.Dialog
+    __gsignals__ = {
+        'close': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_BOOLEAN,))
+    }
+
+    def __init__(self, title = "", parent = None):
+        
+        gobject.GObject.__init__(self)
+
+        self.dialog = gtk.Dialog(
+            title, 
+            parent, 
+            gtk.DIALOG_MODAL, 
+            (gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT, 
+                gtk.STOCK_OK, gtk.RESPONSE_ACCEPT)
+        )
+
+        self.dialog.vbox.add(gtk.Label(title))
+
+        self.input_entry = gtk.Entry()
+        
+        self.dialog.vbox.add(self.input_entry)
+        self.dialog.show_all()
+
+        self.input_entry.connect("changed", self.on_input_changed)
+        self.dialog.connect("response", self.on_dialog_response)
+        self.dialog.connect("destroy", self.on_dialog_destroy)
+
+        self.modified = False
+        self.exit_ok = False
+
+        self.dialog.show()
+
+    def on_input_changed(self, object):
+        self.modified = True
+
+    def on_dialog_response(self, object, response):
+        if response == gtk.RESPONSE_ACCEPT:
+            self.exit_ok = True
+        self.dialog.destroy()
+
+    def on_dialog_destroy(self, object):
+        if self.exit_ok:
+            self.emit("close", self.modified)
+
+    def get_text(self):
+        return self.input_entry.get_text();
+
 class KeyMouseEditWindow(gobject.GObject):
-    
+    """
+    A Window for configuring a key/mouse event.
+
+    @signal: close: (exit_ok)
+        This signals is fired when the window is closed. The parameter exit_ok will be True if the use has closed the window by clicking on OK button. The value of the entries must be accessed by get_* methods.
+
+    """
+   
     __gsignals__ = {
         'close': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_BOOLEAN,))
     }
@@ -87,21 +145,27 @@ class KeyMouseEditWindow(gobject.GObject):
         self.exit_ok = None
 
     def widget(self, name):
+        """ Wraper to get a widget from glade's xml"""
         return self.xml.get_widget(name)
 
     def get_repeat(self):
+        """Get the value of repeat entry"""
         return self.repeat
 
     def get_keycode(self):
+        """Get the value of keycode entry"""
         return self.keycode
 
     def get_action(self):
+        """Get the value of action entry"""
         return self.action
 
     def get_type(self):
+        """Get the value of type entry"""
         return self.type
 
     def on_key_mouse_edit_window_destroy(self, object):
+        """Signal handler for catch when the window was destroied"""
         if self.exit_ok == None:
             self.exit_ok = False
 
@@ -109,34 +173,47 @@ class KeyMouseEditWindow(gobject.GObject):
         return True
 
     def on_event_type_combobox_changed(self, combobox):
+        """Signal handler for catch when the event type combobox widget has be changed"""
         text = combobox.get_active_text()
         if text != None and len(text) > 0:
             self.type = self.reverse_types[text]
 
     def on_event_generated_entry_changed(self, entry):
+        """Signal handler for catch when the event entry has be changed"""
         text = entry.get_text()
         if text != None and len(text) > 0:
             self.action = text
 
     def on_repeat_frequency_entry_changed(self, entry):
+        """Signal handler for catch when the frequency entry has be changed"""
         text = entry.get_text()
         if text != None and len(text) > 0:
             self.repeat = text
 
     def on_cellphone_keycode_entry_changed(self, object):
+        """Signal handler for catch when the keycode entry has be changed"""
         text = entry.get_text()
         if text != None and len(text) > 0:
             self.keycode = text
 
     def on_cancel_button_clicked(self, button):
+        """Signal handler for catch when the cancel button has be pressed"""
         self.exit_ok = False
         self.widget("key-mouse-edit-window").destroy()
 
     def on_ok_button_clicked(self, button):
+        """Signal handler for catch when the ok button has be pressed"""
         self.exit_ok = True
         self.widget("key-mouse-edit-window").destroy()
 
 class ConfigWindow(gobject.GObject):
+    """
+    Widget to configure LBRC
+
+    @signal: close (was_changed)
+        This signal is fired when the config window has be closed if any configuration has be changed the parameter was_changed will be True.
+
+    """
     __gsignals__ = {
         'close': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_BOOLEAN,))
     }
@@ -154,17 +231,22 @@ class ConfigWindow(gobject.GObject):
         self.xml.signal_autoconnect(self)
 
     def widget(self, name):
+        """Wrapper to get a widget from glade's xml"""
         return self.xml.get_widget(name)
 
     def _load_config(self):
+        """Loads the config file"""
         self.config = config()    
         self.user_profiles = self.config.user['profiles']
         self.system_profiles = self.config.system['profiles']
 
     def _fill_treeview(self):
+        """Fills the table of commands"""
+
         iter = self.widget("profile-combobox").get_active_iter()
         model = self.widget("profile-combobox").get_model()
         (profileid, config) = model.get(iter, 1, 2)
+
         profile = {}
         # 0 => keycode, 1 => map_to, 2 => repeat_freq, 3 => EVENT TYPE, 4 => BACKGOROUND COLOR, 5 => EVENT TYPE DESCRIPTION
         mylist = gtk.ListStore(str, str, str, str, str, str)
@@ -182,17 +264,21 @@ class ConfigWindow(gobject.GObject):
             self.widget("key-mouse-edit-button").set_sensitive(False)
             #self.widget("command-add-button").set_sensitive(False)
             profile = self.system_profiles[profileid]
-        
-        for map in profile['UinputDispatcher']['actions']:
-            type = map['type']
-            mylist.append([
-                map['keycode'], 
-                map['map_to'], 
-                map.get('repeat_freq', None),
-                type,
-                colors[type],
-                types_detailed[type]
-            ])
+    
+        try:
+            for map in profile['UinputDispatcher']['actions']:
+                type = map['type']
+                mylist.append([
+                    map['keycode'], 
+                    map['map_to'], 
+                    map.get('repeat_freq', None),
+                    type,
+                    colors[type],
+                    types_detailed[type]
+                ])
+        except KeyError:
+            pass
+
         self.widget("key-mouse-treeview").set_model(mylist)
 
         
@@ -206,8 +292,34 @@ class ConfigWindow(gobject.GObject):
         show_bluetooth.set_active(self.config.get_config_item_fb("show-bluetooth", False))
         uinput_device.set_text(self.config.get_config_item_fb("uinput-device", ""))
        
-        # Profiles
+        # Profiles combobox
+        self._fill_profiles()
+
+        # key-mouse-treeview
+        treeview = self.widget("key-mouse-treeview")
+        # the text is in model index 5
+        # the backgroung is model index 4
+        treeview.insert_column_with_attributes(
+            0, _("Event type"), 
+            gtk.CellRendererText(), text=5, 
+            background=4         
+        )
+        treeview.insert_column_with_attributes(
+            1, _("Event generated"), 
+            gtk.CellRendererText(), text=1, 
+            background=4
+        )
+        treeview.insert_column_with_attributes(
+            2, _("Cellphone keycode"), 
+            gtk.CellRendererText(), text=0, 
+            background=4
+        )
+
+    def _fill_profiles(self, select_last_item=False):
+        """Fills the profile-combobox widget"""
         profile = self.widget("profile-combobox")
+        
+        last_active = profile.get_active()
 
         # 1 => Displayname, 2 => profile, 3 => config
         profile_model = gtk.ListStore(str, str, str)
@@ -220,13 +332,25 @@ class ConfigWindow(gobject.GObject):
             
         profile.set_model(profile_model)
 
-        # create the treeview's
-        for treeview in self.widget("key-mouse-treeview"), self.widget("command-treeview"):
-            treeview.insert_column_with_attributes(0, _("Event type"), gtk.CellRendererText(), text=5, background=4)
-            treeview.insert_column_with_attributes(1, _("Event generated"), gtk.CellRendererText(), text=1, background=4)
-            treeview.insert_column_with_attributes(2, _("Cellphone keycode"), gtk.CellRendererText(), text=0, background=4)
-            #treeview.set_model(gtk.ListStore(str, str))
-            #treeview.get_model().append(["example", "target"])
+        if select_last_item:
+            # walk through profile_model 
+            iter = profile_model.get_iter_first()
+            while profile_model.iter_next(iter):
+                iter = profile_model.iter_next(iter)
+            profile.set_active_iter(iter)
+        else:
+            profile.set_active(last_active)
+            #pass
+
+
+    def _create_new_profile(self, profile_name):
+        keys = self.user_profiles.keys() + self.system_profiles.keys()
+        if keys and profile_name.lower() in map(str.lower, keys):
+            #profile already exists
+            print "Profile already exists"
+            return False
+        self.user_profiles[profile_name] = {}
+        return True
 
     def _edit_key_mouse(self, pos):
         print "Editing pos", pos
@@ -270,10 +394,19 @@ class ConfigWindow(gobject.GObject):
         self._fill_treeview()
 
     def on_profile_new_button_clicked(self, button):
-        print "profile new button clicked"
+        input_window = InputWindow(title=_("What is the name for the new profile?"), parent = self.widget("config-window"))
+        input_window.connect("close", self.on_input_window_close, "new-profile")
+
+    def on_input_window_close(self, window, was_modified, type):
+        #print "modified:", was_modified, "type:", type, "text:", window.get_text()
+        text = window.get_text().strip()
+        if type == "new-profile" and len(text) > 0:
+            self._create_new_profile(text)
+            self._fill_profiles(select_last_item=True)
+
 
     def on_profile_edit_button_clicked(self, object):
-        print "profle edit button clicked"
+        print "profile edit button clicked"
 
     def on_profile_delete_button_clicked(self, object):
         print "profile delete button clicked"
