@@ -77,9 +77,6 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 		}
 		if (com == scan) {
 			FindDevices();
-			wait_screen.setTitle("LBRC - Scan");
-			wait_screen.setAction("Scanning for devices");
-			this.display.setCurrent(wait_screen);
 		}
 		if (com == List.SELECT_COMMAND) {
 			if (dis == dev_list) {
@@ -99,6 +96,9 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 		}
 	}
 	public void FindDevices() {
+		wait_screen.setTitle("LBRC - Scan");
+		wait_screen.setAction("Scanning for devices");
+		this.display.setCurrent(wait_screen);
 		try {
 			devices = new java.util.Vector();
 			LocalDevice local = LocalDevice.getLocalDevice();
@@ -133,8 +133,6 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 	}
 
 	public void inquiryCompleted(int param) {
-		state = 0;
-		display.setCurrent(dev_list);
 		switch (param) {
 		case DiscoveryListener.INQUIRY_COMPLETED: // Inquiry completed normally
 			this.dev_list.deleteAll();
@@ -155,6 +153,8 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 			//this.parent.do_alert("Inqury Canceled", 4000);
 			break;
 		}
+		state = 0;
+		display.setCurrent(dev_list);
 	}
 
 	public void serviceSearchCompleted(int transID, int respCode) {

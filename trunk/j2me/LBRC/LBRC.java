@@ -15,6 +15,7 @@ public class LBRC extends MIDlet {
 		control_frame = new LBRCFrame(this);
 		device_select = new LBRCDeviceSelect(this);
 		device_select.show_chooser();
+		device_select.FindDevices();
     }
 
     public void sendKey(int keyCode, byte mapping) {
