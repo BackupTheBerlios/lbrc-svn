@@ -5,7 +5,8 @@ import javax.microedition.lcdui.*;
 class LBRCFrame extends Canvas  implements CommandListener {
 	Command exit;
 	Command back;
-	private String pressedKey = "No key pressed";
+	private String pressedKeyName = "No key pressed";
+	private int pressedKey = 0;
 	private LBRC parent;
 
     LBRCFrame(LBRC parent) {
@@ -18,13 +19,15 @@ class LBRCFrame extends Canvas  implements CommandListener {
     }
     
     protected void keyPressed(int keyCode) {
-		pressedKey = getKeyName(keyCode);
+		pressedKeyName = getKeyName(keyCode);
+		pressedKey = keyCode;
 		parent.sendKey(keyCode,(byte)0);
 		repaint();
     }
     
     protected void keyReleased(int keyCode) {
-		pressedKey = getKeyName(keyCode);
+		pressedKeyName = getKeyName(keyCode);
+		pressedKey = keyCode;
         parent.sendKey(keyCode,(byte)1);
         repaint();
     }
@@ -39,9 +42,21 @@ class LBRCFrame extends Canvas  implements CommandListener {
 	} 
     
     protected void paint(Graphics g) {
-		g.setColor(255,255,255);
-		g.fillRect(0,0,getWidth(), getHeight());
-		g.setColor(0,0,0);
-		g.drawString(pressedKey, 20, 100, Graphics.TOP| Graphics.LEFT);
+		g.setColor(255, 255, 255);
+		g.fillRect(0, 0, getWidth(), getHeight());
+		int width = g.getClipWidth() - g.getClipX();
+		int height = g.getClipHeight() - g.getClipY();
+		try {
+			Image image = Image.createImage("/res/Blue.png");
+			g.drawImage(image, width - 5, height - 5, Graphics.BOTTOM | Graphics.RIGHT);
+		} catch (Exception e) {
+		}
+		g.setColor(0, 0, 0);
+		Font f = g.getFont();
+		int offset = f.stringWidth(" ");
+		String key1 = "Keypress: " + pressedKeyName;
+		String key2 = "KeyCode: " + Integer.toString(pressedKey);
+		g.drawString(key1, offset, f.getHeight() / 2, Graphics.TOP| Graphics.LEFT);
+		g.drawString(key2, offset, f.getHeight() * 2, Graphics.TOP| Graphics.LEFT);
 	}
 }
