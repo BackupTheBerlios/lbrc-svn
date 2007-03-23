@@ -133,7 +133,8 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 	}
 
 	public void inquiryCompleted(int param) {
-		this.state = 0;
+		state = 0;
+		display.setCurrent(dev_list);
 		switch (param) {
 		case DiscoveryListener.INQUIRY_COMPLETED: // Inquiry completed normally
 			this.dev_list.deleteAll();
@@ -142,13 +143,12 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 					String device_name = ((RemoteDevice) devices.elementAt(x))
 							.getFriendlyName(false);
 					this.dev_list.append(device_name, null);
-					display.setCurrent(dev_list);
 				} catch (Exception e) {
 					this.parent.do_alert("Error in adding devices", 4000);
 				}
 			break;
 		case DiscoveryListener.INQUIRY_ERROR: // Error during inquiry
-			this.parent.do_alert("Inqury error", 4000);
+			this.parent.do_alert("Inquiry error", 4000);
 			break;
 		case DiscoveryListener.INQUIRY_TERMINATED: // Inquiry terminated by
 													// agent.cancelInquiry()
@@ -158,7 +158,8 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 	}
 
 	public void serviceSearchCompleted(int transID, int respCode) {
-		this.state = 0;
+		state = 0;
+		display.setCurrent(dev_list);
 		switch (respCode) {
 		case DiscoveryListener.SERVICE_SEARCH_COMPLETED:
 			for (int x = 0; x < services.size(); x++)
@@ -181,7 +182,7 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 			this.parent.do_alert("Service serch error", 4000);
 			break;
 		case DiscoveryListener.SERVICE_SEARCH_NO_RECORDS:
-			this.parent.do_alert("No records returned", 4000);
+			this.parent.do_alert("LBRC Service not found!", 4000);
 			break;
 		case DiscoveryListener.SERVICE_SEARCH_TERMINATED:
 			//this.parent.do_alert("Inqury Cancled", 4000);

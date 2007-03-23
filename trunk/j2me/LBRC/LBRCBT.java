@@ -9,8 +9,6 @@ import javax.bluetooth.*;
 import java.lang.Integer;
 
 final class LBRCBT implements Runnable {
-
-	private boolean isBTReady;
 	private LocalDevice localDevice;
     private Thread senderThread;
 	private L2CAPConnection conn;
@@ -26,7 +24,7 @@ final class LBRCBT implements Runnable {
 	}
 
 	public void sendKey(int keyCode, byte mapping) {
-		if(isBTReady){
+		if(conn != null){
 		    byte[] data = new byte[5];
             // Encode int keyCode to binary array
             // mapping allows distinguishing press from release
@@ -39,18 +37,26 @@ final class LBRCBT implements Runnable {
 			    conn.send(data);
 			} catch (Exception e) {
 			    parent.do_alert("Can't send data: " + e, 4000);
-                parent.quit();
+                parent.close_remote_service();
 			}
 		}
 	}
 
 	public void run() {
-		isBTReady = false;
 		try {
 			conn = (L2CAPConnection)Connector.open(this.URL);
-			isBTReady = true;
 		} catch (Exception e) {
             parent.do_alert("Bluetooth Connection Failed", 4000);
+            parent.close_remote_service();
 		}
+	}
+	
+	public void shutdown() {
+		try {
+			conn.close();
+		} catch (IOException e) {}
+		try {
+			senderThread.join();
+		} catch (InterruptedException e) {}
 	}
 }

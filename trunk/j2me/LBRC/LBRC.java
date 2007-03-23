@@ -41,6 +41,12 @@ public class LBRC extends MIDlet {
 		display.setCurrent(control_frame);
 	}    
     
+	public void close_remote_service() {
+		remoteBT.shutdown();
+		remoteBT = null;
+		device_select.show_chooser();
+	}
+	
     public void quit() {
         destroyApp(false);
         notifyDestroyed();
