@@ -10,6 +10,7 @@ from LBRC.config import config
 import pygtk
 pygtk.require("2.0")
 import bluetooth
+import json
 import os
 import math
 import re
@@ -150,11 +151,13 @@ class BTServer(gobject.GObject):
         @return:    BTServer object
         """
         gobject.GObject.__init__(self)
+        self.buffer = ""
         self.name = name
         self.serverid = serverid
         self.connectable = 'yes'
+        self.json_read = json.JsonReader().read
         self.filter = {}
-        self.port = bluetooth.get_available_port( bluetooth.L2CAP )
+        self.port = bluetooth.get_available_port( bluetooth.RFCOMM )
         self.connected = None
         self.config = config()
         self.paired_by_us = {}
@@ -165,7 +168,7 @@ class BTServer(gobject.GObject):
         self.client_io_watch = None
         self.server_io_watch = None
 
-        self.server_sock = bluetooth.BluetoothSocket( bluetooth.L2CAP )
+        self.server_sock = bluetooth.BluetoothSocket( bluetooth.RFCOMM )
         self.server_sock.bind(("", self.port))
         self.server_sock.listen(1)
 
@@ -174,6 +177,17 @@ class BTServer(gobject.GObject):
 
     def shutdown(self):
         pass
+
+    def _handle_buffer(self):
+        packets = self.buffer.split(u"\u0000")
+        # The last packet is either empty (if the last packet was completely send
+        # or we only see a partital package, that we feed back into the buffer
+        self.buffer = packets.pop()            
+        for packet in packets:
+            data = self.json_read(packet.encode('utf-8'))
+            mapping = data["mapping"]
+            keycode = data["keycode"]
+            self.emit('keycode', mapping, keycode)
 
     def handle_incoming_data(self, clientsocket, condition):
         """
@@ -195,11 +209,9 @@ class BTServer(gobject.GObject):
         @rtype:         bool
         @return:        always True, as we keep listening on the socket until the connection is shutdown
         """
-        data = clientsocket.recv(5)
-        if data:
-            mapping = ord(data[0])
-            keycode = self.byte_array_to_int(data[1:5])
-            self.emit('keycode', int(mapping), int(keycode))
+        self.buffer += clientsocket.recv(1024)
+        logging.debug("Received data" + self.buffer)
+        self._handle_buffer()
         return True
 
     def handle_disconnection(self, serversocket, condition):
