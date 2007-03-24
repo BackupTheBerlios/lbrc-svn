@@ -60,7 +60,12 @@ final class LBRCBT implements Runnable {
 	
 	public void shutdown() {
 		try {
-			connection.close();
+			if(input != null) input.close();
+			if(output != null) output.close();
+			if(connection != null) connection.close();
+			input = null;
+			output = null;
+			connection = null;
 		} catch (IOException e) {}
 		try {
 			senderThread.join();
