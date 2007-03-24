@@ -1,18 +1,22 @@
 package LBRC;
 
-import javax.bluetooth.LocalDevice;
 import javax.microedition.io.Connector;
 import javax.microedition.io.StreamConnection;
 import java.io.IOException;
 import java.io.OutputStream;
-import javax.bluetooth.*;
-import java.lang.Integer;
+import java.io.InputStream;
+import org.json.*;
 
 final class LBRCBT implements Runnable {
-	private LocalDevice localDevice;
+	// Make the protocol upgradeable
+	// Transport encoding is UTF-8
+	// TODO: Implement check for used protocol
+	private static int[] protocols = { 1 };
+	private int protocol = 0;
     private Thread senderThread;
-	private L2CAPConnection conn;
-    private OutputStream out;
+	private StreamConnection connection;
+    private OutputStream output;
+    private InputStream input;
     private LBRC parent;
     private String URL;
 
@@ -23,28 +27,31 @@ final class LBRCBT implements Runnable {
 		senderThread.start();
 	}
 
+	private String encodeKeyCode(int keyCode, byte mapping) {
+		JSONObject keycode = new JSONObject();
+		keycode.put("type", "keycode");
+		keycode.put("keycode", keyCode);
+		keycode.put("mapping", mapping);
+		return keycode.toString() + "\u0000";
+	}
+	
 	public void sendKey(int keyCode, byte mapping) {
-		if(conn != null){
-		    byte[] data = new byte[5];
-            // Encode int keyCode to binary array
-            // mapping allows distinguishing press from release
-            data[0] = mapping;
-            for (int i = 0; i < 4; i++) {
-                int offset = (3 - i) * 8;
-                data[i+1] = (byte) ((keyCode >>> offset) & 0xFF);
-            }
+		if(output != null){
 			try {
-			    conn.send(data);
+			    output.write(encodeKeyCode(keyCode, mapping).getBytes("UTF-8"));
+			    output.flush();
 			} catch (Exception e) {
 			    parent.do_alert("Can't send data: " + e, 4000);
                 parent.close_remote_service();
 			}
 		}
 	}
-
+	
 	public void run() {
 		try {
-			conn = (L2CAPConnection)Connector.open(this.URL);
+			connection = (StreamConnection)Connector.open(this.URL);
+			input = connection.openInputStream();
+			output = connection.openOutputStream();
 		} catch (Exception e) {
             parent.do_alert("Bluetooth Connection Failed", 4000);
             parent.close_remote_service();
@@ -53,7 +60,7 @@ final class LBRCBT implements Runnable {
 	
 	public void shutdown() {
 		try {
-			conn.close();
+			connection.close();
 		} catch (IOException e) {}
 		try {
 			senderThread.join();
