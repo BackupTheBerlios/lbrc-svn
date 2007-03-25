@@ -1026,21 +1026,12 @@ public class JSONObject {
      *  with <code>}</code>&nbsp;<small>(right brace)</small>.
      */
      static String valueToString(Object value, int indentFactor, int indent) {
-        if (value == null || value.equals(null)) {
-            return "null";
-        }
-        if (value instanceof Number) {
-            return numberToString((Number) value);
-        }
-        if (value instanceof Boolean) {
-            return value.toString();
-        }
         if (value instanceof JSONObject) {
             return (((JSONObject)value).toString(indentFactor, indent));
         }
         if (value instanceof JSONArray) {
             return (((JSONArray)value).toString(indentFactor, indent));
         }
-        return quote(value.toString());
+        return valueToString(value);
     }
 }
