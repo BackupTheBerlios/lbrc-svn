@@ -7,44 +7,50 @@ import java.io.OutputStream;
 import java.io.InputStream;
 import org.json.*;
 
-final class LBRCBT implements Runnable {
-	// Make the protocol upgradeable
+final class LBRCSender implements Runnable {
+	// Make the protocol upgradeable 
+	// (read: the j2me part announces what version it 
+	//  speaks and the python part follows)
 	// Transport encoding is UTF-8
-	// TODO: Implement check for used protocol
-	private static int[] protocols = { 1 };
-	private int protocol = 0;
+	final private int protocol = 0;
     private Thread senderThread;
 	private StreamConnection connection;
     private OutputStream output;
     private InputStream input;
-    private LBRC parent;
+    private LBRCSenderController parent;
     private String URL;
 
-	LBRCBT(LBRC parent, String URL ) {
+	LBRCSender(LBRCSenderController parent, String URL ) {
 		senderThread = new Thread(this);
         this.parent = parent;
         this.URL = URL;
 		senderThread.start();
 	}
 
-	private String encodeKeyCode(int keyCode, byte mapping) {
+	public void sendKey(int keyCode, int mapping) {
 		JSONObject keycode = new JSONObject();
 		keycode.put("type", "keycode");
 		keycode.put("keycode", keyCode);
 		keycode.put("mapping", mapping);
-		return keycode.toString() + "\u0000";
+		send(keycode);
 	}
 	
-	public void sendKey(int keyCode, byte mapping) {
-		if(output != null){
-			try {
-			    output.write(encodeKeyCode(keyCode, mapping).getBytes("UTF-8"));
-			    output.flush();
-			} catch (Exception e) {
-			    parent.do_alert("Can't send data: " + e, 4000);
-                parent.close_remote_service();
-			}
-		}
+	private void initCall() {
+		JSONObject init = new JSONObject();
+		init.put("type", "init");
+		init.put("protocol", protocol);
+		send(init);
+	}
+	
+	private void send(JSONObject message) {
+		try {
+			String stringified = message.toString() + "\u0000";
+			output.write(stringified.getBytes("UTF-8"));
+			output.flush();
+		} catch (Exception e) {
+		    parent.do_alert("Can't send data: " + e, 4000);
+            shutdown();
+		}		
 	}
 	
 	public void run() {
@@ -52,9 +58,10 @@ final class LBRCBT implements Runnable {
 			connection = (StreamConnection)Connector.open(this.URL);
 			input = connection.openInputStream();
 			output = connection.openOutputStream();
+			initCall();
 		} catch (Exception e) {
             parent.do_alert("Bluetooth Connection Failed", 4000);
-            parent.close_remote_service();
+            shutdown();
 		}
 	}
 	
@@ -70,5 +77,6 @@ final class LBRCBT implements Runnable {
 		try {
 			senderThread.join();
 		} catch (InterruptedException e) {}
+		this.parent.remoteServiceClosed();
 	}
 }

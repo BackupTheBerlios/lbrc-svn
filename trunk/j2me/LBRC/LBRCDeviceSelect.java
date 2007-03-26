@@ -16,13 +16,13 @@ import javax.microedition.lcdui.List;
 import javax.microedition.lcdui.Displayable;
 
 public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
+	private final static Command exit = new javax.microedition.lcdui.Command("Exit", Command.EXIT, 1);
+	private final static Command back = new javax.microedition.lcdui.Command("Back", Command.BACK, 1);
+	private final static Command scan = new javax.microedition.lcdui.Command("Scannen", Command.OK, 1);
 	LBRC parent;
 	WaitScreen wait_screen;
 	List dev_list;
 	List serv_list;
-	Command exit;
-	Command back;
-	Command scan;
 	Display display;
 	java.util.Vector devices;
 	java.util.Vector services;
@@ -38,9 +38,6 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 		wait_screen = new WaitScreen();
 		display = Display.getDisplay(this.parent);
 		dev_list = new List("LBRC - Devices", Choice.IMPLICIT);
-		exit = new Command("Exit", Command.EXIT, 1);
-		back = new Command("Back", Command.BACK, 1);
-		scan = new Command("Scannen", Command.OK, 1);
 		
 		wait_screen.addCommand(back);
 		wait_screen.setCommandListener(this);
@@ -168,7 +165,7 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 					DataElement ser_de = sr.getAttributeValue(0x100);
 					String service_name = (String) ser_de.getValue();
 					if (service_name.equals("LBRC")) {
-						this.parent.set_remote_service(sr);
+						this.parent.connect_remote_service(sr);
 						break;
 					}
 				} catch (Exception e) {

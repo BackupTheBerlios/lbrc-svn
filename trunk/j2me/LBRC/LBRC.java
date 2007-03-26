@@ -6,22 +6,16 @@ import javax.microedition.lcdui.*;
 
 public class LBRC extends MIDlet {
 	LBRCDeviceSelect device_select;
+	LBRCSenderController control_frame;
 	Display display;
-	LBRCFrame control_frame;
-	LBRCBT remoteBT;
+
     
     public void startApp() {
 		this.display = Display.getDisplay(this);
-		control_frame = new LBRCFrame(this);
+		control_frame = new LBRCSenderController(this);
 		device_select = new LBRCDeviceSelect(this);
 		device_select.show_chooser();
 		device_select.FindDevices();
-    }
-
-    public void sendKey(int keyCode, byte mapping) {
-    	if (remoteBT != null) {
-    		remoteBT.sendKey(keyCode, mapping);
-    	}
     }
 
     public void do_alert(String msg,int time_out){
@@ -36,15 +30,12 @@ public class LBRC extends MIDlet {
         }
     }
 
-	public void set_remote_service(ServiceRecord sr) {
-		remoteBT = new LBRCBT(this, 
-				   sr.getConnectionURL(0, false));
+	public void connect_remote_service(ServiceRecord sr) {
+		control_frame.set_connection_url(sr.getConnectionURL(0, false));
 		display.setCurrent(control_frame);
 	}    
     
-	public void close_remote_service() {
-		remoteBT.shutdown();
-		remoteBT = null;
+	public void remoteServiceClosed() {
 		device_select.show_chooser();
 	}
 	
