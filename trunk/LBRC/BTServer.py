@@ -185,9 +185,12 @@ class BTServer(gobject.GObject):
         self.buffer = packets.pop()            
         for packet in packets:
             data = self.json_read(packet.encode('utf-8'))
-            mapping = data["mapping"]
-            keycode = data["keycode"]
-            self.emit('keycode', mapping, keycode)
+            if (data['type'] == "keycode"):
+                mapping = data["mapping"]
+                keycode = data["keycode"]
+                self.emit('keycode', mapping, keycode)
+            else:
+                logging.debug("Unmatched package: " + str(data))
 
     def handle_incoming_data(self, clientsocket, condition):
         """
