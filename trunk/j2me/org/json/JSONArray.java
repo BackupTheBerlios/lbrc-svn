@@ -241,7 +241,7 @@ public class JSONArray {
      */
     public int getInt(int index)
             throws NoSuchElementException, NumberFormatException {
-        Object o = get(index);
+//        Object o = get(index);
 //        return o instanceof Number ? ((Number)o).intValue() :
 //                                     (int)getDouble(index);
 				return (int)getDouble(index);

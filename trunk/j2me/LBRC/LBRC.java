@@ -5,17 +5,17 @@ import javax.microedition.midlet.*;
 import javax.microedition.lcdui.*;
 
 public class LBRC extends MIDlet {
-	LBRCDeviceSelect device_select;
-	LBRCSenderController control_frame;
+	LBRCDeviceSelect deviceSelect;
+	LBRCSenderController interactiveControl;
 	Display display;
 
     
     public void startApp() {
 		this.display = Display.getDisplay(this);
-		control_frame = new LBRCSenderController(this);
-		device_select = new LBRCDeviceSelect(this);
-		device_select.show_chooser();
-		device_select.FindDevices();
+		interactiveControl = new LBRCSenderController(this);
+		deviceSelect = new LBRCDeviceSelect(this);
+		deviceSelect.showChooser();
+		deviceSelect.FindDevices();
     }
 
     public void do_alert(String msg,int time_out){
@@ -30,13 +30,12 @@ public class LBRC extends MIDlet {
         }
     }
 
-	public void connect_remote_service(ServiceRecord sr) {
-		control_frame.set_connection_url(sr.getConnectionURL(0, false));
-		display.setCurrent(control_frame);
+	public void connectRemoteService(ServiceRecord sr) {
+		interactiveControl.setConnectionUrl(sr.getConnectionURL(0, false));
 	}    
     
 	public void remoteServiceClosed() {
-		device_select.show_chooser();
+		deviceSelect.showChooser();
 	}
 	
     public void quit() {

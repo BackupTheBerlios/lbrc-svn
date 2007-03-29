@@ -366,7 +366,7 @@ public class JSONObject {
     public int getInt(String key)
             throws NoSuchElementException, NumberFormatException {
         //System.out.print("In getInt()\n");
-        Object o = get(key);
+//        Object o = get(key);
 				//System.out.print("After get() in getInt()\n");
         
         //return o instanceof Number ? ((Number)o).intValue() :

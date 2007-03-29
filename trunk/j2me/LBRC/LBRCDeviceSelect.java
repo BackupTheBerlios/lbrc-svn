@@ -20,9 +20,8 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 	private final static Command back = new javax.microedition.lcdui.Command("Back", Command.BACK, 1);
 	private final static Command scan = new javax.microedition.lcdui.Command("Scannen", Command.OK, 1);
 	LBRC parent;
-	WaitScreen wait_screen;
-	List dev_list;
-	List serv_list;
+	WaitScreen waitScreen;
+	List deviceDisplayList;
 	Display display;
 	java.util.Vector devices;
 	java.util.Vector services;
@@ -35,24 +34,24 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 		this.parent = parent;
 		this.state = 0;
 		this.search = 0;
-		wait_screen = new WaitScreen();
+		waitScreen = new WaitScreen();
 		display = Display.getDisplay(this.parent);
-		dev_list = new List("LBRC - Devices", Choice.IMPLICIT);
+		deviceDisplayList = new List("LBRC - Devices", Choice.IMPLICIT);
 		
-		wait_screen.addCommand(back);
-		wait_screen.setCommandListener(this);
-		dev_list.addCommand(exit);
-		dev_list.addCommand(scan);
-		dev_list.setCommandListener(this);
+		waitScreen.addCommand(back);
+		waitScreen.setCommandListener(this);
+		deviceDisplayList.addCommand(exit);
+		deviceDisplayList.addCommand(scan);
+		deviceDisplayList.setCommandListener(this);
 	}
 	
-	public void show_chooser() {
-		this.display.setCurrent(this.dev_list);
+	public void showChooser() {
+		this.display.setCurrent(this.deviceDisplayList);
 	}
 	
 	public void commandAction(Command com, Displayable dis) {
 		if (com == back) {
-			this.display.setCurrent(dev_list);
+			this.display.setCurrent(deviceDisplayList);
 			try {
 			if (this.state == 1) {
 				local = LocalDevice.getLocalDevice();
@@ -76,26 +75,26 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 			FindDevices();
 		}
 		if (com == List.SELECT_COMMAND) {
-			if (dis == dev_list) {
-				if (dev_list.getSelectedIndex() >= 0) {
+			if (dis == deviceDisplayList) {
+				if (deviceDisplayList.getSelectedIndex() >= 0) {
 					int[] attributes = { 0x100 }; // the name of the service
 					UUID[] uuids = new UUID[1];
 					uuids[0] = new UUID(0x1002); // browsable services
 					FindServices( attributes,
 							      uuids, 
-							      (RemoteDevice) devices.elementAt(dev_list.getSelectedIndex()
+							      (RemoteDevice) devices.elementAt(deviceDisplayList.getSelectedIndex()
 							     ));
-					wait_screen.setTitle("LBRC - Inquiery");
-					wait_screen.setAction("Checking for service");
-					this.display.setCurrent(wait_screen);
+					waitScreen.setTitle("LBRC - Inquiery");
+					waitScreen.setAction("Checking for service");
+					this.display.setCurrent(waitScreen);
 				}
 			}
 		}
 	}
 	public void FindDevices() {
-		wait_screen.setTitle("LBRC - Scan");
-		wait_screen.setAction("Scanning for devices");
-		this.display.setCurrent(wait_screen);
+		waitScreen.setTitle("LBRC - Scan");
+		waitScreen.setAction("Scanning for devices");
+		this.display.setCurrent(waitScreen);
 		try {
 			devices = new java.util.Vector();
 			LocalDevice local = LocalDevice.getLocalDevice();
@@ -132,12 +131,12 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 	public void inquiryCompleted(int param) {
 		switch (param) {
 		case DiscoveryListener.INQUIRY_COMPLETED: // Inquiry completed normally
-			this.dev_list.deleteAll();
+			this.deviceDisplayList.deleteAll();
 			for (int x = 0; x < devices.size(); x++)
 				try {
 					String device_name = ((RemoteDevice) devices.elementAt(x))
 							.getFriendlyName(false);
-					this.dev_list.append(device_name, null);
+					this.deviceDisplayList.append(device_name, null);
 				} catch (Exception e) {
 					this.parent.do_alert("Error in adding devices", 4000);
 				}
@@ -151,12 +150,12 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 			break;
 		}
 		state = 0;
-		display.setCurrent(dev_list);
+		display.setCurrent(deviceDisplayList);
 	}
 
 	public void serviceSearchCompleted(int transID, int respCode) {
 		state = 0;
-		display.setCurrent(dev_list);
+		display.setCurrent(deviceDisplayList);
 		switch (respCode) {
 		case DiscoveryListener.SERVICE_SEARCH_COMPLETED:
 			for (int x = 0; x < services.size(); x++)
@@ -165,7 +164,7 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 					DataElement ser_de = sr.getAttributeValue(0x100);
 					String service_name = (String) ser_de.getValue();
 					if (service_name.equals("LBRC")) {
-						this.parent.connect_remote_service(sr);
+						this.parent.connectRemoteService(sr);
 						break;
 					}
 				} catch (Exception e) {
