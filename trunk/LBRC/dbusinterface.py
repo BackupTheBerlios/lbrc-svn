@@ -15,6 +15,7 @@ from LBRC.config import config
 from LBRC.UinputDispatcher import UinputDispatcher
 from LBRC.CommandExecutor import CommandExecutor
 from LBRC.DBUSCaller import DBUSCaller
+from LBRC.ProfileSwitcher import ProfileSwitcher
 from LBRC.BTServer import BTServer
 from LBRC.l10n import _
 
@@ -28,9 +29,9 @@ class LBRCdbus(dbus.service.Object):
         self.config = config()
 
         self.event_listener = []
-        self.event_listener.append(UinputDispatcher(self.config))
-        self.event_listener.append(CommandExecutor(self.config))
-        self.event_listener.append(DBUSCaller(self.config))
+        
+        for i in (UinputDispatcher, CommandExecutor, DBUSCaller, ProfileSwitcher):
+            self._register_listener(i)
 
         #load of config data 
         self.cur_profile = None
@@ -44,6 +45,14 @@ class LBRCdbus(dbus.service.Object):
         #load the default profile
         self._load_default_profile()
 
+    def _register_listener(self, constructor):
+        # TODO: at some point we have to do conflict resolving (when we define what is a conflict ...)
+        listener = constructor(self.config)
+        try: listener.set_bluetooth_connector(self.btserver)
+        except AttributeError: pass
+        try: listener.set_core(self)
+        except AttributeError: pass
+        self.event_listener.append(listener)
 
     def _load_default_profile(self):
         #FIXME: catch error when there's no profiles
@@ -130,6 +139,7 @@ class LBRCdbus(dbus.service.Object):
 
     @dbus.service.signal('custom.LBRC', signature="ssi")
     def disconnect_cb(self, btname, btadress, port):
+        logging.debug("disconnect_cb: " + str(btname) + " " + str(btadress) + " " + str(port))
         pass
 
     @dbus.service.signal('custom.LBRC', signature="ix")

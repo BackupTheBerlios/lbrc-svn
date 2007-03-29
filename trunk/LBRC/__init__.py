@@ -20,5 +20,6 @@ def dinterface(bus, service, obj_path, interface):
     proxy_obj = bus.get_object(service, obj_path)
     return dbus.Interface(proxy_obj, interface)
 
-__all__ = ["dbusinterface", "BTServer", "UinputDispatcher", "CommandExecutor", "write_config" , "read_config"]
+__all__ = ["dbusinterface", "BTServer", "UinputDispatcher", "CommandExecutor",  
+           "config", "consts", "DBUSCaller", "l10n", "path", "ProfileSwitcher"]
 

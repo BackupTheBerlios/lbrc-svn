@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: UTF-8 -*-
 #
 # TODO: check pairing - maybe rework connection handling ...
 # TODO: react to config changes (currently the configs are checked on demand, so no problem - currently!)
@@ -151,11 +152,12 @@ class BTServer(gobject.GObject):
         @return:    BTServer object
         """
         gobject.GObject.__init__(self)
+        self.handler = {}
+        self.handler['list'] = None
         self.buffer = ""
         self.name = name
         self.serverid = serverid
         self.connectable = 'yes'
-        self.json_read = json.JsonReader().read
         self.filter = {}
         self.port = bluetooth.get_available_port( bluetooth.RFCOMM )
         self.connected = None
@@ -184,13 +186,29 @@ class BTServer(gobject.GObject):
         # or we only see a partital package, that we feed back into the buffer
         self.buffer = packets.pop()            
         for packet in packets:
-            data = self.json_read(packet.encode('utf-8'))
-            if (data['type'] == "keycode"):
+            data = json.read(packet.encode('utf-8'))
+            if (data['type'] == "keyCode"):
                 mapping = data["mapping"]
                 keycode = data["keycode"]
                 self.emit('keycode', mapping, keycode)
+            elif (data['type'] == "listReply" and self.handler['list']):
+                self.handler['list'](data['selectionIndex'])
+                self.handler['list'] = None
             else:
                 logging.debug("Unmatched package: " + str(data))
+
+    def send_list_query(self, title, list, callback):
+        package = {}
+        package['type'] = "listQuery"
+        package['title'] = title
+        package['list'] = list
+        self._send_query(package)
+        self.handler['list'] = callback
+        
+    def _send_query(self, package):
+        message = (json.write(package) + u"\u0000").encode('utf-8')
+        logging.debug(repr(message))
+        self.client_sock.sendall(message)
 
     def handle_incoming_data(self, clientsocket, condition):
         """
@@ -213,7 +231,7 @@ class BTServer(gobject.GObject):
         @return:        always True, as we keep listening on the socket until the connection is shutdown
         """
         self.buffer += clientsocket.recv(1024)
-        logging.debug("Received data" + self.buffer)
+        logging.debug("In Buffer: " + self.buffer)
         self._handle_buffer()
         return True
 
