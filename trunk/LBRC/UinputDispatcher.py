@@ -8,7 +8,11 @@ import LBRC.consts as co
 
 class UinputDispatcher( object ):
     """
-    Class to handle keycodes received by BTServer and issue commands according to them
+    The UinputDispatcher translates keycodes from the phone into input events, that are
+    injected into the kernel. When the class is instanciated, the uinput device is opened
+    and the kernel creates the corresponding device node. Additionally the events are
+    also fed into the global event sind /dev/input/events (or where ever the distribution
+    descides to place this).
     """
     def __init__( self, config ):
         """
@@ -26,15 +30,23 @@ class UinputDispatcher( object ):
         
         self.uinput_dev = None
         
-        self.open_uinput_dev()
+        self._open_uinput_dev()
         
-        Event.set_uinput_dev( self.uinput_dev )
+        
 
         self.init = []
         self.actions = {}
         self.destruct = []
 
-    def open_uinput_dev( self ):
+    def _open_uinput_dev( self ):
+        """
+        Open uinput device and initialise the event masks, that we will deliver.
+        We don't calculate the masks, but instead set masks for:
+        
+        - relative axes ( x, y, z, mouse_wheel)
+        - mousebuttons (MOUSE, TOUCH, LEFT, MIDDLE, RIGHT, FORWARD, BACK)
+        - keypresses (a-z, ENTER, SHIFT, 0-9, ...)
+        """
         device_file = None
         for location in self.config.get_config_item('uinpt-device'):
             if self._check_uinput_dev(location):
@@ -68,7 +80,6 @@ class UinputDispatcher( object ):
             fcntl.ioctl( self.uinput_dev, co.uinput['UI_SET_KEYBIT'], i )
         fcntl.ioctl( self.uinput_dev, co.uinput['UI_SET_KEYBIT'], co.input['BTN_MOUSE'] )
         fcntl.ioctl( self.uinput_dev, co.uinput['UI_SET_KEYBIT'], co.input['BTN_TOUCH'] )
-        fcntl.ioctl( self.uinput_dev, co.uinput['UI_SET_KEYBIT'], co.input['BTN_MOUSE'] )
         fcntl.ioctl( self.uinput_dev, co.uinput['UI_SET_KEYBIT'], co.input['BTN_LEFT'] )
         fcntl.ioctl( self.uinput_dev, co.uinput['UI_SET_KEYBIT'], co.input['BTN_MIDDLE'] )
         fcntl.ioctl( self.uinput_dev, co.uinput['UI_SET_KEYBIT'], co.input['BTN_RIGHT'] )
@@ -101,9 +112,15 @@ class UinputDispatcher( object ):
 
     def _interpret_profile( self, config, profile ):
         """
-        Interpret the data from the profile and create appropriate uinput events
-        additionally record the Events, that will be passed, to set the appropriate
-        eventmasks on the uinputdevice
+        Interpret the data from the profile and create appropriate uinput events for each
+        configure keycode/mapping tuple in the config an array is created, that holds
+        L{Event} objects, that are called, then the corresponding keycode/mapping tuple
+        is activated
+        
+        @param    config:    Source of the profile (system or user)
+        @type     config:    String
+        @param    profile:   ID of the currently selected Profile
+        @type     profile:   String
         """
         logging.debug( "UinputDispatcher: _interpret_profile(%s, %s)" % ( config, profile ) )
         
@@ -117,14 +134,17 @@ class UinputDispatcher( object ):
                 event_tuple = ( int( action['keycode'] ), 0 )
                 if not self.actions.has_key( event_tuple ):
                     self.actions[event_tuple] = []
+                event = None
                 if action['type'] == 'mouseaxis':
-                    self.actions[event_tuple].append( MouseAxisEvent( action ) )
-                if action['type'] == 'mousewheel':
-                    self.actions[event_tuple].append( MouseWheelEvent( action ) )
-                if action['type'] == 'mousebutton':
-                    self.actions[event_tuple].append( MouseButtonEvent( action ) )
-                if action['type'] == 'key':
-                    self.actions[event_tuple].append( KeyPressEvent( action ) )
+                    event = MouseAxisEvent( action ) 
+                elif action['type'] == 'mousewheel':
+                    event = MouseWheelEvent( action )
+                elif action['type'] == 'mousebutton':
+                    event = MouseButtonEvent( action )
+                elif action['type'] == 'key':
+                    event = KeyPressEvent( action )
+                event.set_uinput_dev( self.uinput_dev )
+                self.actions[event_tuple].append(event)
         except Exception, e:
             logging.debug( "UinputDispatcher: Error when interpreting action clause\n%s", repr(e) )
             pass
@@ -132,7 +152,9 @@ class UinputDispatcher( object ):
     def keycode( self, mapping, keycode ):
         """
         The method maps the incoming keycode and mapping to the associated
-        uinput events. And where appropriate it installs a repeathandler.
+        uinput L{Event} objects. For each event the release event (inverted mapping,
+        same keycode) is calculated and checked, whether we invoked the original
+        event previously. If there is one, we call the stop method on the event.
 
         @param  mapping:        mapping state of the keycode
         @type   mapping:        int
@@ -161,7 +183,16 @@ class UinputDispatcher( object ):
                 self.invoked[event_tuple].append( entry )
                 entry.activate()
     
-    def _check_uinput_dev(self, place):
+    @staticmethod
+    def _check_uinput_dev(place):
+        """
+        Check whether an supplied place is suitable as uinput device. That means,
+        that we need read and write permissions on it.
+        
+        @param    place:    a path to a potential uinput device
+        @type     place:    String
+        """
+        # TODO: add check, that we are faced with a device file
         logging.debug( 'Examing %s as uinput device' % ( place, ) )
         if osp.exists( place ):
             if not os.access( place, os.R_OK | os.W_OK ):
@@ -213,9 +244,8 @@ class Event( object ):
         self.repeat_commands = []
         self.type = 'Generic Event'
 
-    @classmethod
-    def set_uinput_dev( cls, uinput_dev ):
-        cls.uinput_dev = uinput_dev
+    def set_uinput_dev( self, uinput_dev ):
+        self.uinput_dev = uinput_dev
 
     def _lin_mouse_freq( self, x, n ):
         """
