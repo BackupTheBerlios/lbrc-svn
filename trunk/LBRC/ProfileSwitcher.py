@@ -71,7 +71,8 @@ class ProfileSwitcher(object):
                     ps.append([ "%s (%s)" % (profile, _("System")), (type,profile)])
                 else:
                     ps.append([profile, (type,profile)])
-            self.bluetooth_connector.send_list_query(_("Switch Profile"), [i[0] for i in ps], self._handle_list_reply)
+            btconnection = self.bluetooth_connector.get_bt_connection()
+            btconnection.send_list_query(_("Switch Profile"), [i[0] for i in ps], self._handle_list_reply)
     
     def _handle_list_reply(self, index):
         """

@@ -20,6 +20,75 @@ import gobject
 import dbus
 import dbus.glib
 
+class BTConnection(gobject.GObject):    
+    __gsignals__ = {
+        'keycode': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_INT, gobject.TYPE_INT64,)),
+    }
+    def __init__(self, client_sock):
+        gobject.GObject.__init__(self)
+        self.handler = {}
+        self.handler['list'] = None
+        self.buffer = ""
+        self.client_sock = client_sock
+        self.client_io_watch = gobject.io_add_watch(self.client_sock, gobject.IO_IN, self.handle_incoming_data)
+        
+    def _handle_buffer(self):
+        packets = self.buffer.split(u"\u0000")
+        # The last packet is either empty (if the last packet was completely send
+        # or we only see a partital package, that we feed back into the buffer
+        self.buffer = packets.pop()            
+        for packet in packets:
+            data = json.read(packet.encode('utf-8'))
+            if (data['type'] == "keyCode"):
+                mapping = data["mapping"]
+                keycode = data["keycode"]
+                self.emit('keycode', mapping, keycode)
+            elif (data['type'] == "listReply" and self.handler['list']):
+                self.handler['list'](data['selectionIndex'])
+                self.handler['list'] = None
+            else:
+                logging.debug("Unmatched package: " + str(data))
+
+    def send_list_query(self, title, list, callback):
+        package = {}
+        package['type'] = "listQuery"
+        package['title'] = title
+        package['list'] = list
+        self._send_query(package)
+        self.handler['list'] = callback
+        
+    def _send_query(self, package):
+        message = (json.write(package) + u"\u0000").encode('utf-8')
+        logging.debug(repr(message))
+        self.client_sock.sendall(message)
+
+    def handle_incoming_data(self, clientsocket, condition):
+        """
+        Handle incoming data from the client. The data is coded as json objects,
+        that are terminated by the NUL char. For the connection we assume a
+        UTF-8 transfer encoding.
+
+        With this data the keycode signal is fired, with the mapping as first
+        and the keycode as second parameter.
+
+        @type   self:           BTServer
+        @param  self:           The BTServer object responsible for handling the connection
+        @type   clientsocket:   bluetooth.BluetoothSocket
+        @param  clientsocket:   The clientside part of the connection
+        @type   condition:      integer (gobject.Enum)
+        @param  condition:      The condition of the clientsocket which caused the handler to be called
+                                should always be gobject.IO_IN (=1)
+        @rtype:         bool
+        @return:        always True, as we keep listening on the socket until the connection is shutdown
+        """
+        self.buffer += clientsocket.recv(1024)
+        logging.debug("In Buffer: " + self.buffer)
+        self._handle_buffer()
+        return True
+    
+    def shutdown(self):
+        gobject.source_remove( self.client_io_watch )
+
 class BTServer(gobject.GObject):
     """
     Class to handle communication with a client on a bluetooth phone.
@@ -30,6 +99,9 @@ class BTServer(gobject.GObject):
         decoded and the mapping and keycode is extracted. Mapping refers to the
         press state (0 => pressed, 1 => released), the keycode is defined by
         the phone (or a JSR)
+        
+        This is a convenience signal, that acts as a relay to the keycode
+        signal from the unterlying L{BTConnection}
 
     @signal: connect: (bluetoothaddress, port)
 
@@ -79,6 +151,39 @@ class BTServer(gobject.GObject):
         else:
             raise AttributeError, 'unknown property %s' % property.name
 
+    def __init__(self, name = "LBRC", serverid = "a1e7"):
+        """
+        @param  serverid:   ID associated to the service we announce
+        @type   serverid:   string (hexadecimal)
+        @param  name:      The name used to announce the service via bluetooth
+        @type   name:      string
+        @rtype:     BTServer object
+        @return:    BTServer object
+        """
+        gobject.GObject.__init__(self)
+        self.name = name
+        self.serverid = serverid
+        self.connectable = 'yes'
+        self.filter = {}
+        self.port = bluetooth.get_available_port( bluetooth.RFCOMM )
+        self.connected = None
+        self.bluetooth_connection = None
+        self.bluetooth_keycode = None
+        self.config = config()
+        self.paired_by_us = {}
+
+        self.client_sock = None
+        self.server_sock = None
+
+        self.server_io_watch = None
+
+        self.server_sock = bluetooth.BluetoothSocket( bluetooth.RFCOMM )
+        self.server_sock.bind(("", self.port))
+        self.server_sock.listen(1)
+
+        self._register_bluez_signals()
+        self._switch_connectable()
+        
     def _switch_connectable(self):
         if (self.connectable == 'yes' or self.connectable == 'filtered') and not self.server_io_watch:
             self.server_io_watch = gobject.io_add_watch(self.server_sock, gobject.IO_IN, self.handle_connection)
@@ -142,97 +247,11 @@ class BTServer(gobject.GObject):
         """
         return self.filter.keys()
 
-    def __init__(self, name = "LBRC", serverid = "a1e7"):
-        """
-        @param  serverid:   ID associated to the service we announce
-        @type   serverid:   string (hexadecimal)
-        @param  name:      The name used to announce the service via bluetooth
-        @type   name:      string
-        @rtype:     BTServer object
-        @return:    BTServer object
-        """
-        gobject.GObject.__init__(self)
-        self.handler = {}
-        self.handler['list'] = None
-        self.buffer = ""
-        self.name = name
-        self.serverid = serverid
-        self.connectable = 'yes'
-        self.filter = {}
-        self.port = bluetooth.get_available_port( bluetooth.RFCOMM )
-        self.connected = None
-        self.config = config()
-        self.paired_by_us = {}
-
-        self.client_sock = None
-        self.server_sock = None
-
-        self.client_io_watch = None
-        self.server_io_watch = None
-
-        self.server_sock = bluetooth.BluetoothSocket( bluetooth.RFCOMM )
-        self.server_sock.bind(("", self.port))
-        self.server_sock.listen(1)
-
-        self._register_bluez_signals()
-        self._switch_connectable()
-
     def shutdown(self):
-        pass
-
-    def _handle_buffer(self):
-        packets = self.buffer.split(u"\u0000")
-        # The last packet is either empty (if the last packet was completely send
-        # or we only see a partital package, that we feed back into the buffer
-        self.buffer = packets.pop()            
-        for packet in packets:
-            data = json.read(packet.encode('utf-8'))
-            if (data['type'] == "keyCode"):
-                mapping = data["mapping"]
-                keycode = data["keycode"]
-                self.emit('keycode', mapping, keycode)
-            elif (data['type'] == "listReply" and self.handler['list']):
-                self.handler['list'](data['selectionIndex'])
-                self.handler['list'] = None
-            else:
-                logging.debug("Unmatched package: " + str(data))
-
-    def send_list_query(self, title, list, callback):
-        package = {}
-        package['type'] = "listQuery"
-        package['title'] = title
-        package['list'] = list
-        self._send_query(package)
-        self.handler['list'] = callback
-        
-    def _send_query(self, package):
-        message = (json.write(package) + u"\u0000").encode('utf-8')
-        logging.debug(repr(message))
-        self.client_sock.sendall(message)
-
-    def handle_incoming_data(self, clientsocket, condition):
-        """
-        Handle incoming data from the client. The data is coded as json objects,
-        that are terminated by the NUL char. For the connection we assume a
-        UTF-8 transfer encoding.
-
-        With this data the keycode signal is fired, with the mapping as first
-        and the keycode as second parameter.
-
-        @type   self:           BTServer
-        @param  self:           The BTServer object responsible for handling the connection
-        @type   clientsocket:   bluetooth.BluetoothSocket
-        @param  clientsocket:   The clientside part of the connection
-        @type   condition:      integer (gobject.Enum)
-        @param  condition:      The condition of the clientsocket which caused the handler to be called
-                                should always be gobject.IO_IN (=1)
-        @rtype:         bool
-        @return:        always True, as we keep listening on the socket until the connection is shutdown
-        """
-        self.buffer += clientsocket.recv(1024)
-        logging.debug("In Buffer: " + self.buffer)
-        self._handle_buffer()
-        return True
+        if self.bluetooth_keycode:
+            self.bluetooth_connection.disconnect(self.bluetooth_keycode)
+            self.bluetooth_keycode = None
+            self.bluetooth_connection.shutdown()
 
     def handle_disconnection(self, serversocket, condition):
         """
@@ -258,9 +277,11 @@ class BTServer(gobject.GObject):
         @return:        always False, as we only allow one concurrent connection
         """
         logging.debug('BTServer: %s disconnected' % (self.connected[0],))
-        gobject.source_remove(self.client_io_watch)
+        if self.bluetooth_keycode:
+            self.bluetooth_connection.disconnect(self.bluetooth_keycode)
+            self.bluetooth_keycode = None
+            self.bluetooth_connection.shutdown()
         self.server_io_watch = None
-        self.client_io_watch = None
         self.client_sock = None
         if self.connected[0] in self.paired_by_us:
             logging.debug('BTServer: We paired this device')
@@ -315,7 +336,10 @@ class BTServer(gobject.GObject):
             self.connected = client_address
             self.emit("connect", client_address[0], client_address[1])
 
-            self.client_io_watch = gobject.io_add_watch(self.client_sock, gobject.IO_IN, self.handle_incoming_data)
+            self.bluetooth_connection = BTConnection(self.client_sock)
+            self.bluetooth_keycode = self.bluetooth_connection.connect(
+                                                   "keycode", lambda btc, mp, kc: self.emit("keycode", mp, kc))
+            
             self.server_io_watch = gobject.io_add_watch(self.client_sock, gobject.IO_HUP, self.handle_disconnection)
         else:
             logging.debug("BTServer: Closing remote connection")
@@ -324,7 +348,6 @@ class BTServer(gobject.GObject):
             if self.connectable == 'filtered':
                 self.server_io_watch = gobject.io_add_watch(self.server_sock, gobject.IO_IN, self.handle_connection)
                 bluetooth.advertise_service(self.server_sock, self.name, self.serverid)
-            
         return False
 
     def _check_pairing(self, client_address):
@@ -379,6 +402,9 @@ class BTServer(gobject.GObject):
     def _adapter_added(self,adapter): 
         self._switch_connectable()
 
+    def get_bt_connection(self):
+        return self.bluetooth_connection
+
     @staticmethod
     def is_bluez_up():
         """
@@ -395,10 +421,10 @@ class BTServer(gobject.GObject):
         except dbus.dbus_bindings.DBusException:
             return False
 
-if __name__ == '__main__':
-    def print_args(*args):
-        print args
+def print_args(*args):
+    print args
 
+def stand_alone_test(*args):
     import gobject
     bt = BTServer()
     bt.connect("keycode", print_args, 'keycode')
@@ -447,3 +473,6 @@ if __name__ == '__main__':
         m.run()
     except KeyboardInterrupt:
         m.quit()
+
+if __name__ == "__main__":
+    stand_alone_test()
