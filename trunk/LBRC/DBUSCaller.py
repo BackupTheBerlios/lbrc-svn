@@ -53,7 +53,7 @@ class DBUSCaller(object):
         self.config = config
         self.init = []
         self.actions = {}
-        self.descruct = []
+        self.destruct = []
 
     def keycode(self, mapping, keycode):
         """
@@ -77,11 +77,13 @@ class DBUSCaller(object):
         @param  profile:    the profile we switch to
         @type   profile:    string
         """
-        for i in self.init:
-            i.call
-        self._interpret_profile(config, profile)
+        logging.debug("DBUSCaller: Init")
         for i in self.destruct:
-            i.call
+            i.call()
+        self._interpret_profile(config, profile)
+        logging.debug("DBUSCaller: Init")
+        for i in self.init:
+            i.call()
         
     def _interpret_profile(self, config, profile):
         """
@@ -110,7 +112,7 @@ class DBUSCaller(object):
         try:
             for action in _section['destruct']:
                 logging.debug('DBUSCaller: Destruct: ' + str(action))
-                self.init.append(DBUSCall(action))
+                self.destruct.append(DBUSCall(action))
         except KeyError:
             logging.debug("DBUSCaller: destuct subsection not found")
 
