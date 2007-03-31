@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 #
-# TODO: check pairing - maybe rework connection handling ...
+# TODO: maybe rework connection handling (create a separate class for the connection?!)
 # TODO: react to config changes (currently the configs are checked on demand, so no problem - currently!)
 
 __extra_epydoc_fields__ = [('signal', 'Signal', 'Signals')]
@@ -395,23 +395,6 @@ class BTServer(gobject.GObject):
             return True
         except dbus.dbus_bindings.DBusException:
             return False
-
-    @staticmethod
-    def byte_array_to_int(bytes):
-        """
-        Convert byte array to int, assuming most significant byte first
-
-        @type   bytes:  bytestring
-        @param  bytes:  bytestring interpreted as a bytearray representing an integer value
-        @rtype:         integer
-        @return:        Interger value of the bytearray supplied
-        """
-        exponent = len(bytes) - 1;
-        result = 0
-        for i in range(len(bytes)):
-            factor =  int(math.pow(2, (exponent - i) * 8 ))
-            result += ord(bytes[i]) * factor
-        return result
 
 if __name__ == '__main__':
     def print_args(*args):

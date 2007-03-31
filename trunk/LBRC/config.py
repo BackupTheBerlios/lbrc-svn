@@ -4,6 +4,28 @@ import json
 from LBRC.path import path
 from LBRC.l10n import _
 
+class configValueNotFound(Exception):
+    """
+    Base class for L{noConfigException}, L{profileNotFoundException}
+    and L{sectionNotFoundException}. These are fired, when a config
+    value could not be fetched.
+    """
+
+class profileNotFoundException(configValueNotFound):
+    """
+    Raised, when a profile is queried that does not exist
+    """
+    
+class sectionNotFoundException(configValueNotFound): 
+    """
+    Raised, when a section is queried, that does not exist
+    """
+    
+class noConfigException(configValueNotFound):
+    """
+    Raised, when a config is queried, that does not exist
+    """
+
 class config(object):
     """
     The config class is a wrapper around the json on disk configuration format.
@@ -38,9 +60,11 @@ class config(object):
         self.profile_index.extend([('system', profile_name) for profile_name in self.system['profiles']])
         self.profile_index.extend([('user', profile_name) for profile_name in self.user['profiles']])
 
-    def get_profile(self, config=None, profile=None, section=None):
+    def get_profile(self, config, profile=None, section=None):
         """
-        Fetch profile from config files.
+        Fetch profile from config files. If C{profile} or C{section} are set to
+        C{None} or completly omitted, the whole config/profile is returned. If
+        C{section} is set, C{profile} also has to be set!
         
         @param    config:    config file selection (user/system)
         @type     config:    String
@@ -49,10 +73,28 @@ class config(object):
         @param    section:   For which module do we fetch information (== classname)
         @type     section:   String
         """
-        if config=='user':
-            return self.user['profiles'][profile][section]
-        else:
-            return self.system['profiles'][profile][section]
+        _config = None
+        _profile = None
+        _section = None
+        try:
+            if config == 'user':
+                _config = self.user['profiles']
+            elif config == 'system':
+                _config = self.system['profiles']
+            _profile = _config[profile]
+            _section = _profile[section]
+        except (KeyError, TypeError):
+            if not _config:
+                raise noConfigException()
+            elif not _profile and not profile:
+                return _config
+            elif not _profile:
+                raise profileNotFoundException()
+            elif not _section and not section:
+                return _profile
+            elif not _section:
+                raise sectionNotFoundException()
+        return _section            
 
     def set_config_item(self, name, value):
         """

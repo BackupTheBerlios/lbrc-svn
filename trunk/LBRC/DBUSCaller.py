@@ -3,6 +3,7 @@
 from LBRC import dinterface
 import dbus
 import logging
+from LBRC.config import configValueNotFound
 
 class DBUSCall(object):
     _translator = {
@@ -78,7 +79,11 @@ class DBUSCaller(object):
         @param  profile:    the profile we switch to
         @type   profile:    string
         """
+        for i in self.init:
+            i.call
         self._interpret_profile(config, profile)
+        for i in self.destruct:
+            i.call
         
     def _interpret_profile(self, config, profile):
         """
@@ -87,7 +92,29 @@ class DBUSCaller(object):
 
         If no mapping is provided, we assume mapping = 0 => keypress
         """
+        self.init = []
         self.actions = {}
+        self.destruct = []
+
+        try:
+            _section = self.config.get_profile(config, profile, 'DBUSCaller')
+        except configValueNotFound:
+            logging.debug('DBUSCaller: no config section found for profile "%s", config "%s"', profile, config)
+            return
+
+        try:
+            for action in _section['init']:
+                logging.debug('DBUSCaller: Init: ' + str(action))
+                self.init.append(DBUSCall(action))
+        except KeyError:
+            logging.debug("DBUSCaller: init subsection not found")
+            
+        try:
+            for action in _section['destruct']:
+                logging.debug('DBUSCaller: Destruct: ' + str(action))
+                self.init.append(DBUSCall(action))
+        except KeyError:
+            logging.debug("DBUSCaller: destuct subsection not found")
 
         try:
             for action in self.config.get_profile(config, profile, 'DBUSCaller')['actions']:
@@ -101,9 +128,9 @@ class DBUSCaller(object):
                     self.actions[event_tuple] = []
                 self.actions[event_tuple].append(DBUSCall(action))
                 logging.debug("DBUSCaller: Added Event for : " + str(event_tuple))
-        except Exception, e:
-            logging.debug("DBUSCaller: Failed to parse actions\n" + str(e))
-            pass
+        except KeyError:
+            logging.debug("DBUSCaller: actions subsection not found")
+
 
     def shutdown(self):
         pass

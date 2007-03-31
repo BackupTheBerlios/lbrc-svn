@@ -5,6 +5,7 @@ import os.path as osp
 import logging
 import gobject
 import LBRC.consts as co
+from LBRC.config import configValueNotFound
 
 class UinputDispatcher( object ):
     """
@@ -128,8 +129,17 @@ class UinputDispatcher( object ):
         self.actions = {}
         self.destruct = []
 
+        _actions = None
+
         try:
-            for action in self.config.get_profile( config, profile, 'UinputDispatcher' )['actions']:
+            _actions = self.config.get_profile( config, profile, 'UinputDispatcher')['actions']
+        except KeyError:
+            logging.debug("UinputDispatcher: actions section not found")
+        except configValueNotFound:
+            logging.debug("UinputDispatcher: Error fetching config section for %s profile from %s config" % (config, profile))
+            
+        if _actions:
+            for action in _actions:
                 logging.debug( str( action ) )
                 event_tuple = ( int( action['keycode'] ), 0 )
                 if not self.actions.has_key( event_tuple ):
@@ -145,9 +155,8 @@ class UinputDispatcher( object ):
                     event = KeyPressEvent( action )
                 event.set_uinput_dev( self.uinput_dev )
                 self.actions[event_tuple].append(event)
-        except Exception, e:
-            logging.debug( "UinputDispatcher: Error when interpreting action clause\n%s", repr(e) )
-            pass
+        else:
+            logging.debug( "UinputDispatcher: No actions were defined")
 
     def keycode( self, mapping, keycode ):
         """
