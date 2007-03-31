@@ -39,7 +39,7 @@ class CommandExecutor(object):
         @param  mapping:        mapping state of the keycode
         @type   mapping:        int
         @param  keycode:        keycode received
-        @type:  keycode:        int
+        @type   keycode:        int
         """
         event_tuple = (keycode, mapping)
         if event_tuple in self.actions:

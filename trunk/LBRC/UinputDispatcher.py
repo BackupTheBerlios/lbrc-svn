@@ -44,9 +44,9 @@ class UinputDispatcher( object ):
         Open uinput device and initialise the event masks, that we will deliver.
         We don't calculate the masks, but instead set masks for:
         
-        - relative axes ( x, y, z, mouse_wheel)
-        - mousebuttons (MOUSE, TOUCH, LEFT, MIDDLE, RIGHT, FORWARD, BACK)
-        - keypresses (a-z, ENTER, SHIFT, 0-9, ...)
+            - relative axes ( x, y, z, mouse_wheel)
+            - mousebuttons (MOUSE, TOUCH, LEFT, MIDDLE, RIGHT, FORWARD, BACK)
+            - keypresses (a-z, ENTER, SHIFT, 0-9, ...)
         """
         device_file = None
         for location in self.config.get_config_item('uinpt-device'):
@@ -166,9 +166,9 @@ class UinputDispatcher( object ):
         event previously. If there is one, we call the stop method on the event.
 
         @param  mapping:        mapping state of the keycode
-        @type   mapping:        int
+        @type   mapping:        integer
         @param  keycode:        keycode received
-        @type:  keycode:        int
+        @type   keycode:        integer
         """
         logging.debug( 'Keycode: %i, Mapping: %i' % ( keycode, mapping ) )
         event_tuple = ( keycode, mapping )

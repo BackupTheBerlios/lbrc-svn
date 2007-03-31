@@ -133,7 +133,7 @@ class config(object):
         dictionary using C{user} and C{system} as keys and the
         corresponting values as value.
         
-        @param    namme:    name of configuration value to fetch
+        @param    name:    name of configuration value to fetch
         @type     name:     String
         """
         result = {}

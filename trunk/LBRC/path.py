@@ -104,10 +104,8 @@ class path(object):
 
     def get_userconfigfile(self):
         """
-        Returns absolute path to a user config file with C{name} name
-
-        @param  name:   name of the config file
-        @type   name:   string
+        Returns absolute path to the user config file
+        
         @return:    path to the config file
         @rtype:     string
         """
@@ -115,10 +113,8 @@ class path(object):
 
     def get_systemconfigfile(self):
         """
-        Returns absolute path to a system config file with C{name} name
-
-        @param name: name of config file
-        @type  name: string
+        Returns absolute path to the system config file
+        
         @return:    absolute path for a config file
         @rtype:     string
         """
@@ -132,10 +128,9 @@ class path(object):
 
     def get_configfiles(self):
         """
-        Returns a list of absolute paths to all config files with C{name} name and verify if the path is a file.
+        Returns a list of absolute paths to all config files.
+        The method verifies that the paths point to a file.
 
-        @param  name:   name of cofig file
-        @type   name:   string
         @return:    list of complete paths to config files
         @rtype:     list of strings
         """

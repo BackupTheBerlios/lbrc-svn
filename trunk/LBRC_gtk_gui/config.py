@@ -15,6 +15,8 @@
 #   * Change a profile name
 #   * Edition of profiles
 
+__extra_epydoc_fields__ = [('signal', 'Signal', 'Signals')]
+
 import os
 import sys
 import dbus

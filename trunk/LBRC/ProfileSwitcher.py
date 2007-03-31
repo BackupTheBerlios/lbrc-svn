@@ -17,9 +17,7 @@ class ProfileSwitcher(object):
         as a keycode, that is generated, when a profile change shall be issued.
         
         @param  config:         configuration data
-        @type   config:         dictionary
-        @param  profiledata:    profile data
-        @type   profiledata:    dictionary
+        @type   config:         L{LBRC.config}
         """
         self.config = config
         self.init = []
@@ -56,13 +54,13 @@ class ProfileSwitcher(object):
         More or less a dummy method, that in this class only checks
         whether the supplied keycode is the configured keycode and
         the mapping maps to key release. If this is the case
-        the menu is generated from the L{core} and send to the phone via
+        the list is generated from the L{dbusinterface} and send to the phone via
         a L{BTServer} Instance.
 
         @param  mapping:        mapping state of the keycode
-        @type   mapping:        int
+        @type   mapping:        Integer
         @param  keycode:        keycode received
-        @type:  keycode:        int
+        @type   keycode:        Integer
         """
         if self._keycode and \
            keycode == self._keycode and \

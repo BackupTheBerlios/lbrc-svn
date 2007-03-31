@@ -212,10 +212,9 @@ class BTServer(gobject.GObject):
 
     def handle_incoming_data(self, clientsocket, condition):
         """
-        Handle incoming data from the client. We assume a 5 byte payload. This consists
-        of one byte providing a X{mapping} (key pressed=>0, key released=>1) and the rest
-        encoding an integer (4 byte). This bytestring is passed to L{byte_array_to_int},
-        which decodes the bytestring to the original integer X{keycode}.
+        Handle incoming data from the client. The data is coded as json objects,
+        that are terminated by the NUL char. For the connection we assume a
+        UTF-8 transfer encoding.
 
         With this data the keycode signal is fired, with the mapping as first
         and the keycode as second parameter.

@@ -1,18 +1,13 @@
-uinput = {}
-uinput['UI_DEV_CREATE'] = 0x5501
-uinput['UI_DEV_DESTROY'] = 0x5502
-uinput['UI_SET_EVBIT'] = 0x40045564
-uinput['UI_SET_KEYBIT'] = 0x40045565
-uinput['UI_SET_RELBIT'] = 0x40045566
-uinput['UI_SET_ABSBIT'] = 0x40045567
-uinput['UI_SET_MSCBIT'] = 0x40045568
-uinput['UI_SET_LEDBIT'] = 0x40045569
-uinput['UI_SET_SNDBIT'] = 0x4004556A
-uinput['UI_SET_FFBIT'] = 0x4004556B
-uinput['UI_SET_PHYS'] = 0x4004556C
-uinput['UI_SET_SWBIT'] = 0x4004556D
 
+"""
+@var input: Constants taken from input.h (see kernel source or in our doc dir)
 
+             These constants are used to report input events to the kernel.
+             
+@var uinput: Constants taken from uinput.h (see kernel source or in our doc dir)
+
+             These are needed for the creation of a userspace uinput driver
+"""
 input = {}
 input['EV_SYN'] = 0x00
 input['EV_KEY'] = 0x01
@@ -566,3 +561,19 @@ input['BUS_ADB'] = 0x17
 input['BUS_I2C'] = 0x18
 input['BUS_HOST'] = 0x19
 input['BUS_GSC'] = 0x1A
+
+
+uinput = {}
+uinput['UI_DEV_CREATE'] = 0x5501
+uinput['UI_DEV_DESTROY'] = 0x5502
+uinput['UI_SET_EVBIT'] = 0x40045564
+uinput['UI_SET_KEYBIT'] = 0x40045565
+uinput['UI_SET_RELBIT'] = 0x40045566
+uinput['UI_SET_ABSBIT'] = 0x40045567
+uinput['UI_SET_MSCBIT'] = 0x40045568
+uinput['UI_SET_LEDBIT'] = 0x40045569
+uinput['UI_SET_SNDBIT'] = 0x4004556A
+uinput['UI_SET_FFBIT'] = 0x4004556B
+uinput['UI_SET_PHYS'] = 0x4004556C
+uinput['UI_SET_SWBIT'] = 0x4004556D
+

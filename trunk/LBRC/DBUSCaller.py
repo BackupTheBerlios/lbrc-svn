@@ -48,9 +48,7 @@ class DBUSCaller(object):
     def __init__(self, config):
         """
         @param  config:         configuration data
-        @type   config:         dictionary
-        @param  profiledata:    profile data
-        @type   profiledata:    dictionary
+        @type   config:         L{LBRC.config}
         """
         self.config = config
         self.init = []
@@ -65,7 +63,7 @@ class DBUSCaller(object):
         @param  mapping:        mapping state of the keycode
         @type   mapping:        int
         @param  keycode:        keycode received
-        @type:  keycode:        int
+        @type   keycode:        int
         """
         event_tuple = (keycode, mapping)
         if event_tuple in self.actions:
