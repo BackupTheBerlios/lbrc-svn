@@ -102,7 +102,7 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 			agent.startInquiry(DiscoveryAgent.GIAC, this);
 			this.state = 1;
 		} catch (Exception e) {
-			this.parent.do_alert("Error in initiating search", 4000);
+			this.parent.do_alert("Error starting search - Bluetooth not enabled?", 5000);
 		}
 	}
 
