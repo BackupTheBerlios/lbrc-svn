@@ -6,4 +6,4 @@ CFLAGS=`pkg-config --cflags dbus-glib-1`
 LIBS=`pkg-config --libs dbus-glib-1`
 $BINDINGTOOL --mode=glib-server --output=$BASENAME-glue.h \
              --prefix=uinputbridge $BASENAME.xml
-$CC $CFLAGS $LIBS -o $BASENAME $BASENAME.c
+$CC $CFLAGS $LIBS -o ../$BASENAME $BASENAME.c

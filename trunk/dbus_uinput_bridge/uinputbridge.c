@@ -121,6 +121,7 @@ uinputbridge_setup_device (UInputBridge *obj, const char *uinputdevice,
   /* Initialize the event masks, we will use - activate _all_ keyboard keys,
      relative axes, mouse buttons, mouse wheel */
   ioctl(uinp_fd, UI_SET_EVBIT, EV_KEY);
+  ioctl(uinp_fd, UI_SET_EVBIT, EV_REL);
   ioctl(uinp_fd, UI_SET_RELBIT, REL_X);
   ioctl(uinp_fd, UI_SET_RELBIT, REL_Y);
   ioctl(uinp_fd, UI_SET_RELBIT, REL_Z);
@@ -130,7 +131,6 @@ uinputbridge_setup_device (UInputBridge *obj, const char *uinputdevice,
   }
   ioctl(uinp_fd, UI_SET_KEYBIT, BTN_MOUSE);
   ioctl(uinp_fd, UI_SET_KEYBIT, BTN_TOUCH);
-  ioctl(uinp_fd, UI_SET_KEYBIT, BTN_MOUSE);
   ioctl(uinp_fd, UI_SET_KEYBIT, BTN_LEFT);
   ioctl(uinp_fd, UI_SET_KEYBIT, BTN_MIDDLE);
   ioctl(uinp_fd, UI_SET_KEYBIT, BTN_RIGHT);
