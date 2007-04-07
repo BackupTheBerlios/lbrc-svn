@@ -16,6 +16,7 @@ from LBRC.UinputDispatcher import UinputDispatcher
 from LBRC.CommandExecutor import CommandExecutor
 from LBRC.DBUSCaller import DBUSCaller
 from LBRC.ProfileSwitcher import ProfileSwitcher
+from LBRC.MPlayer import MPlayer
 from LBRC.BTServer import BTServer
 from LBRC.l10n import _
 
@@ -30,7 +31,7 @@ class LBRCdbus(dbus.service.Object):
 
         self.event_listener = []
         
-        for i in (UinputDispatcher, CommandExecutor, DBUSCaller, ProfileSwitcher):
+        for i in (UinputDispatcher, CommandExecutor, DBUSCaller, ProfileSwitcher, MPlayer):
             self._register_listener(i)
 
         #load of config data 
