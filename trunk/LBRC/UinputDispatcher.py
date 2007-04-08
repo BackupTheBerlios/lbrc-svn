@@ -4,8 +4,15 @@ import os, struct, fcntl, time
 import os.path as osp
 import logging
 import gobject
+import dbus
+import dbus.glib
+import time
 import LBRC.consts as co
+from LBRC import dinterface
 from LBRC.config import configValueNotFound
+from LBRC.path import path
+
+class UinputServiceStartException(Exception): pass
 
 class UinputDispatcher( object ):
     """
@@ -25,28 +32,43 @@ class UinputDispatcher( object ):
         @param  config:         configuration data
         @type   config:         dictionary
         """
+        self.path = path()
+        
         self.invoked = {}
 
         self.config = config
         
         self.uinput_dev = None
+        self.uinputbridge = None
         
+        self._start_uinput_bridge()
         self._open_uinput_dev()
         
-        
-
         self.init = []
         self.actions = {}
         self.destruct = []
 
+    def _start_uinput_bridge(self):
+        db = dinterface(dbus.SessionBus(), "org.freedesktop.DBus", "/", "org.freedesktop.DBus")
+        if not "org.uinputbridge" in db.ListNames() and \
+           not "org.uinputbridge" in db.ListActivatableNames():
+            gobject.spawn_async([self.path.get_binfile("uinputbridge")],
+                                flags=gobject.SPAWN_STDOUT_TO_DEV_NULL | 
+                                      gobject.SPAWN_STDERR_TO_DEV_NULL )
+            count = 0
+            while count < 10:
+                count += 1
+                if "org.uinputbridge" in db.ListNames():
+                    count = 11
+                time.sleep(1)
+            if count == 10:
+                raise UinputServiceStartException()
+        self.uinputbridge = dinterface(dbus.SessionBus(), "org.uinputbridge", "/UInputBridge", "org.uinputbridge")
+
     def _open_uinput_dev( self ):
         """
-        Open uinput device and initialise the event masks, that we will deliver.
-        We don't calculate the masks, but instead set masks for:
-        
-            - relative axes ( x, y, z, mouse_wheel)
-            - mousebuttons (MOUSE, TOUCH, LEFT, MIDDLE, RIGHT, FORWARD, BACK)
-            - keypresses (a-z, ENTER, SHIFT, 0-9, ...)
+        We switched from the direct opening of the device to the dbus<->uinput bridge,
+        that does the initialisation for us
         """
         device_file = None
         for location in self.config.get_config_item('uinpt-device'):
@@ -54,41 +76,9 @@ class UinputDispatcher( object ):
                 device_file = location
         if not device_file:
             device_file = self._guess_uinput_dev()
-        self.uinput_dev = os.open( device_file, os.O_RDWR )
-        dev = ["BlueRemote", # Name for device
-           co.input['BUS_BLUETOOTH'], # Bus where we stay on
-           1, # Vendor ID
-           1, # Product ID
-           1, # Version ID
-           0                            # We don't support force feedback
-        ]
-        # No Absolute Values!
-        for f in range( 64*4 ):  #absmin
-          dev.append( 0x00 )
-        #for f in range(64*1):  #absmax
-        #  dev.append(0x00)
-        #for f in range(64*2):  #absfuzz,absflat
-        #  dev.append(0x00)
-        device_structure = struct.pack( "80sHHHHi" + 64*4*'I', *dev )
-
-        fcntl.ioctl( self.uinput_dev, co.uinput['UI_SET_EVBIT'], co.input['EV_KEY'] )
-        fcntl.ioctl( self.uinput_dev, co.uinput['UI_SET_EVBIT'], co.input['EV_REL'] )
-        fcntl.ioctl( self.uinput_dev, co.uinput['UI_SET_RELBIT'], co.input['REL_X'] )
-        fcntl.ioctl( self.uinput_dev, co.uinput['UI_SET_RELBIT'], co.input['REL_Y'] )
-        fcntl.ioctl( self.uinput_dev, co.uinput['UI_SET_RELBIT'], co.input['REL_Z'] )
-        fcntl.ioctl( self.uinput_dev, co.uinput['UI_SET_RELBIT'], co.input['REL_WHEEL'] )
-        for i in xrange( 0, 256 ):
-            fcntl.ioctl( self.uinput_dev, co.uinput['UI_SET_KEYBIT'], i )
-        fcntl.ioctl( self.uinput_dev, co.uinput['UI_SET_KEYBIT'], co.input['BTN_MOUSE'] )
-        fcntl.ioctl( self.uinput_dev, co.uinput['UI_SET_KEYBIT'], co.input['BTN_TOUCH'] )
-        fcntl.ioctl( self.uinput_dev, co.uinput['UI_SET_KEYBIT'], co.input['BTN_LEFT'] )
-        fcntl.ioctl( self.uinput_dev, co.uinput['UI_SET_KEYBIT'], co.input['BTN_MIDDLE'] )
-        fcntl.ioctl( self.uinput_dev, co.uinput['UI_SET_KEYBIT'], co.input['BTN_RIGHT'] )
-        fcntl.ioctl( self.uinput_dev, co.uinput['UI_SET_KEYBIT'], co.input['BTN_FORWARD'] )
-        fcntl.ioctl( self.uinput_dev, co.uinput['UI_SET_KEYBIT'], co.input['BTN_BACK'] )
-        
-        os.write( self.uinput_dev, device_structure )
-        fcntl.ioctl( self.uinput_dev, co.uinput['UI_DEV_CREATE'] )
+        self.uinput_dev = self.uinputbridge.SetupDevice(device_file, 
+                                                        "Linux Bluetooth Remote Control", 
+                                                        dbus.UInt16(co.input["BUS_BLUETOOTH"]))
  
     def set_profile( self, config, profile ):
         """
@@ -110,6 +100,7 @@ class UinputDispatcher( object ):
         for invoked in self.invoked.values():
             for i in invoked:
                 i.stop()
+        self.uinputbridge.CloseDevice(self.uinput_dev)
 
     def _interpret_profile( self, config, profile ):
         """
@@ -153,7 +144,7 @@ class UinputDispatcher( object ):
                     event = MouseButtonEvent( action )
                 elif action['type'] == 'key':
                     event = KeyPressEvent( action )
-                event.set_uinput_dev( self.uinput_dev )
+                event.set_uinput_dev( self.uinput_dev, self.uinputbridge )
                 self.actions[event_tuple].append(event)
         else:
             logging.debug( "UinputDispatcher: No actions were defined")
@@ -240,8 +231,6 @@ class UinputDispatcher( object ):
         logging.error( 'No device node found, that looks like a uinput device node - is the kernel module loaded?' )
 
 class Event( object ):
-    uinput_dev = None
-
     def __init__( self ):
         # (keycode,mapping) => [callback_id, calls]
         # dictionaries, for handling repeats and cleanups of repeats
@@ -253,8 +242,9 @@ class Event( object ):
         self.repeat_commands = []
         self.type = 'Generic Event'
 
-    def set_uinput_dev( self, uinput_dev ):
+    def set_uinput_dev( self, uinput_dev, uinputbridge ):
         self.uinput_dev = uinput_dev
+        self.uinputbridge = uinputbridge
 
     def _lin_mouse_freq( self, x, n ):
         """
@@ -334,7 +324,8 @@ class Event( object ):
         @type   param:      int
         """
         logging.debug( "Event: %i, %i, %i" % ( event, descriptor, param ) )
-        os.write( self.uinput_dev, struct.pack( "LLHHl", time.time(), 0, event, descriptor, param ) )
+        self.uinputbridge.SendEvent(self.uinput_dev, event, descriptor, param)
+        #os.write( self.uinput_dev, struct.pack( "LLHHl", time.time(), 0, event, descriptor, param ) )
 
     def activate( self ):
         logging.debug( "Event activated: " + self.type )

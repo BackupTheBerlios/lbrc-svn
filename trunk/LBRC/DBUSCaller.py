@@ -81,7 +81,7 @@ class DBUSCaller(object):
         for i in self.destruct:
             i.call()
         self._interpret_profile(config, profile)
-        logging.debug("DBUSCaller: Init")
+        logging.debug("DBUSCaller: Destruct")
         for i in self.init:
             i.call()
         
