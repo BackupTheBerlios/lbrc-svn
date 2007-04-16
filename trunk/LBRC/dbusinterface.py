@@ -48,12 +48,16 @@ class LBRCdbus(dbus.service.Object):
 
     def _register_listener(self, constructor):
         # TODO: at some point we have to do conflict resolving (when we define what is a conflict ...)
-        listener = constructor(self.config)
-        try: listener.set_bluetooth_connector(self.btserver)
-        except AttributeError: pass
-        try: listener.set_core(self)
-        except AttributeError: pass
-        self.event_listener.append(listener)
+        try: 
+            listener = constructor(self.config)
+            try: listener.set_bluetooth_connector(self.btserver)
+            except AttributeError: pass
+            try: listener.set_core(self)
+            except AttributeError: pass
+            self.event_listener.append(listener)
+        except Exception, e: 
+            logging.warn("Failed to initalize " + str(constructor) + "\n" + str(e))
+            return
 
     def _load_default_profile(self):
         #FIXME: catch error when there's no profiles
