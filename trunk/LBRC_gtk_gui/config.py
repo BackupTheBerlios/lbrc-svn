@@ -227,15 +227,14 @@ class ConfigWindow(gobject.GObject):
         #self.control = ConfigWindowControl()
         self.modified = False
 
+        # Wrapper to get a widget from glade's xml
+        self.widget = self.xml.get_widget
+
         self._load_config()
         self._fill_window()
         #connnect signals
         self.xml.signal_autoconnect(self)
 
-    def widget(self, name):
-        #TODO: just aliase self.widget = self.xml.get_widget
-        """Wrapper to get a widget from glade's xml"""
-        return self.xml.get_widget(name)
 
     def _load_config(self):
         """Loads the config file"""
@@ -349,7 +348,6 @@ class ConfigWindow(gobject.GObject):
         else:
             profile.set_active(last_active)
             #pass
-
 
     def _create_new_profile(self, profile_name):
         keys = self.user_profiles.keys() + self.system_profiles.keys()
