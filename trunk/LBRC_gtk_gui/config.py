@@ -233,6 +233,7 @@ class ConfigWindow(gobject.GObject):
         self.xml.signal_autoconnect(self)
 
     def widget(self, name):
+        #TODO: just aliase self.widget = self.xml.get_widget
         """Wrapper to get a widget from glade's xml"""
         return self.xml.get_widget(name)
 
@@ -289,10 +290,14 @@ class ConfigWindow(gobject.GObject):
         save_current = self.widget("save-current-checkbutton")
         show_bluetooth = self.widget("show-bluetooth-checkbutton")
         uinput_device = self.widget("uinput-device-entry")
-        
+        require_pairing = self.widget("require-pairing-checkbutton")
+        onetime_pairing = self.widget("onetime-pairing-checkbutton")
+
         save_current.set_active(self.config.get_config_item_fb("persistent", True))
         show_bluetooth.set_active(self.config.get_config_item_fb("show-bluetooth", False))
         uinput_device.set_text(self.config.get_config_item_fb("uinput-device", ""))
+        require_pairing.set_active(self.config.get_config_item_fb("require-pairing", True))
+        onetime_pairing.set_active(self.config.get_config_item_fb("remove-pairing", False))
        
         # Profiles combobox
         self._fill_profiles()
@@ -382,10 +387,14 @@ class ConfigWindow(gobject.GObject):
     def on_show_bluetooth_checkbutton_toggled(self, object):
         print "show bluetooth checkbutton toggled"
 
+    def on_require_pairing_checkbutton_toggled(self, object):
+        print "require pairing checkbutton toggled"
+
+    def on_onetime_pairing_checkbutton_toggled(self, object):
+        print object.get_state()
+        print "ontime pairing checkbutton toggled"
+
     def on_profile_combobox_changed(self, combobox):
-        #print "profile combobox changed"
-        #from pprint import pprint 
-        #pprint(*kargs)
         selected_profile = combobox.get_active_text()
         self.widget("profile-notebook").set_sensitive(True)
         if selected_profile in self.user_profiles:
