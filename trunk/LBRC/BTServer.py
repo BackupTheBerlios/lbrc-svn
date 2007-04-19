@@ -248,6 +248,12 @@ class BTServer(gobject.GObject):
         return self.filter.keys()
 
     def shutdown(self):
+        """
+        Called on shutdown
+
+        We tear down the bluetooth connection and disconnect from it,
+        if we were connected.
+        """
         if self.bluetooth_keycode:
             self.bluetooth_connection.disconnect(self.bluetooth_keycode)
             self.bluetooth_keycode = None

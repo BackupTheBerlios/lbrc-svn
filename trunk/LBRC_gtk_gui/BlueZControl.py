@@ -6,6 +6,7 @@ import gobject
 import dbus, dbus.glib
 
 from LBRC.l10n import _
+from LBRC.config import config
 from LBRC import dinterface
 
 class BlueZAdapter(gobject.GObject):
@@ -63,6 +64,7 @@ class BlueZControl(object):
     def __init__(self):
         self.bluez_manager = dinterface(dbus.SystemBus(), 'org.bluez', '/org/bluez' , 'org.bluez.Manager')
         self.bluez_manager.InterfaceVersion()
+        self.config = config()
         self.adapter = {}
         self.menu = {}
         self.bluez_manager.connect_to_signal("AdapterAdded", self._bluez_adapter_added)
@@ -73,13 +75,27 @@ class BlueZControl(object):
                                      'callback': (self._bluez_switch_visible, 180)}
         self.menu["bz_invisible"] = {'title': _("Bluetooth invisible"), 
                                      'callback': (self._bluez_switch_visible, -1)}
+
         for menu in self.menu.values():
             menuitem = gtk.CheckMenuItem(menu['title'])
             menuitem.set_draw_as_radio(1)
             menuitem.set_sensitive(0)
             menu['handler'] = menuitem.connect("toggled", *menu['callback'])
             menu['menuitem'] = menuitem
+
+        self.menu_list = [i['menuitem'] for i in self.menu.values()]
+        menuitem = gtk.SeparatorMenuItem()
+        self.menu_list.append(menuitem)
+        self.set_menus_visible(self.config.get_config_item_fb("show-bluetooth", True))
         self._bluez_init_adapter()
+
+    def set_menus_visible(self, state):
+        if state == True:
+            for i in self.menu_list:
+                i.show_all()
+        elif state == False:
+            for i in self.menu_list:
+                i.hide_all()
 
     def get_menus(self):
         """
@@ -88,7 +104,7 @@ class BlueZControl(object):
         @return:    Menuitems for BlueZControl
         @rtype:     list of gtk.MenuItem
         """
-        return [i['menuitem'] for i in self.menu.values()]
+        return self.menu_list
 
     def _bluez_update_menu(self, *args):
         common_timeout = None

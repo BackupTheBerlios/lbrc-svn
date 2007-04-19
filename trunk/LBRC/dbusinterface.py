@@ -36,7 +36,7 @@ class LBRCdbus(dbus.service.Object):
 
         #load of config data 
         self.cur_profile = None
-        self.force_reload()
+        self.reload_config()
 
         self.btserver.connect('keycode', self.handler)
         self.btserver.connect('connect', lambda btserver, btadress, port: 
@@ -69,7 +69,7 @@ class LBRCdbus(dbus.service.Object):
                 return
 
     @dbus.service.method('custom.LBRC', out_signature='')
-    def force_reload(self): 
+    def reload_config(self): 
         self.config.reread()
 
         #verify if the current selected profile doesn't exist anymore

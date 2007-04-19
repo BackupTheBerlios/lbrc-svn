@@ -282,7 +282,6 @@ class ConfigWindow(gobject.GObject):
             pass
 
         self.widget("key-mouse-treeview").set_model(mylist)
-
         
     def _fill_window(self):
         # Configuration notebook
@@ -293,7 +292,7 @@ class ConfigWindow(gobject.GObject):
         onetime_pairing = self.widget("onetime-pairing-checkbutton")
 
         save_current.set_active(self.config.get_config_item_fb("persistent", True))
-        show_bluetooth.set_active(self.config.get_config_item_fb("show-bluetooth", False))
+        show_bluetooth.set_active(self.config.get_config_item_fb("show-bluetooth", True))
         uinput_device.set_text(self.config.get_config_item_fb("uinput-device", ""))
         require_pairing.set_active(self.config.get_config_item_fb("require-pairing", True))
         onetime_pairing.set_active(self.config.get_config_item_fb("remove-pairing", False))
@@ -347,7 +346,6 @@ class ConfigWindow(gobject.GObject):
             profile.set_active_iter(iter)
         else:
             profile.set_active(last_active)
-            #pass
 
     def _create_new_profile(self, profile_name):
         keys = self.user_profiles.keys() + self.system_profiles.keys()
@@ -373,23 +371,39 @@ class ConfigWindow(gobject.GObject):
             print "type: ", edit_window.get_type()
 
     def on_config_window_destroy(self, destroy):
+        if self.modified:
+            self.config.write()
         self.emit("close", self.modified)
         return True
 
     def on_save_current_checkbutton_toggled(self, object):
+        self.config.set_config_item("persistent", object.get_active())
+        self.modified = True
         print "save current checkbutton toggled"
 
     def on_uinput_device_entry_changed(self, object):
+        path = object.get_text()
+        path = path.strip()
+        if path:
+            self.config.set_config_item("uinput-device", path)
+        else:
+            self.config.set_config_item("uinput-device", "")
+        self.modified = True
         print "uinput device entry changed"
     
     def on_show_bluetooth_checkbutton_toggled(self, object):
+        self.config.set_config_item("show-bluetooth", object.get_active())
+        self.modified = True
         print "show bluetooth checkbutton toggled"
 
     def on_require_pairing_checkbutton_toggled(self, object):
+        self.config.set_config_item("require-pairing", object.get_active())
+        self.modified = True
         print "require pairing checkbutton toggled"
 
     def on_onetime_pairing_checkbutton_toggled(self, object):
-        print object.get_state()
+        self.config.set_config_item("remove-pairing", object.get_active())
+        self.modified = True
         print "ontime pairing checkbutton toggled"
 
     def on_profile_combobox_changed(self, combobox):

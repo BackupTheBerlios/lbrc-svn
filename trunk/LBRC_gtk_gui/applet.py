@@ -35,7 +35,7 @@ class Applet(object):
         self.trayicon = egg.trayicon.TrayIcon("LBRC")
         image = gtk.Image()
         image.set_from_pixbuf(self.icon.scale_simple(self._config['icon_size'],self._config['icon_size'], gtk.gdk.INTERP_BILINEAR))
-        self.__create_menu()
+        self._create_menu()
         eventbox = gtk.EventBox()
         self.trayicon.add(eventbox)
         eventbox.add(image)
@@ -47,6 +47,17 @@ class Applet(object):
         self.lbrc.connect_to_signal("profile_change", self.profile_change_cb)
         self.pid_menu_map[self.lbrc.get_profile()].set_active(1)
         self.trayicon.show_all()
+
+        self.config_close_handler = None
+
+    def _config_close_handler(self, config_dialog, changed):
+        if changed:
+            self.lbrc.reload_config()
+            self.config.reread()
+            if self.bluecontrol:
+                self.bluecontrol.set_menus_visible(self.config.get_config_item_fb("show-bluetooth", True))
+        config_dialog.disconnect(self.config_close_handler)
+        self.config_close_handler = None
 
     def profile_change_cb(self, config, profile):
         self.notify(_("Profile changed:\n%(profilename)s") % {"profilename": profile})
@@ -69,12 +80,13 @@ class Applet(object):
             cp = self.lbrc.get_profile()
             self.pid_menu_map[cp].set_active(0)
 
-    def __create_menu(self):
+    def _create_menu(self):
         self.traymenu = gtk.Menu()
         
         profilemenu = gtk.Menu()
         menuitem = gtk.MenuItem(_("Profiles"))
         menuitem.set_submenu(profilemenu)
+        menuitem.show()
         self.traymenu.add(menuitem)
         self.pid_menu_map = {}
         group = None
@@ -103,34 +115,37 @@ class Applet(object):
             self.pid_menu_map[(config, profile)] = menuitem
             profilemenu.append(menuitem)
         
-        if self.bluecontrol:
-            menuitem = gtk.SeparatorMenuItem()
-            self.traymenu.append(menuitem)
-            for menuitem in self.bluecontrol.get_menus():
-                menuitem.show_all()
-                self.traymenu.append(menuitem)
-
         menuitem = gtk.SeparatorMenuItem()
+        menuitem.show()
         self.traymenu.append(menuitem)
+        
+        if self.bluecontrol:
+            for menuitem in self.bluecontrol.get_menus():
+                self.traymenu.append(menuitem)
 
         # Configuration editor 
         menuitem = gtk.ImageMenuItem(stock_id=gtk.STOCK_PREFERENCES)
         menuitem.connect("activate", self.show_config)
+        menuitem.show()
         self.traymenu.append(menuitem)
 
         menuitem = gtk.SeparatorMenuItem()
+        menuitem.show()
         self.traymenu.append(menuitem)
 
         menuitem = gtk.ImageMenuItem(stock_id=gtk.STOCK_QUIT)
         menuitem.connect('activate', self.quit)
+        menuitem.show()
         self.traymenu.append(menuitem)
-        self.traymenu.show_all()
+        self.traymenu.show()
 
     def quit(self, *args):
         self.lbrc.shutdown()
     
     def show_config(self, object):
-        ConfigWindow()
+        if not self.config_close_handler:
+            config_dialog = ConfigWindow()
+            self.config_close_handler = config_dialog.connect("close", self._config_close_handler)
 
     def notify(self, message):
         if not self.notify_interface:
