@@ -9,11 +9,14 @@
 #
 # TODO:
 #   * Write to the config file at end
+#     partly done: when called from applet
 #   * Document each method
-#   * Merge config.glade and keymouseeditwindow in one file
 #   * Delete a profile
 #   * Change a profile name
 #   * Edition of profiles
+#
+# TODO (long time):
+#   * join config object into one dbus object
 
 __extra_epydoc_fields__ = [('signal', 'Signal', 'Signals')]
 
@@ -118,7 +121,13 @@ class KeyMouseEditWindow(gobject.GObject):
     def __init__(self, keycode=None, action=None, repeat=None, type=None):
         gobject.GObject.__init__(self)
         # create widget tree ...
-        self.xml = gtk.glade.XML(os.path.join(path().get_guidir(), "keymouseeditwindow.glade"))
+        # TODO: use one global config glade object
+        self.xml = gtk.glade.XML(os.path.join(path().get_guidir(), "config.glade"))
+        # Wraper to get a widget from glade's xml
+        self.widget = self.xml.get_widget
+
+        self.widget("key-mouse-edit-window").show_all()
+
         # event types
         i = 0
         self.type = type
@@ -147,7 +156,7 @@ class KeyMouseEditWindow(gobject.GObject):
         self.exit_ok = None
 
     def widget(self, name):
-        """ Wraper to get a widget from glade's xml"""
+        
         return self.xml.get_widget(name)
 
     def get_repeat(self):
@@ -223,6 +232,7 @@ class ConfigWindow(gobject.GObject):
     def __init__(self):
         gobject.GObject.__init__(self)
         # create widget tree ...
+        # TODO: use one global config glade object
         self.xml = gtk.glade.XML(os.path.join(path().get_guidir(), "config.glade"))
         #self.control = ConfigWindowControl()
         self.modified = False
@@ -230,11 +240,12 @@ class ConfigWindow(gobject.GObject):
         # Wrapper to get a widget from glade's xml
         self.widget = self.xml.get_widget
 
+        self.widget("config-window").show_all()
+
         self._load_config()
         self._fill_window()
         #connnect signals
         self.xml.signal_autoconnect(self)
-
 
     def _load_config(self):
         """Loads the config file"""
@@ -246,6 +257,9 @@ class ConfigWindow(gobject.GObject):
         """Fills the table of commands"""
 
         iter = self.widget("profile-combobox").get_active_iter()
+        if not iter:
+            # TODO: replace current model with an empty model
+            return 
         model = self.widget("profile-combobox").get_model()
         (profileid, config) = model.get(iter, 1, 2)
 
@@ -283,7 +297,7 @@ class ConfigWindow(gobject.GObject):
 
         self.widget("key-mouse-treeview").set_model(mylist)
         
-    def _fill_window(self):
+    def _fill_window(self, initial=True):
         # Configuration notebook
         save_current = self.widget("save-current-checkbutton")
         show_bluetooth = self.widget("show-bluetooth-checkbutton")
@@ -300,25 +314,26 @@ class ConfigWindow(gobject.GObject):
         # Profiles combobox
         self._fill_profiles()
 
-        # key-mouse-treeview
-        treeview = self.widget("key-mouse-treeview")
-        # the text is in model index 5
-        # the backgroung is model index 4
-        treeview.insert_column_with_attributes(
-            0, _("Event type"), 
-            gtk.CellRendererText(), text=5, 
-            background=4         
-        )
-        treeview.insert_column_with_attributes(
-            1, _("Event generated"), 
-            gtk.CellRendererText(), text=1, 
-            background=4
-        )
-        treeview.insert_column_with_attributes(
-            2, _("Cellphone keycode"), 
-            gtk.CellRendererText(), text=0, 
-            background=4
-        )
+        if initial:
+            # key-mouse-treeview
+            treeview = self.widget("key-mouse-treeview")
+            # the text is in model index 5
+            # the backgroung is model index 4
+            treeview.insert_column_with_attributes(
+                0, _("Event type"), 
+                gtk.CellRendererText(), text=5, 
+                background=4         
+            )
+            treeview.insert_column_with_attributes(
+                1, _("Event generated"), 
+                gtk.CellRendererText(), text=1, 
+                background=4
+            )
+            treeview.insert_column_with_attributes(
+                2, _("Cellphone keycode"), 
+                gtk.CellRendererText(), text=0, 
+                background=4
+            )
 
     def _fill_profiles(self, select_last_item=False):
         """Fills the profile-combobox widget"""
@@ -428,7 +443,6 @@ class ConfigWindow(gobject.GObject):
             self._create_new_profile(text)
             self._fill_profiles(select_last_item=True)
 
-
     def on_profile_edit_button_clicked(self, object):
         print "profile edit button clicked"
 
@@ -457,7 +471,9 @@ class ConfigWindow(gobject.GObject):
         print "commands edit button clicked"
     
     def on_config_revert_button_clicked(self, object):
-        print "config revert button clicked"
+        self._load_config()
+        self._fill_window(False)
+        self.modified = False
 
     def on_key_mouse_treeview_row_activated(self, object, path, column):
         if path != None:
@@ -465,7 +481,6 @@ class ConfigWindow(gobject.GObject):
 
     def on_config_close_button_clicked(self, object):
         self.widget('config-window').destroy()
-
 
 if __name__ == "__main__":
     p = ConfigWindow()
