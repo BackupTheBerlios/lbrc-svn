@@ -55,11 +55,25 @@ for t in types_detailed:
     reverse_types[types_detailed[t]] = t
     
 types_values = {
-                'key': [True, ["ENTER", "CTRL", "ALT", "A", "B", "C", "CTRL+C"], None, True],
+                'key': [True, ["LEFTCTRL", "LEFTALT", "RIGHTCTRL", "RIGHTALT",
+                               "UP", "DOWN", "LEFT", "RIGHT", "PAGEUP", "PAGEDOWN", 
+                               "ENTER", "SPACE", "BACKSPACE", "HOME", "END"], None, True],
                 'mousebutton': [False, ["LEFT", "MIDDLE", "RIGHT", "MOUSE", "FORWARD", "BACK", "TOUCH"], None, False],
                 'mousewheel': [False, ["+WHEEL", "-WHEEL", "+HWHEEL", "-HWHEEL"], None, True],
                 'mouseaxis': [False, ["+X", "-X", "+Y", "-Y", "+Z", "-Z"], None, False]
                 }
+
+for i in xrange(0,10):
+    types_values['key'][1].append(str(i))
+
+for i in xrange(0,13):
+    types_values['key'][1].append("F" + str(i))
+    
+for i in xrange(97, 123):
+    types_values['key'][1].append(chr(i))
+    
+for i in xrange(65, 90):
+    types_values['key'][1].append(chr(i))
 
 for name in types_values:
     model = gtk.ListStore(str)
