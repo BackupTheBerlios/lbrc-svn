@@ -11,9 +11,8 @@
 #   * Write to the config file at end
 #     partly done: when called from applet
 #   * Document each method
-#   * Delete a profile
-#   * Change a profile name
 #   * Edition of profiles
+#     partly done: Uinput
 #
 # TODO (long time):
 #   * join config object into one dbus object
@@ -51,6 +50,22 @@ colors = { 'key':'snow', 'mousebutton':'bisque', 'mousewheel':'snow', 'mouseaxis
 # More descriptive string for each event type
 types_detailed = { 'key':_('KEYBOARD'), 'mousebutton':_('MOUSE BUTTON'), 'mousewheel':_('MOUSE WHEEL'), 'mouseaxis':_('MOUSE AXIS') }
 
+reverse_types = {}
+for t in types_detailed:
+    reverse_types[types_detailed[t]] = t
+    
+types_values = {
+                'key': [True, ["ENTER", "CTRL", "ALT", "A", "B", "C", "CTRL+C"], None, True],
+                'mousebutton': [False, ["LEFT", "MIDDLE", "RIGHT", "MOUSE", "FORWARD", "BACK", "TOUCH"], None, False],
+                'mousewheel': [False, ["+WHEEL", "-WHEEL", "+HWHEEL", "-HWHEEL"], None, True],
+                'mouseaxis': [False, ["+X", "-X", "+Y", "-Y", "+Z", "-Z"], None, False]
+                }
+
+for name in types_values:
+    model = gtk.ListStore(str)
+    for i in types_values[name][1]:
+        model.append([i])
+    types_values[name][2] = model
 
 # TIP: Command to get name of handlers from config.glade
 # >grep handler LBRC_gtk_gui/config.glade | perl -pe 's/.*"(on_.*?)".*/$1/'
@@ -105,118 +120,6 @@ class InputWindow(gobject.GObject):
     def get_text(self):
         return self.input_entry.get_text();
 
-class KeyMouseEditWindow(gobject.GObject):
-    """
-    A Window for configuring a key/mouse event.
-
-    @signal: close: (exit_ok)
-        This signals is fired when the window is closed. The parameter exit_ok will be True if the use has closed the window by clicking on OK button. The value of the entries must be accessed by get_* methods.
-
-    """
-   
-    __gsignals__ = {
-        'close': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_BOOLEAN,))
-    }
-
-    def __init__(self, keycode=None, action=None, repeat=None, type=None):
-        gobject.GObject.__init__(self)
-        # create widget tree ...
-        # TODO: use one global config glade object
-        self.xml = gtk.glade.XML(os.path.join(path().get_guidir(), "config.glade"))
-        # Wraper to get a widget from glade's xml
-        self.widget = self.xml.get_widget
-
-        self.widget("key-mouse-edit-window").show_all()
-
-        # event types
-        i = 0
-        self.type = type
-        self.reverse_types = {}
-        for t in types_detailed:
-            self.widget("event-type-combobox").append_text(types_detailed[t])
-            self.reverse_types[types_detailed[t]] = t
-            if self.type != None and t == self.type:
-                self.widget("event-type-combobox").set_active(i)
-
-            i += 1
-        
-        self.action = action
-        if self.action != None:
-            self.widget("event-generated-entry").set_text(self.action)
-
-        self.repeat = repeat
-        if self.repeat != None:
-            self.widget("repeat-frequency-entry").set_text(self.repeat)
-        self.keycode = keycode
-        if self.keycode != None:
-            self.widget("cellphone-keycode-entry").set_text(self.keycode)
-
-        self.xml.signal_autoconnect(self)
-        # to sinalize the exit status
-        self.exit_ok = None
-
-    def widget(self, name):
-        
-        return self.xml.get_widget(name)
-
-    def get_repeat(self):
-        """Get the value of repeat entry"""
-        return self.repeat
-
-    def get_keycode(self):
-        """Get the value of keycode entry"""
-        return self.keycode
-
-    def get_action(self):
-        """Get the value of action entry"""
-        return self.action
-
-    def get_type(self):
-        """Get the value of type entry"""
-        return self.type
-
-    def on_key_mouse_edit_window_destroy(self, object):
-        """Signal handler for catch when the window was destroied"""
-        if self.exit_ok == None:
-            self.exit_ok = False
-
-        self.emit("close", self.exit_ok)
-        return True
-
-    def on_event_type_combobox_changed(self, combobox):
-        """Signal handler for catch when the event type combobox widget has be changed"""
-        text = combobox.get_active_text()
-        if text != None and len(text) > 0:
-            self.type = self.reverse_types[text]
-
-    def on_event_generated_entry_changed(self, entry):
-        """Signal handler for catch when the event entry has be changed"""
-        text = entry.get_text()
-        if text != None and len(text) > 0:
-            self.action = text
-
-    def on_repeat_frequency_entry_changed(self, entry):
-        """Signal handler for catch when the frequency entry has be changed"""
-        text = entry.get_text()
-        if text != None and len(text) > 0:
-            self.repeat = text
-
-    def on_cellphone_keycode_entry_changed(self, object):
-        """Signal handler for catch when the keycode entry has be changed"""
-        text = entry.get_text()
-        if text != None and len(text) > 0:
-            self.keycode = text
-
-    def on_cancel_button_clicked(self, button):
-        """Signal handler for catch when the cancel button has be pressed"""
-        self.exit_ok = False
-        self.widget("key-mouse-edit-window").destroy()
-
-    def on_ok_button_clicked(self, button):
-        """Signal handler for catch when the ok button has be pressed"""
-        self.exit_ok = True
-        self.widget("key-mouse-edit-window").destroy()
-
 class ConfigWindow(gobject.GObject):
     """
     Widget to configure LBRC
@@ -255,45 +158,51 @@ class ConfigWindow(gobject.GObject):
 
     def _fill_treeview(self):
         """Fills the table of commands"""
-
         iter = self.widget("profile-combobox").get_active_iter()
+        
+        # 0 => keycode, 1 => map_to, 2 => repeat_freq, 3 => EVENT TYPE, 
+        # 4 => BACKGOROUND COLOR, 5 => EVENT TYPE DESCRIPTION 6 => is a repeater
+        # 7 => model for the event mapping, 8 => do we allow other event mappings (useful for keyboard)
+        
+        mylist = gtk.ListStore(int, str, int, str, str, str, gobject.TYPE_BOOLEAN, gtk.ListStore,gobject.TYPE_BOOLEAN, gobject.TYPE_PYOBJECT)
+        
         if not iter:
-            # TODO: replace current model with an empty model
+            self.widget("key-mouse-treeview").set_model(mylist)
             return 
         model = self.widget("profile-combobox").get_model()
         (profileid, config) = model.get(iter, 1, 2)
 
         profile = {}
-        # 0 => keycode, 1 => map_to, 2 => repeat_freq, 3 => EVENT TYPE, 4 => BACKGOROUND COLOR, 5 => EVENT TYPE DESCRIPTION
-        mylist = gtk.ListStore(str, str, str, str, str, str)
+
         if config == 'user':
             self.widget("key-mouse-add-button").set_sensitive(True)
             self.widget("key-mouse-remove-button").set_sensitive(True)
-            self.widget("key-mouse-edit-button").set_sensitive(True)
             self.widget("key-mouse-treeview").set_sensitive(True)
             #self.widget("command-add-button").set_sensitive(True)
             profile = self.user_profiles[profileid]
         else:
             self.widget("key-mouse-add-button").set_sensitive(False)
             self.widget("key-mouse-treeview").set_sensitive(False)
-            self.widget("key-mouse-remove-button").set_sensitive(False)
-            self.widget("key-mouse-edit-button").set_sensitive(False)
             #self.widget("command-add-button").set_sensitive(False)
             profile = self.system_profiles[profileid]
     
-        try:
-            for map in profile['UinputDispatcher']['actions']:
-                type = map['type']
-                mylist.append([
-                    map['keycode'], 
-                    map['map_to'], 
-                    map.get('repeat_freq', None),
-                    type,
-                    colors[type],
-                    types_detailed[type]
-                ])
-        except KeyError:
-            pass
+        #try:
+        for map in profile['UinputDispatcher']['actions']:
+            type = map['type']
+            mylist.append([
+                map['keycode'], 
+                map['map_to'], 
+                int(map.get('repeat_freq', 0)),
+                type,
+                colors[type],
+                types_detailed[type],
+                types_values[type][3],
+                types_values[type][2],
+                types_values[type][0],
+                map
+            ])
+        #except KeyError:
+        #    pass
 
         self.widget("key-mouse-treeview").set_model(mylist)
         
@@ -315,25 +224,65 @@ class ConfigWindow(gobject.GObject):
         self._fill_profiles()
 
         if initial:
-            # key-mouse-treeview
             treeview = self.widget("key-mouse-treeview")
-            # the text is in model index 5
-            # the backgroung is model index 4
+            
+            textrenderer = gtk.CellRendererText()
+            textrenderer.connect("edited", self._treeview_changed, "keycode")
+            textrenderer.set_property("editable", True)
             treeview.insert_column_with_attributes(
-                0, _("Event type"), 
-                gtk.CellRendererText(), text=5, 
-                background=4         
+                0, 
+                _("Cellphone keycode"), 
+                textrenderer, 
+                text=0
             )
+            
+            comborenderer = gtk.CellRendererCombo()
+            comborenderer.connect("edited", self._treeview_changed, "type")
+            mylist = gtk.ListStore(str)
+            for i in types_detailed.values():
+                mylist.append([i])
+            comborenderer.set_property("model", mylist)
+            comborenderer.set_property("text-column", 0)
+            comborenderer.set_property("editable", True)
+            comborenderer.set_property("has-entry", False)
             treeview.insert_column_with_attributes(
-                1, _("Event generated"), 
-                gtk.CellRendererText(), text=1, 
-                background=4
+                1, 
+                _("Event type"), 
+                comborenderer,
+                text=5
             )
+ 
+            comborenderer = gtk.CellRendererCombo()
+            comborenderer.connect("edited", self._treeview_changed, "event")
+            comborenderer.set_property("text-column", 0)
+            comborenderer.set_property("editable", True)
+            #comborenderer.set_property("has-entry", True)           
             treeview.insert_column_with_attributes(
-                2, _("Cellphone keycode"), 
-                gtk.CellRendererText(), text=0, 
-                background=4
+                2, 
+                _("Event generated"), 
+                comborenderer,
+                model=7,
+                has_entry=8,
+                text=1
             )
+            
+            textrenderer = gtk.CellRendererText()
+            textrenderer.connect("edited", self._treeview_changed, "repeat")
+            textrenderer.set_property("editable-set", True)
+            treeview.insert_column_with_attributes(
+                3, 
+                _("Repeatfrequency"), 
+                textrenderer,
+                text=2,
+                editable = 6,
+                visible=6
+            )
+            treeview.get_column(0).set_resizable(True)
+            treeview.get_column(0).set_sort_column_id(0)
+            treeview.get_column(1).set_resizable(True)
+            treeview.get_column(1).set_sort_column_id(5)
+            treeview.get_column(2).set_resizable(True)
+            treeview.get_column(2).set_sort_column_id(1)
 
     def _fill_profiles(self, select_last_item=False):
         """Fills the profile-combobox widget"""
@@ -368,23 +317,39 @@ class ConfigWindow(gobject.GObject):
             #profile already exists
             print "Profile already exists"
             return False
+        self.modified = True
         self.user_profiles[profile_name] = {}
         return True
 
-    def _edit_key_mouse(self, pos):
-        print "Editing pos", pos
-        mylist = list(self.widget("key-mouse-treeview").get_model()[pos])
-        edit_window = KeyMouseEditWindow(mylist[0], mylist[1], mylist[2], mylist[3])
-        edit_window.connect("close", self.on_edit_window_close, pos)
-
-    def on_edit_window_close(self, edit_window, exit_ok, pos):
-        if exit_ok == True:
-            print "pos: ", pos
-            print "repeat: ", edit_window.get_repeat()
-            print "keycode: ", edit_window.get_keycode()
-            print "action: ", edit_window.get_action()
-            print "type: ", edit_window.get_type()
-
+    def _treeview_changed(self, cellrenderer, treepath, new_text, ctype):
+        # 0 => keycode, 1 => map_to, 2 => repeat_freq, 3 => EVENT TYPE, 
+        # 4 => BACKGOROUND COLOR, 5 => EVENT TYPE DESCRIPTION 6 => is a repeater
+        # 7 => model for the event mapping, 8 => do we allow other event mappings (useful for keyboard)
+        #
+        # TODO: Check that we got valid values
+        tv = self.widget("key-mouse-treeview")
+        model = tv.get_model()
+        iter = model.get_iter(treepath)
+        (keycode, map_to, repeat_freq, type, row) = model.get(iter, 0, 1, 2, 3, 9)      
+        
+        if ctype == 'type':
+            row["type"] = type = reverse_types[new_text]
+            row["map_to"] = map_to = types_values[type][1][0]
+            repeat_freq = 0
+            if repeat_freq in row: del row["repeat_freq"]
+        elif ctype == 'keycode':
+            row["keycode"] = keycode = int(new_text)
+        elif ctype == 'event':
+            row["map_to"] = map_to = new_text
+        elif ctype == 'repeat':
+            row["repeat_freq"] = repeat_freq = int(new_text)
+        
+        model.set(iter, 0, keycode, 1, map_to, 2, repeat_freq, 3, type, 4, colors[type], 
+                        5, types_detailed[type], 6, types_values[type][3], 7, types_values[type][2],
+                        8, types_values[type][0])
+        
+        self.modified = True
+                    
     def on_config_window_destroy(self, destroy):
         if self.modified:
             self.config.write()
@@ -425,41 +390,64 @@ class ConfigWindow(gobject.GObject):
         selected_profile = combobox.get_active_text()
         self.widget("profile-notebook").set_sensitive(True)
         if selected_profile in self.user_profiles:
-            self.widget("profile-edit-button").set_sensitive(True)
+            self.widget("profile-rename-button").set_sensitive(True)
             self.widget("profile-delete-button").set_sensitive(True)
         else:
-            self.widget("profile-edit-button").set_sensitive(False)
+            self.widget("profile-rename-button").set_sensitive(False)
             self.widget("profile-delete-button").set_sensitive(False)
         self._fill_treeview()
 
     def on_profile_new_button_clicked(self, button):
-        input_window = InputWindow(title=_("What is the name for the new profile?"), parent = self.widget("config-window"))
+        input_window = InputWindow(title=_("What is the name for the new profile?"), 
+                                   parent = self.widget("config-window"))
         input_window.connect("close", self.on_input_window_close, "new-profile")
 
     def on_input_window_close(self, window, was_modified, type):
-        #print "modified:", was_modified, "type:", type, "text:", window.get_text()
         text = window.get_text().strip()
         if type == "new-profile" and len(text) > 0:
             self._create_new_profile(text)
             self._fill_profiles(select_last_item=True)
+        elif type == "rename-profile" and len(text) > 0:
+            if text in self.user_profiles:
+                # TODO: Handle rename with name clash
+                return
+            iter = self.widget("profile-combobox").get_active_iter()
+            if not iter:
+                return
+            model = self.widget("profile-combobox").get_model()
+            data = model.get(iter,1,2)       
+            if data[1] == "user":
+                model.set(iter, 0, text, 1, text)
+                self.user_profiles[text] = self.user_profiles[data[0]]
+                del(self.user_profiles[data[0]])
+                self.modified = True
+                self._fill_treeview()
+                
 
-    def on_profile_edit_button_clicked(self, object):
-        print "profile edit button clicked"
+    def on_profile_rename_button_clicked(self, object):        
+        input_window = InputWindow(title=_("Specify the new name for the new profile"), 
+                                   parent = self.widget("config-window"))
+        input_window.connect("close", self.on_input_window_close, "rename-profile")
 
     def on_profile_delete_button_clicked(self, object):
-        print "profile delete button clicked"
+        iter = self.widget("profile-combobox").get_active_iter()
+        if not iter:
+            return
+        model = self.widget("profile-combobox").get_model()
+        data = model.get(iter,1,2)
+        if data[1] == "user":
+            del self.user_profiles[data[0]]
+            self.modified = True
+            model.remove(iter)
+            self._fill_treeview()
 
     def on_key_mouse_add_button_clicked(self, object):
-        edit_window = KeyMouseEditWindow()
-        edit_window.connect("close", self.on_edit_window_close, -1)
+        edit_window = KeyMouseEditWindow(parent=self.widget("config-window"))
+        #edit_window.connect("close", self.on_edit_window_close, -1)
+        edit_window.run()
 
     def on_key_mouse_remove_button_clicked(self, object):
         print "keyboard/mouse remove button clicked"
-
-    def on_key_mouse_edit_button_clicked(self, object):
-        path, column = self.widget("key-mouse-treeview").get_cursor()
-        if path != None:
-            self._edit_key_mouse(path[0])
 
     def on_command_add_button_clicked(self, object):
         print "commands add button clicked"
@@ -474,10 +462,6 @@ class ConfigWindow(gobject.GObject):
         self._load_config()
         self._fill_window(False)
         self.modified = False
-
-    def on_key_mouse_treeview_row_activated(self, object, path, column):
-        if path != None:
-            self._edit_key_mouse(path[0])
 
     def on_config_close_button_clicked(self, object):
         self.widget('config-window').destroy()
