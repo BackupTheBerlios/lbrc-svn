@@ -455,22 +455,49 @@ class ConfigWindow(gobject.GObject):
             model.remove(iter)
             self._fill_treeview()
 
-    def on_key_mouse_add_button_clicked(self, object):
-        edit_window = KeyMouseEditWindow(parent=self.widget("config-window"))
-        #edit_window.connect("close", self.on_edit_window_close, -1)
-        edit_window.run()
-
     def on_key_mouse_remove_button_clicked(self, object):
-        print "keyboard/mouse remove button clicked"
+        model = self.widget("key-mouse-treeview").get_model()
+        (path, column) = self.widget("key-mouse-treeview").get_cursor()
+        if not path: return
+        iter = model.get_iter(path)
+        piter = self.widget("profile-combobox").get_active_iter()
+        pmodel = self.widget("profile-combobox").get_model()
+        (profileid, config) = pmodel.get(piter, 1, 2)
+        entry = model.get_value(iter, 9)
+        self.user_profiles[profileid]['UinputDispatcher']['actions'].remove(entry)
+        model.remove(iter)
+        self.modified = True
 
-    def on_command_add_button_clicked(self, object):
-        print "commands add button clicked"
-
-    def on_command_remove_button_clicked(self, object):
-        print "commands remove button clicked"
-
-    def on_command_edit_button_clicked(self, object):
-        print "commands edit button clicked"
+    def on_key_mouse_add_button_clicked(self, object):
+        model = self.widget("key-mouse-treeview").get_model()
+        piter = self.widget("profile-combobox").get_active_iter()
+        pmodel = self.widget("profile-combobox").get_model()
+        (profileid, config) = pmodel.get(piter, 1, 2)
+        
+        map = {'keycode': 0, 'type': 'key', 'map_to': 'A', 'repeat_freq': 0}
+        
+        if not 'UinputDispatcher' in self.user_profiles[profileid]:
+            self.user_profiles[profileid] = {}
+        if not 'actions' in self.user_profiles[profileid]['UinputDispatcher']:
+            self.user_profiles[profileid]['UinputDispatcher']['actions'] = []
+        
+        self.user_profiles[profileid]['UinputDispatcher']['actions'].append(map)
+        
+        type = map['type']
+        iter = model.append([
+            map['keycode'], 
+            map['map_to'], 
+            int(map.get('repeat_freq', 0)),
+            type,
+            colors[type],
+            types_detailed[type],
+            types_values[type][3],
+            types_values[type][2],
+            types_values[type][0],
+            map
+        ])
+        self.widget("key-mouse-treeview").set_cursor(model.get_path(iter))
+        self.modified = True
     
     def on_config_revert_button_clicked(self, object):
         self._load_config()
