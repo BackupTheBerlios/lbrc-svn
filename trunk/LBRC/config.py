@@ -88,7 +88,7 @@ class config(object):
                 raise noConfigException()
             elif not _profile and not profile:
                 return _config
-            elif not _profile:
+            elif not _profile and not type(_profile) == type({}):
                 raise profileNotFoundException()
             elif not _section and not section:
                 return _profile
