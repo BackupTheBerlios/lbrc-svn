@@ -10,6 +10,7 @@ import gobject
 import egg.trayicon
 import time
 import dbus
+import dbus.glib
 import os
 import sys
 
@@ -100,11 +101,12 @@ if __name__=="__main__":
     bus = dbus.SessionBus()
     proxy_obj = None
     count = 0
-    proxy_obj = dbus.SessionBus().get_object('custom.LBRC', '/custom/LBRC')
-    lbrc_interface = dbus.Interface(proxy_obj, 'custom.LBRC')
+
     ok = 0
     while count < 10:
         try:
+            proxy_obj = dbus.SessionBus().get_object('custom.LBRC', '/custom/LBRC')
+            lbrc_interface = dbus.Interface(proxy_obj, 'custom.LBRC')
             lbrc_interface.get_profiles()
             ok = 1
             break

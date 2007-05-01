@@ -41,9 +41,9 @@ class LBRCdbus(dbus.service.Object):
         self.events = self.profiles[self.cur_profile]['events']
 
     def check_running_instance(self):
-        proxy_obj = dbus.SessionBus().get_object('custom.LBRC', '/custom/LBRC')
-        lbrc_interface = dbus.Interface(proxy_obj, 'custom.LBRC')
         try:
+            proxy_obj = dbus.SessionBus().get_object('custom.LBRC', '/custom/LBRC')
+            lbrc_interface = dbus.Interface(proxy_obj, 'custom.LBRC')
             lbrc_interface.get_profiles()
             return 1
         except:
