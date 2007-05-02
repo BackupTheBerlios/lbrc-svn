@@ -41,7 +41,7 @@ class MPlayer(object):
         self.path = path()
         self.mplayer = None
 
-    def _execute_command(self, command, args):
+    def _execute_command(self, command):
         if self.mplayer:
             try:
                 if command == "quit" or \
@@ -50,7 +50,7 @@ class MPlayer(object):
                     self.mplayer.stdin.flush()
                     self.mplayer = None
                 else:
-                    self.mplayer.stdin.write(command + " " + " ".join([str(a) for a in args]) + "\n")
+                    self.mplayer.stdin.write(command + "\n")
                     self.mplayer.stdin.flush()
             except IOError:
                 self.mplayer = None
@@ -74,7 +74,7 @@ class MPlayer(object):
         event_tuple = (keycode, mapping)
         if event_tuple in self.actions:
             for command in self.actions[event_tuple]:
-                self._execute_command(command["command"], command["args"])
+                self._execute_command(command["command"])
     
     def set_profile(self, config, profile):
         """
@@ -84,10 +84,10 @@ class MPlayer(object):
         @type   profile:    string
         """
         for command in self.destruct:
-            self._execute_command(command["command"], command["args"])
+            self._execute_command(command["command"])
         self._interpret_profile(config, profile)
         for command in self.init:
-            self._execute_command(command["command"], command["args"])
+            self._execute_command(command["command"])
                                 
     def _interpret_profile(self, config, profile):
         """
@@ -101,13 +101,11 @@ class MPlayer(object):
         self.destruct = []
         try:
             for init in self.config.get_profile(config, profile, 'MPlayer')['init']:
-                if not "args" in init: init["args"] = []
                 self.init.append(init)
         except:
             pass
         try:
             for destruct in self.config.get_profile(config, profile, 'MPlayer')['destruct']:
-                if not "args" in destruct: destruct["args"] = []
                 self.destruct.append(destruct)
         except:
             pass
@@ -121,11 +119,10 @@ class MPlayer(object):
                 event_tuple = (int(action['keycode']), mapping)
                 if not event_tuple in self.actions:
                     self.actions[event_tuple] = []
-                if not "args" in action: action["args"] = []
                 self.actions[event_tuple].append(action)
         except:
             pass
 
     def shutdown(self):
         for command in self.destruct:
-            self._execute_command(command["command"], command["args"])
+            self._execute_command(command["command"])
