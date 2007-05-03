@@ -108,7 +108,7 @@ for state in button_press_state_reverse:
 # TIP: Command to get name of handlers from config.glade
 # >grep handler LBRC_gtk_gui/config.glade | perl -pe 's/.*"(on_.*?)".*/$1/'
 
-class CellArgumentsEditor(gtk.Entry, gtk.CellEditable):
+class CellCommandArgumentsEditor(gtk.Entry, gtk.CellEditable):
     __gsignals__ = {
          'edited': (gobject.SIGNAL_RUN_FIRST, gobject.TYPE_NONE,())
     }
@@ -120,22 +120,14 @@ class CellArgumentsEditor(gtk.Entry, gtk.CellEditable):
         self.hwindow.set_position(gtk.WIN_POS_MOUSE)
         self.hwindow.set_decorated(False)
         vbox = gtk.VBox()
-        self.liststore = liststore = gtk.ListStore(str, str)
+        self.liststore = liststore = gtk.ListStore(str)
         self.treeview = treeview = gtk.TreeView(liststore)
         self.hwindow.set_default_size(200,  300)
-
-        comborenderer = gtk.CellRendererCombo()
-        comborenderer.connect("edited", self._treeview_changed, "type")
-        comborenderer.set_property("model", dbus_type_model)
-        comborenderer.set_property("text-column", 0)
-        comborenderer.set_property("editable", True)
-        comborenderer.set_property("has-entry", False)
-        treeview.insert_column_with_attributes(0, _("Param-Type"), comborenderer, text=0)
         
         textrenderer = gtk.CellRendererText()
         textrenderer.connect("edited", self._treeview_changed, "param")
         textrenderer.set_property("editable", True)
-        treeview.insert_column_with_attributes(1, _("Param"), textrenderer, text=1)
+        treeview.insert_column_with_attributes(0, _("Param"), textrenderer, text=0)
 
         treeview.set_headers_visible(True)
         sw = gtk.ScrolledWindow()
@@ -154,7 +146,7 @@ class CellArgumentsEditor(gtk.Entry, gtk.CellEditable):
         self.hwindow.show_all()
 
     def add_entry(self, button):
-        self.liststore.append(["boolean", "true"])
+        self.liststore.append(["New Param"])
 
     def remove_entry(self, button):
         (path, column) = self.treeview.get_cursor()
@@ -165,22 +157,19 @@ class CellArgumentsEditor(gtk.Entry, gtk.CellEditable):
     def set_arguments(self, arguments):
         self.liststore.clear()
         for arg in arguments:
-            (param_type, param) = arg.split(":", 2)
-            self.liststore.append([param_type, param])
+            self.liststore.append([arg])
         self.set_text(", ".join(self.get_arguments()))
             
     def get_arguments(self):
         re = []
         for i in self.liststore:
-            re.append(":".join(i))
+            re.append(i[0])
         return re
     
     def _treeview_changed(self, cellrenderer, treepath, new_text, ctype):
         model = self.liststore
         iter = model.get_iter(treepath)
         if ctype == 'param':
-            model.set(iter, 1, new_text)
-        elif ctype == 'type':
             model.set(iter, 0, new_text)
         self.set_text(", ".join(self.get_arguments()))
 
@@ -193,7 +182,7 @@ class CellArgumentsEditor(gtk.Entry, gtk.CellEditable):
     def do_start_editing(*args):
          pass
 
-class CellArgumentsRenderer(gtk.GenericCellRenderer):
+class CellCommandArgumentsRenderer(gtk.GenericCellRenderer):
     __gproperties__= {
         "backupdata": (gobject.TYPE_PYOBJECT, "Backup", "Backup", gobject.PARAM_READWRITE),
         'editable': (gobject.TYPE_BOOLEAN, 'editable', 'is editable', True, gobject.PARAM_READWRITE),
@@ -278,7 +267,7 @@ class CellArgumentsRenderer(gtk.GenericCellRenderer):
 
 
     def on_start_editing(self, event, widget, path, bg_area, cell_area, flags):
-         editor = CellArgumentsEditor()
+         editor = CellCommandArgumentsEditor()
          try:
              editor.set_arguments(self.get_property("backupdata")['arguments'])
          except:
@@ -290,8 +279,194 @@ class CellArgumentsRenderer(gtk.GenericCellRenderer):
          editor.connect("editing-done", lambda *args: self.emit("edited", path, ", ".join(editor.get_arguments()), editor.get_arguments()))
          return editor
      
-gobject.type_register(CellArgumentsEditor)
-gobject.type_register(CellArgumentsRenderer)
+gobject.type_register(CellCommandArgumentsEditor)
+gobject.type_register(CellCommandArgumentsRenderer)
+
+
+class CellDBUSArgumentsEditor(gtk.Entry, gtk.CellEditable):
+    __gsignals__ = {
+         'edited': (gobject.SIGNAL_RUN_FIRST, gobject.TYPE_NONE,())
+    }
+    def __init__(self, *arg):
+        gtk.Entry.__init__(self, *arg)
+        self.set_editable(False)
+        
+        self.hwindow = gtk.Window()
+        self.hwindow.set_position(gtk.WIN_POS_MOUSE)
+        self.hwindow.set_decorated(False)
+        vbox = gtk.VBox()
+        self.liststore = liststore = gtk.ListStore(str, str)
+        self.treeview = treeview = gtk.TreeView(liststore)
+        self.hwindow.set_default_size(200,  300)
+
+        comborenderer = gtk.CellRendererCombo()
+        comborenderer.connect("edited", self._treeview_changed, "type")
+        comborenderer.set_property("model", dbus_type_model)
+        comborenderer.set_property("text-column", 0)
+        comborenderer.set_property("editable", True)
+        comborenderer.set_property("has-entry", False)
+        treeview.insert_column_with_attributes(0, _("Param-Type"), comborenderer, text=0)
+        
+        textrenderer = gtk.CellRendererText()
+        textrenderer.connect("edited", self._treeview_changed, "param")
+        textrenderer.set_property("editable", True)
+        treeview.insert_column_with_attributes(1, _("Param"), textrenderer, text=1)
+
+        treeview.set_headers_visible(True)
+        sw = gtk.ScrolledWindow()
+        sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        sw.add(treeview)
+        vbox.pack_start(sw, expand=True, fill=True, padding=0)
+        addbutton = gtk.Button(stock=gtk.STOCK_ADD)
+        removebutton = gtk.Button(stock=gtk.STOCK_REMOVE)
+        addbutton.connect("clicked", self.add_entry)
+        removebutton.connect("clicked", self.remove_entry)
+        buttonbox = gtk.HButtonBox()
+        buttonbox.add(removebutton)
+        buttonbox.add(addbutton)
+        vbox.pack_start(buttonbox, expand=False, fill=True, padding=0)
+        self.hwindow.add(vbox)
+        self.hwindow.show_all()
+
+    def add_entry(self, button):
+        self.liststore.append(["boolean", "true"])
+
+    def remove_entry(self, button):
+        (path, column) = self.treeview.get_cursor()
+        if not path: return
+        iter = self.liststore.get_iter(path)
+        self.liststore.remove(iter)
+        
+    def set_arguments(self, arguments):
+        self.liststore.clear()
+        for arg in arguments:
+            (param_type, param) = arg.split(":", 2)
+            self.liststore.append([param_type, param])
+        self.set_text(", ".join(self.get_arguments()))
+            
+    def get_arguments(self):
+        re = []
+        for i in self.liststore:
+            re.append(":".join(i))
+        return re
+    
+    def _treeview_changed(self, cellrenderer, treepath, new_text, ctype):
+        model = self.liststore
+        iter = model.get_iter(treepath)
+        if ctype == 'param':
+            model.set(iter, 1, new_text)
+        elif ctype == 'type':
+            model.set(iter, 0, new_text)
+        self.set_text(", ".join(self.get_arguments()))
+
+    def do_editing_done(*args):
+         pass
+     
+    def do_remove_widget(self):
+        self.hwindow.destroy()
+        
+    def do_start_editing(*args):
+         pass
+
+class CellDBUSArgumentsRenderer(gtk.GenericCellRenderer):
+    __gproperties__= {
+        "backupdata": (gobject.TYPE_PYOBJECT, "Backup", "Backup", gobject.PARAM_READWRITE),
+        'editable': (gobject.TYPE_BOOLEAN, 'editable', 'is editable', True, gobject.PARAM_READWRITE),
+        'text': (gobject.TYPE_STRING, 'text', 'text displayed', '', gobject.PARAM_READWRITE)
+    }
+    __gsignals__ = {
+         'edited': (gobject.SIGNAL_RUN_FIRST, gobject.TYPE_NONE,
+                    (gobject.TYPE_STRING, gobject.TYPE_STRING, gobject.TYPE_PYOBJECT))
+    }
+
+    property_names = __gproperties__.keys()
+    
+    def do_set_property(self, pspec, value):
+        setattr(self, pspec.name, value)
+    
+    def do_get_property(self, pspec):
+        return getattr(self, pspec.name)
+    
+    def __init__(self, *args):
+        gtk.GenericCellRenderer.__init__(self, *args)
+        self.set_property('mode', gtk.CELL_RENDERER_MODE_EDITABLE)
+    
+    def on_render(self, window, widget, bg_area, cell_area, exp_area, flags):
+         x_offset, y_offset, width, height = self.on_get_size(widget, cell_area)
+         layout = self.get_layout(widget)
+
+         # Determine state to get text color right.
+         if flags & gtk.CELL_RENDERER_SELECTED:
+             if widget.get_property('has-focus'):
+                 state = gtk.STATE_SELECTED
+             else:
+                 state = gtk.STATE_ACTIVE
+         else:
+             state = gtk.STATE_NORMAL
+
+         widget.style.paint_layout(
+             window, state, True, cell_area, widget, 'foo',
+             cell_area.x + x_offset, cell_area.y + y_offset, layout
+         )
+
+
+    def get_layout(self, widget):
+        '''Gets the Pango layout used in the cell in a TreeView widget.'''
+        layout = pango.Layout(widget.get_pango_context())
+        layout.set_width(-1)    # Do not wrap text.
+
+        if self.text:
+            layout.set_text(self.text)
+        else:
+            layout.set_text('')
+        return layout
+
+
+    def on_get_size(self, widget, cell_area):
+
+        # The following size calculations have tested so that the TextView
+        # will fully fit in the cell when editing and it will be the same
+        # size as a CellRendererText cell with same amount or rows.
+        xpad = 2
+        ypad = 2
+        xalign = 0
+        yalign = 0.5
+        layout = self.get_layout(widget)
+        width, height = layout.get_pixel_size()
+
+        x_offset = xpad
+        y_offset = ypad
+
+        if cell_area:
+            x_offset = xalign * (cell_area.width - width)
+            x_offset = max(x_offset, xpad)
+            x_offset = int(round(x_offset, 0))
+
+            y_offset = yalign * (cell_area.height - height)
+            y_offset = max(y_offset, ypad)
+            y_offset = int(round(y_offset, 0))
+
+        width  = width  + (xpad * 2)
+        height = height + (ypad * 2)
+
+        return x_offset, y_offset, width, height
+
+
+    def on_start_editing(self, event, widget, path, bg_area, cell_area, flags):
+         editor = CellDBUSArgumentsEditor()
+         try:
+             editor.set_arguments(self.get_property("backupdata")['arguments'])
+         except:
+             empty_array = []
+             editor.set_arguments(empty_array)
+             self.get_property("backupdata")['arguments'] = empty_array
+         editor.grab_focus()
+         editor.show_all()
+         editor.connect("editing-done", lambda *args: self.emit("edited", path, ", ".join(editor.get_arguments()), editor.get_arguments()))
+         return editor
+     
+gobject.type_register(CellDBUSArgumentsEditor)
+gobject.type_register(CellDBUSArgumentsRenderer)
 
 class InputWindow(gtk.Dialog):
     def __init__(self, query="", title = "", parent = None):
@@ -675,7 +850,7 @@ class DBusCallerEditor(ConfigWindowWidget):
             text=3,
         )
         
-        textrenderer = CellArgumentsRenderer()
+        textrenderer = CellDBUSArgumentsRenderer()
         textrenderer.connect("edited", self._treeview_init_changed, "arguments")
         textrenderer.set_property("editable", True)
         treeview.insert_column_with_attributes(
@@ -788,7 +963,7 @@ class DBusCallerEditor(ConfigWindowWidget):
             text=5,
         )
         
-        textrenderer = CellArgumentsRenderer()
+        textrenderer = CellDBUSArgumentsRenderer()
         textrenderer.connect("edited", self._treeview_changed, "arguments")
         textrenderer.set_property("editable", True)
         treeview.insert_column_with_attributes(
@@ -882,7 +1057,7 @@ class DBusCallerEditor(ConfigWindowWidget):
             text=3,
         )
         
-        textrenderer = CellArgumentsRenderer()
+        textrenderer = CellDBUSArgumentsRenderer()
         textrenderer.connect("edited", self._treeview_destruct_changed, "arguments")
         textrenderer.set_property("editable", True)
         treeview.insert_column_with_attributes(
@@ -1154,37 +1329,7 @@ class DBusCallerEditor(ConfigWindowWidget):
         ])
         self.treeview_destruct.set_cursor(model.get_path(iter))
         self.emit("changed")
-    
-    def on_removebutton_init_clicked(self, object):
-        model = self.treeview_init.get_model()
-        (path, column) = self.treeview_init.get_cursor()
-        if not path: return
-        iter = model.get_iter(path)
-        entry = model.get_value(iter, 5)
-        self.section['init'].remove(entry)
-        model.remove(iter)
-        self.emit("changed")
-    
-    def on_removebutton_destruct_clicked(self, object):
-        model = self.treeview_destruct.get_model()
-        (path, column) = self.treeview_destruct.get_cursor()
-        if not path: return
-        iter = model.get_iter(path)
-        entry = model.get_value(iter, 7)
-        self.section['destruct'].remove(entry)
-        model.remove(iter)
-        self.emit("changed")        
-        
-    def on_removebutton_clicked(self, object):
-        model = self.treeview.get_model()
-        (path, column) = self.treeview.get_cursor()
-        if not path: return
-        iter = model.get_iter(path)
-        entry = model.get_value(iter, 7)
-        self.section['actions'].remove(entry)
-        model.remove(iter)
-        self.emit("changed")
-    
+
     def on_addbutton_clicked(self, object):
         model = self.treeview.get_model()
 
@@ -1207,6 +1352,460 @@ class DBusCallerEditor(ConfigWindowWidget):
         ])
         self.treeview.set_cursor(model.get_path(iter))
         self.emit("changed")
+
+    def on_removebutton_init_clicked(self, object):
+        model = self.treeview_init.get_model()
+        (path, column) = self.treeview_init.get_cursor()
+        if not path: return
+        iter = model.get_iter(path)
+        entry = model.get_value(iter, 5)
+        self.section['init'].remove(entry)
+        model.remove(iter)
+        self.emit("changed")
+    
+    def on_removebutton_destruct_clicked(self, object):
+        model = self.treeview_destruct.get_model()
+        (path, column) = self.treeview_destruct.get_cursor()
+        if not path: return
+        iter = model.get_iter(path)
+        entry = model.get_value(iter, 5)
+        self.section['destruct'].remove(entry)
+        model.remove(iter)
+        self.emit("changed")        
+        
+    def on_removebutton_clicked(self, object):
+        model = self.treeview.get_model()
+        (path, column) = self.treeview.get_cursor()
+        if not path: return
+        iter = model.get_iter(path)
+        entry = model.get_value(iter, 7)
+        self.section['actions'].remove(entry)
+        model.remove(iter)
+        self.emit("changed")
+    
+class CommandExecutorEditor(ConfigWindowWidget):
+    """
+    Widget for configuration of CommandExecutor
+    
+    @signal: changed
+        This signal is fired, when the config data of this modules was changed in here
+    """
+    title = _("CommandExecutor")
+    config_section = 'CommandExecutor'
+    
+    def __init__(self, config):
+        ConfigWindowWidget.__init__(self, config)
+ 
+        #======================
+         
+        expander = gtk.Expander(_("On Initialisation"))
+        expander.set_expanded(False)
+        expander.connect("activate", self.on_expander_activate)
+        
+        vbox = gtk.VBox()
+        
+        hbuttonbox = gtk.HButtonBox()
+        hbuttonbox.set_layout(gtk.BUTTONBOX_START)
+        self.addbutton_init = addbutton = gtk.Button(stock="gtk-add")
+        self.removebutton_init = removebutton = gtk.Button(stock="gtk-remove")
+        addbutton.connect("clicked", self.on_addbutton_init_clicked)
+        removebutton.connect("clicked", self.on_removebutton_init_clicked)
+        
+        self.treeview_init = treeview = gtk.TreeView()
+        
+        textrenderer = gtk.CellRendererText()
+        textrenderer.connect("edited", self._treeview_init_changed, "command")
+        textrenderer.set_property("editable", True)
+        treeview.insert_column_with_attributes(
+            0, 
+            _("Command"), 
+            textrenderer, 
+            text=0
+        )
+        
+        textrenderer = CellCommandArgumentsRenderer()
+        textrenderer.connect("edited", self._treeview_init_changed, "arguments")
+        textrenderer.set_property("editable", True)
+        treeview.insert_column_with_attributes(
+            1, 
+            _("Arguments"), 
+            textrenderer,
+            text=1,
+            backupdata=2
+        )        
+        
+        hbuttonbox.add(addbutton)
+        hbuttonbox.add(removebutton)
+        
+        scrolled = gtk.ScrolledWindow()
+        scrolled.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        scrolled.add(treeview)
+        
+        vbox.pack_start(hbuttonbox, expand=False, fill=True, padding=0)
+        vbox.pack_start(scrolled, expand=True, fill=True, padding=0)
+        expander.add(vbox)
+        self.pack_start(expander, expand=False, fill=False, padding=0)
+        
+        #======================
+        
+        expander = gtk.Expander(_("Actions"))
+        expander.set_expanded(True)
+        expander.connect("activate", self.on_expander_activate)
+        
+        vbox = gtk.VBox()
+        
+        hbuttonbox = gtk.HButtonBox()
+        hbuttonbox.set_layout(gtk.BUTTONBOX_START)
+        self.addbutton = addbutton = gtk.Button(stock="gtk-add")
+        self.removebutton = removebutton = gtk.Button(stock="gtk-remove")
+        addbutton.connect("clicked", self.on_addbutton_clicked)
+        removebutton.connect("clicked", self.on_removebutton_clicked)
+        
+        self.treeview = treeview = gtk.TreeView()
+
+        textrenderer = gtk.CellRendererText()
+        textrenderer.connect("edited", self._treeview_changed, "keycode")
+        textrenderer.set_property("editable", True)
+        treeview.insert_column_with_attributes(
+            0, 
+            _("Keycode"), 
+            textrenderer, 
+            text=0
+        )
+
+        comborenderer = gtk.CellRendererCombo()
+        comborenderer.connect("edited", self._treeview_changed, "state")
+        comborenderer.set_property("model", button_press_model)
+        comborenderer.set_property("text-column", 0)
+        comborenderer.set_property("editable", True)
+        comborenderer.set_property("has-entry", False)
+        treeview.insert_column_with_attributes(
+            1, 
+            _("State"), 
+                comborenderer,
+                text=1
+            )
+        
+        textrenderer = gtk.CellRendererText()
+        textrenderer.connect("edited", self._treeview_changed, "command")
+        textrenderer.set_property("editable", True)
+        treeview.insert_column_with_attributes(
+            2, 
+            _("Command"), 
+            textrenderer, 
+            text=2
+        )
+        
+        textrenderer = CellCommandArgumentsRenderer()
+        textrenderer.connect("edited", self._treeview_changed, "arguments")
+        textrenderer.set_property("editable", True)
+        treeview.insert_column_with_attributes(
+            3, 
+            _("Command"), 
+            textrenderer,
+            text=3,
+            backupdata=4
+        )        
+        
+        treeview.get_column(0).set_resizable(True)
+        treeview.get_column(0).set_sort_column_id(0)
+        treeview.get_column(1).set_resizable(True)
+        treeview.get_column(1).set_sort_column_id(1)
+        treeview.get_column(2).set_resizable(True)
+        treeview.get_column(2).set_sort_column_id(2)
+        treeview.get_column(3).set_resizable(True)
+        treeview.get_column(3).set_sort_column_id(3)
+        
+        hbuttonbox.add(addbutton)
+        hbuttonbox.add(removebutton)
+        
+        scrolled = gtk.ScrolledWindow()
+        scrolled.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        scrolled.add(treeview)
+        
+        vbox.pack_start(hbuttonbox, expand=False, fill=True, padding=0)
+        vbox.pack_start(scrolled, expand=True, fill=True, padding=0)
+        expander.add(vbox)
+        self.pack_start(expander, expand=True, fill=True, padding=0)
+
+        #======================
+         
+        expander = gtk.Expander(_("On Destruction"))
+        expander.set_expanded(False)
+        expander.connect("activate", self.on_expander_activate)
+        
+        vbox = gtk.VBox()
+        
+        hbuttonbox = gtk.HButtonBox()
+        hbuttonbox.set_layout(gtk.BUTTONBOX_START)
+        self.addbutton_destruct = addbutton = gtk.Button(stock="gtk-add")
+        self.removebutton_destruct = removebutton = gtk.Button(stock="gtk-remove")
+        addbutton.connect("clicked", self.on_addbutton_destruct_clicked)
+        removebutton.connect("clicked", self.on_removebutton_destruct_clicked)
+        
+        self.treeview_destruct = treeview = gtk.TreeView()
+        
+        textrenderer = gtk.CellRendererText()
+        textrenderer.connect("edited", self._treeview_destruct_changed, "command")
+        textrenderer.set_property("editable", True)
+        treeview.insert_column_with_attributes(
+            0, 
+            _("Command"), 
+            textrenderer, 
+            text=0
+        )
+        
+        textrenderer = CellCommandArgumentsRenderer()
+        textrenderer.connect("edited", self._treeview_destruct_changed, "arguments")
+        textrenderer.set_property("editable", True)
+        treeview.insert_column_with_attributes(
+            1, 
+            _("Arguments"), 
+            textrenderer,
+            text=1,
+            backupdata=2
+        )
+        
+        hbuttonbox.add(addbutton)
+        hbuttonbox.add(removebutton)
+        
+        scrolled = gtk.ScrolledWindow()
+        scrolled.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        scrolled.add(treeview)
+        
+        vbox.pack_start(hbuttonbox, expand=False, fill=True, padding=0)
+        vbox.pack_start(scrolled, expand=True, fill=True, padding=0)
+        expander.add(vbox)
+        self.pack_start(expander, expand=False, fill=False, padding=0)
+        
+        #======================
+
+        self.show_all()
+        
+    def update_view(self):
+        mylist = gtk.ListStore(str, str, gobject.TYPE_PYOBJECT)
+
+        if self.editable:
+            self.addbutton_init.set_sensitive(True)
+            self.removebutton_init.set_sensitive(True)
+            self.treeview_init.set_sensitive(True)
+        else:
+            self.addbutton_init.set_sensitive(False)
+            self.removebutton_init.set_sensitive(False)
+            self.treeview_init.set_sensitive(False)
+    
+        try:
+            for map in self.section['init']:
+                args = ''
+                if 'arguments' in map:
+                    args = ", ".join(map['arguments'])
+                mylist.append([map['command'], args, map])
+        except KeyError: pass
+        except TypeError: pass
+
+        self.treeview_init.set_model(mylist)
+ 
+        mylist = gtk.ListStore(int, str, str, str, gobject.TYPE_PYOBJECT)
+
+        if self.editable:
+            self.addbutton.set_sensitive(True)
+            self.removebutton.set_sensitive(True)
+            self.treeview.set_sensitive(True)
+        else:
+            self.addbutton.set_sensitive(False)
+            self.removebutton.set_sensitive(False)
+            self.treeview.set_sensitive(False)
+    
+        try:
+            for map in self.section['actions']:
+                args = ''
+                if 'arguments' in map:
+                    args = ", ".join(map['arguments'])
+                try:
+                    mapping = button_press_state[int(map['mapping'])]
+                except:
+                    mapping = button_press_state[0]
+                mylist.append([int(map['keycode']),
+                               mapping,
+                               map['command'],
+                               args,
+                               map])
+        except KeyError: pass
+        except TypeError: pass
+
+        self.treeview.set_model(mylist)
+        
+        mylist = gtk.ListStore(str, str, str, str, str, gobject.TYPE_PYOBJECT)
+
+        if self.editable:
+            self.addbutton_destruct.set_sensitive(True)
+            self.removebutton_destruct.set_sensitive(True)
+            self.treeview_destruct.set_sensitive(True)
+        else:
+            self.addbutton_destruct.set_sensitive(False)
+            self.removebutton_destruct.set_sensitive(False)
+            self.treeview_destruct.set_sensitive(False)
+    
+        try:
+            for map in self.section['destruct']:
+                args = ''
+                if 'arguments' in map:
+                    args = ", ".join(map['arguments'])
+                mylist.append([map['command'], args, map])
+        except KeyError: pass
+        except TypeError: pass
+
+        self.treeview_destruct.set_model(mylist)     
+        
+    def _treeview_changed(self, cellrenderer, treepath, *args):
+        if len(args) == 2:
+            new_text = args[0]
+            ctype = args[1]
+        elif len(args) == 3:
+            new_text = args[0]
+            object = args[1]
+            ctype = args[2]
+        tv = self.treeview
+        model = tv.get_model()
+        iter = model.get_iter(treepath)
+        
+        if ctype == 'keycode':
+            model.set(iter, 0, int(new_text))
+            model.get_value(iter, 4)['keycode'] = int(new_text)
+        elif ctype == 'state':
+            try:
+                state = button_press_state_reverse[new_text]
+            except:
+                state = 0
+                new_text = 'Release'
+            model.set(iter, 1, new_text)
+            model.get_value(iter, 4)['mapping'] = state
+        elif ctype == 'command':
+            model.set(iter, 2, new_text)
+            model.get_value(iter, 4)['command'] = new_text
+        elif ctype == 'arguments':
+            model.set(iter, 3, new_text)
+            model.get_value(iter, 4)['arguments'] = object
+        self.emit('changed')
+
+    def _treeview_init_changed(self, cellrenderer, treepath,*args):
+        if len(args) == 2:
+            new_text = args[0]
+            ctype = args[1]
+        elif len(args) == 3:
+            new_text = args[0]
+            object = args[1]
+            ctype = args[2]
+        tv = self.treeview_init
+        model = tv.get_model()
+        iter = model.get_iter(treepath)    
+        if ctype == 'command':
+            model.set(iter, 0, new_text)
+            model.get_value(iter, 2)['command'] = new_text
+        elif ctype == 'arguments':
+            model.set(iter, 1, new_text)
+            model.get_value(iter, 2)['arguments'] = args[0]
+        self.emit('changed')
+    
+    def _treeview_destruct_changed(self, cellrenderer, treepath, *args):
+        if len(args) == 2:
+            new_text = args[0]
+            ctype = args[1]
+        elif len(args) == 3:
+            new_text = args[0]
+            object = args[1]
+            ctype = args[2]
+        tv = self.treeview_destruct
+        model = tv.get_model()
+        iter = model.get_iter(treepath)   
+        if ctype == 'command':
+            model.set(iter, 0, new_text)
+            model.get_value(iter, 2)['service'] = new_text
+        elif ctype == 'arguments':
+            model.set(iter, 1, new_text)
+            model.get_value(iter, 2)['arguments'] = args[0]
+        self.emit('changed')
+
+    def on_addbutton_init_clicked(self, object):
+        model = self.treeview_init.get_model()
+
+        map = {'command': 'command'}
+        
+        if not 'init' in self.section:
+            self.section['init'] = []
+        
+        self.section['init'].append(map)
+        
+        iter = model.append([map['command'], "", map])
+        self.treeview_init.set_cursor(model.get_path(iter))
+        self.emit("changed")
+        pass
+    
+    def on_addbutton_destruct_clicked(self, object):
+        model = self.treeview_destruct.get_model()
+
+        map = {'command':'command'}
+        
+        if not 'destruct' in self.section:
+            self.section['destruct'] = []
+        
+        self.section['destruct'].append(map)
+        
+        iter = model.append([map['command'], "", map])
+        self.treeview_destruct.set_cursor(model.get_path(iter))
+        self.emit("changed")
+
+    def on_addbutton_clicked(self, object):
+        model = self.treeview.get_model()
+
+        map = {'keycode': 0, 'mapping': 0, 'command': 'command'}
+        
+        if not 'actions' in self.section:
+            self.section['actions'] = []
+        
+        self.section['actions'].append(map)
+        
+        iter = model.append([
+            map['keycode'], 
+            button_press_state[map['mapping']], 
+            map['command'],
+            "",
+            map
+        ])
+        self.treeview.set_cursor(model.get_path(iter))
+        self.emit("changed")
+        
+    def on_removebutton_init_clicked(self, object):
+        model = self.treeview_init.get_model()
+        (path, column) = self.treeview_init.get_cursor()
+        if not path: return
+        iter = model.get_iter(path)
+        entry = model.get_value(iter, 2)
+        self.section['init'].remove(entry)
+        model.remove(iter)
+        self.emit("changed")
+    
+    def on_removebutton_destruct_clicked(self, object):
+        model = self.treeview_destruct.get_model()
+        (path, column) = self.treeview_destruct.get_cursor()
+        if not path: return
+        iter = model.get_iter(path)
+        entry = model.get_value(iter, 2)
+        self.section['destruct'].remove(entry)
+        model.remove(iter)
+        self.emit("changed")        
+        
+    def on_removebutton_clicked(self, object):
+        model = self.treeview.get_model()
+        (path, column) = self.treeview.get_cursor()
+        if not path: return
+        iter = model.get_iter(path)
+        entry = model.get_value(iter, 4)
+        self.section['actions'].remove(entry)
+        model.remove(iter)
+        self.emit("changed")
+    
+
 
 class MPlayerEditor(ConfigWindowWidget):
     """
@@ -1585,7 +2184,7 @@ class ConfigWindow(gobject.GObject):
         self.widget("profile-combobox").pack_start(renderer)
         self.widget("profile-combobox").add_attribute(renderer, "text", 0)
         
-        for i in (KeyMouseEditor, DBusCallerEditor, MPlayerEditor):
+        for i in (KeyMouseEditor, DBusCallerEditor, MPlayerEditor, CommandExecutorEditor):
             applet = i(self.config)
             applet.connect("changed", self._change_handler)
             applet.set_noprofile()
