@@ -11,11 +11,12 @@
 #   * Write to the config file at end
 #     partly done: when called from applet
 #   * Document each method
-#   * Edition of profiles
-#     partly done: Uinput
 #
 # TODO (long time):
 #   * join config object into one dbus object
+#
+# TIP: Command to get name of handlers from config.glade
+# >grep handler LBRC_gtk_gui/config.glade | perl -pe 's/.*"(on_.*?)".*/$1/'
 
 __extra_epydoc_fields__ = [('signal', 'Signal', 'Signals')]
 
@@ -44,58 +45,49 @@ if __name__ == "__main__":
 from LBRC.l10n import _
 LBRC.l10n.init_glade_gettext()
 
-# Colors for each event type
-# see: 
-#   /etc/X11/rgb.txt, 
-#   /usr/lib/X11/rgb.txt, 
-#   /usr/share/X11/rgb.txt
-colors = { 'key':'snow', 'mousebutton':'bisque', 'mousewheel':'snow', 'mouseaxis':'bisque' }
-
-# More descriptive string for each event type
-types_detailed = { 'key':_('KEYBOARD'), 'mousebutton':_('MOUSE BUTTON'), 'mousewheel':_('MOUSE WHEEL'), 'mouseaxis':_('MOUSE AXIS') }
-
-reverse_types = {}
-for t in types_detailed:
-    reverse_types[types_detailed[t]] = t
-    
+# Backgrounddata for events
+# key is event type
+# 0 => event mappings allowed apart from the predefined onces (see [1])
+# 1 => event mappings
+# 2 => gtk-liststore of [1]
+# 3 => is this repeatable?
+# 4 => Translated Description of the event type
 types_values = {
                 'key': [True, ["LEFTCTRL", "LEFTALT", "RIGHTCTRL", "RIGHTALT",
                                "UP", "DOWN", "LEFT", "RIGHT", "PAGEUP", "PAGEDOWN", 
-                               "ENTER", "SPACE", "BACKSPACE", "HOME", "END"], None, True],
-                'mousebutton': [False, ["LEFT", "MIDDLE", "RIGHT", "MOUSE", "FORWARD", "BACK", "TOUCH"], None, False],
-                'mousewheel': [False, ["+WHEEL", "-WHEEL", "+HWHEEL", "-HWHEEL"], None, True],
-                'mouseaxis': [False, ["+X", "-X", "+Y", "-Y", "+Z", "-Z"], None, False]
+                               "ENTER", "SPACE", "BACKSPACE", "HOME", "END"], None, True, _('KEYBOARD')],
+                'mousebutton': [False, ["LEFT", "MIDDLE", "RIGHT", "MOUSE", "FORWARD", "BACK", "TOUCH"], None, False, _('MOUSE BUTTON')],
+                'mousewheel': [False, ["+WHEEL", "-WHEEL", "+HWHEEL", "-HWHEEL"], None, True, _('MOUSE WHEEL')],
+                'mouseaxis': [False, ["+X", "-X", "+Y", "-Y", "+Z", "-Z"], None, False, _('MOUSE AXIS')]
                 }
 
+# Fill with Numbers
 for i in xrange(0,10):
     types_values['key'][1].append(str(i))
 
+# Fill with F-Keys
 for i in xrange(0,13):
     types_values['key'][1].append("F" + str(i))
-    
+
+# Fill width small keys (a-z)
 for i in xrange(97, 123):
     types_values['key'][1].append(chr(i))
-    
+
+# Fill with cap keys (A-Z)
 for i in xrange(65, 90):
     types_values['key'][1].append(chr(i))
 
+# Create gtk-liststores mentioned above
 for name in types_values:
     model = gtk.ListStore(str)
     for i in types_values[name][1]:
         model.append([i])
     types_values[name][2] = model
 
-dbus_type_model = gtk.ListStore(str)
-dbus_type_model.append(['boolean'])
-dbus_type_model.append(['byte'])
-dbus_type_model.append(['int16'])
-dbus_type_model.append(['int32'])
-dbus_type_model.append(['int64'])
-dbus_type_model.append(['uint16'])
-dbus_type_model.append(['uint32'])
-dbus_type_model.append(['uint64'])
-dbus_type_model.append(['string'])
-dbus_type_model.append(['double'])
+# Create reverse mapping from Translated event description to event type
+reverse_types = {}
+for t in types_values:
+    reverse_types[types_values[t][4]] = t
 
 button_press_state = {1: _('Press'), 0: _('Release')}
 button_press_state_reverse = {}
@@ -105,8 +97,7 @@ button_press_model = gtk.ListStore(str)
 for state in button_press_state_reverse:
     button_press_model.append([state])
 
-# TIP: Command to get name of handlers from config.glade
-# >grep handler LBRC_gtk_gui/config.glade | perl -pe 's/.*"(on_.*?)".*/$1/'
+
 
 class CellCommandArgumentsEditor(gtk.Entry, gtk.CellEditable):
     __gsignals__ = {
@@ -301,6 +292,19 @@ class CellDBUSArgumentsEditor(gtk.Entry, gtk.CellEditable):
 
         comborenderer = gtk.CellRendererCombo()
         comborenderer.connect("edited", self._treeview_changed, "type")
+        
+        dbus_type_model = gtk.ListStore(str)
+        dbus_type_model.append(['boolean'])
+        dbus_type_model.append(['byte'])
+        dbus_type_model.append(['int16'])
+        dbus_type_model.append(['int32'])
+        dbus_type_model.append(['int64'])
+        dbus_type_model.append(['uint16'])
+        dbus_type_model.append(['uint32'])
+        dbus_type_model.append(['uint64'])
+        dbus_type_model.append(['string'])
+        dbus_type_model.append(['double'])
+        
         comborenderer.set_property("model", dbus_type_model)
         comborenderer.set_property("text-column", 0)
         comborenderer.set_property("editable", True)
@@ -472,10 +476,12 @@ class InputWindow(gtk.Dialog):
     def __init__(self, query="", title = "", parent = None):
         gtk.Dialog.__init__(self, title, parent, gtk.DIALOG_MODAL, (gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT, 
                                                                     gtk.STOCK_OK, gtk.RESPONSE_ACCEPT))
+        self.action_area.foreach(self.get_buttons)
+        
         self.datamodel = gtk.ListStore(str, str, str)
         self.userprofiles = []
         
-        table = gtk.Table(2,2)
+        table = gtk.Table(2,3)
         
         self.pcombobox = gtk.ComboBox()
         self.pcombobox.set_model(self.datamodel)
@@ -491,19 +497,40 @@ class InputWindow(gtk.Dialog):
         self.vbox.add(label)
         self.vbox.add(table)
         
+        self.warn_name_label = gtk.Image()
+        self.warn_name_label.set_from_stock(gtk.STOCK_DIALOG_WARNING, gtk.ICON_SIZE_SMALL_TOOLBAR)
+        
         table.attach(self.plabel, 0, 1, 0, 1, xoptions=gtk.FILL, yoptions=gtk.FILL)
-        table.attach(self.pcombobox, 1, 2, 0, 1, xoptions=gtk.EXPAND|gtk.FILL, yoptions=gtk.FILL)
+        table.attach(self.pcombobox, 1, 3, 0, 1, xoptions=gtk.EXPAND|gtk.FILL, yoptions=gtk.FILL)
         table.attach(label2, 0, 1, 1, 2, xoptions=gtk.FILL, yoptions=gtk.FILL)
-        table.attach(self.input_entry, 1, 2, 1, 2, xoptions=gtk.EXPAND|gtk.FILL, yoptions=gtk.FILL)
+        table.attach(self.warn_name_label, 1, 2, 1, 2, xoptions=gtk.FILL, yoptions=gtk.FILL)
+        table.attach(self.input_entry, 2, 3, 1, 2, xoptions=gtk.EXPAND|gtk.FILL, yoptions=gtk.FILL)
+        
+        self.input_entry.connect("changed", self.check_text)
+        self.check_text(self.input_entry)
         
         self.input_entry.show()
         label.show()
         label2.show()
         table.show()
 
+    def get_buttons(self, button):
+        if button.get_property("label") == gtk.STOCK_CANCEL:
+            self.cancel_button = button
+        elif button.get_property("label") == gtk.STOCK_OK:
+            self.ok_button = button
+
+    def check_text(self, entry):
+        text = entry.get_text()
+        if text == "" or text in self.userprofiles:
+            self.warn_name_label.show()
+            self.ok_button.set_sensitive(False)
+        else:
+            self.warn_name_label.hide()
+            self.ok_button.set_sensitive(True)
+
     def get_text(self):
         return self.input_entry.get_text()
-    
     def get_curr_profile(self):
         iter = self.pcombobox.get_active_iter()
         if iter:
@@ -620,8 +647,8 @@ class KeyMouseEditor(ConfigWindowWidget):
         comborenderer = gtk.CellRendererCombo()
         comborenderer.connect("edited", self._treeview_changed, "type")
         mylist = gtk.ListStore(str)
-        for i in types_detailed.values():
-            mylist.append([i])
+        for i in types_values.values():
+            mylist.append([i[4]])
         comborenderer.set_property("model", mylist)
         comborenderer.set_property("text-column", 0)
         comborenderer.set_property("editable", True)
@@ -704,7 +731,7 @@ class KeyMouseEditor(ConfigWindowWidget):
                     int(map.get('repeat_freq', 0)),
                     type,
                     "snow",
-                    types_detailed[type],
+                    types_values[type][4],
                     types_values[type][3],
                     types_values[type][2],
                     types_values[type][0],
@@ -738,7 +765,7 @@ class KeyMouseEditor(ConfigWindowWidget):
         elif ctype == 'repeat':
             row["repeat_freq"] = repeat_freq = int(new_text)
         
-        model.set(iter, 0, keycode, 1, map_to, 2, repeat_freq, 3, type, 5, types_detailed[type],
+        model.set(iter, 0, keycode, 1, map_to, 2, repeat_freq, 3, type, 5, types_values[type][4],
                         6, types_values[type][3], 7, types_values[type][2],
                         8, types_values[type][0])
         
@@ -770,8 +797,8 @@ class KeyMouseEditor(ConfigWindowWidget):
             map['map_to'], 
             int(map.get('repeat_freq', 0)),
             type,
-            colors[type],
-            types_detailed[type],
+            "snow",
+            types_values[type][4],
             types_values[type][3],
             types_values[type][2],
             types_values[type][0],
@@ -1199,7 +1226,6 @@ class DBusCallerEditor(ConfigWindowWidget):
         tv = self.treeview
         model = tv.get_model()
         iter = model.get_iter(treepath)
-        # TODO: Handle arguments
         
         if ctype == 'keycode':
             model.set(iter, 0, int(new_text))
@@ -1239,8 +1265,7 @@ class DBusCallerEditor(ConfigWindowWidget):
             ctype = args[2]
         tv = self.treeview_init
         model = tv.get_model()
-        iter = model.get_iter(treepath)
-        # TODO: Handle arguments    
+        iter = model.get_iter(treepath) 
         if ctype == 'service':
             model.set(iter, 0, new_text)
             model.get_value(iter, 7)['service'] = new_text
@@ -1269,7 +1294,7 @@ class DBusCallerEditor(ConfigWindowWidget):
         tv = self.treeview_destruct
         model = tv.get_model()
         iter = model.get_iter(treepath)
-        # TODO: Handle arguments    
+  
         if ctype == 'service':
             model.set(iter, 0, new_text)
             model.get_value(iter, 7)['service'] = new_text
@@ -2164,9 +2189,8 @@ class ConfigWindow(gobject.GObject):
     def __init__(self):
         gobject.GObject.__init__(self)
         # create widget tree ...
-        # TODO: use one global config glade object
         self.xml = gtk.glade.XML(os.path.join(path().get_guidir(), "config.glade"))
-        #self.control = ConfigWindowControl()
+
         self.modified = False
 
         # Wrapper to get a widget from glade's xml
@@ -2221,7 +2245,7 @@ class ConfigWindow(gobject.GObject):
         # Profiles combobox
         self._fill_profiles()
 
-    def _fill_profiles(self, select_last_item=False):
+    def _fill_profiles(self, select_item = None):
         """Fills the profile-combobox widget"""
         profile = self.widget("profile-combobox")
         
@@ -2230,23 +2254,21 @@ class ConfigWindow(gobject.GObject):
         # 1 => Displayname, 2 => profile, 3 => config
         profile_model = gtk.ListStore(str, str, str)
 
-        for i in self.system_profiles.keys():
+        for i in sorted(self.system_profiles.keys()):
             itemname = '%s (%s)' % (i, _("System"))
             profile_model.append((itemname, i, "system"))
         
-        for i in self.user_profiles.keys():
-            profile_model.append((i, i, "user"))
+        select_iter = None
+        
+        for i in sorted(self.user_profiles.keys()):
+            iter = profile_model.append((i, i, "user"))
+            if i == select_item:
+                select_iter = iter
             
         profile.set_model(profile_model)
 
-        #if select_last_item:
-        #    # walk through profile_model 
-        #    iter = profile_model.get_iter_first()
-        #    while profile_model.iter_next(iter):
-        #        iter = profile_model.iter_next(iter)
-        #    profile.set_active_iter(iter)
-        #else:
-        #    profile.set_active(last_active)
+        if select_iter:
+            profile.set_active_iter(select_iter)
 
     def _create_new_profile(self, profile_name, base_profile, base_config):
         keys = self.user_profiles.keys() + self.system_profiles.keys()
@@ -2263,7 +2285,7 @@ class ConfigWindow(gobject.GObject):
         except:
             self.user_profiles[profile_name] = {}
         self.modified = True
-        self._fill_profiles()
+        self._fill_profiles(select_item = profile_name)
         self.update_configs()
         return True
     
@@ -2337,21 +2359,19 @@ class ConfigWindow(gobject.GObject):
             if len(text) > 0:
                 (profile, config) = input_window.get_curr_profile()
                 self._create_new_profile(text, profile, config)
-                #self._fill_profiles(select_last_item=True)
         input_window.destroy()
-
 
 
     def on_profile_rename_button_clicked(self, object):        
         input_window = InputWindow(query=_("New Name"),
                                    title=_("Specify the new name for the new profile"), 
                                    parent = self.widget("config-window"))
+        input_window.set_curr_profiles(self.widget("profile-combobox").get_model())
         responce = input_window.run()
         if responce == gtk.RESPONSE_ACCEPT:
             text = input_window.get_text().strip()
             iter = self.widget("profile-combobox").get_active_iter()
             if len(text) > 0 and not text in self.user_profiles and iter:
-                # TODO: Handle rename with name clash
                 model = self.widget("profile-combobox").get_model()
                 data = model.get(iter,1,2)       
                 if data[1] == "user":
@@ -2359,6 +2379,7 @@ class ConfigWindow(gobject.GObject):
                     self.user_profiles[text] = self.user_profiles[data[0]]
                     del(self.user_profiles[data[0]])
                     self.modified = True
+                    self._fill_profiles(select_item = text)
                     self.update_configs()
         input_window.destroy()
 
@@ -2381,8 +2402,3 @@ class ConfigWindow(gobject.GObject):
 
     def on_config_close_button_clicked(self, object):
         self.widget('config-window').destroy()
-
-if __name__ == "__main__":
-    p = ConfigWindow()
-    p.widget("config-window").connect_after('destroy',lambda x: gtk.main_quit() )
-    gtk.main()
