@@ -48,8 +48,7 @@ for afile in glob.glob('doc/mappings/*'):
 data_files = []
 data_files.append(('share/lbrc', ['profiles.conf', 
                                        'LBRC.svg',
-                                       'LBRC_gtk_gui/config.glade',
-                                       'LBRC_gtk_gui/keymouseeditwindow.glade',
+                                       'LBRC_gtk_gui/config.glade'
                                        ]
                  ))
 data_files.append(('share/dbus-1/services', ['LBRCdbus.service']))
