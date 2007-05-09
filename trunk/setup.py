@@ -5,7 +5,13 @@
 import glob
 import os
 import os.path as osp
+from subprocess import call
 from distutils.core import setup
+from distutils.command.build import build
+
+class custom_build(build):
+    def run(self):
+        call(["dbus_uinput_bridge/build"])
 
 # patch distutils if it can't cope with the "classifiers" or "download_url"
 # keywords (prior to python 2.3.0).
@@ -39,7 +45,7 @@ data_files.append(('share/dbus-1/services', ['LBRCdbus.service']))
 data_files.append(('share/doc/python-lbrc', doc))
 data_files.append(('share/doc/python-lbrc/includes', idoc))
 data_files.append(('share/doc/python-lbrc/mappings', mdoc))
-data_files.append(('share/lbrc/j2me/', ['j2me/bin/LBRC.jar', 'j2me/bin/LBRC.jad']))
+data_files.append(('share/lbrc/j2me/', ['j2me-build/LBRC.jar', 'j2me-build/LBRC.jad']))
 for (path, dirs, files) in os.walk("pot"):
     if "LBRC.mo" in files:
         target = path.replace("pot", "share/locale", 1)
@@ -55,7 +61,7 @@ setup(name='LBRC',
       platforms = ['linux'],
       keywords = ['remotecontrol', 'bluetooth', 'j2me'],
       packages=['LBRC', 'LBRC_gtk_gui'],
-      scripts=['LBRCdbus.py', 'LBRC-applet'],
+      scripts=['LBRCdbus.py', 'LBRC-applet', 'uinputbridge'],
       data_files=data_files
       )
 

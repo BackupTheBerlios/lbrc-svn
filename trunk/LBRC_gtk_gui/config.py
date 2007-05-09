@@ -472,7 +472,7 @@ class CellDBUSArgumentsRenderer(gtk.GenericCellRenderer):
 gobject.type_register(CellDBUSArgumentsEditor)
 gobject.type_register(CellDBUSArgumentsRenderer)
 
-class InputWindow(gtk.Dialog):
+class ProfileQueryWindow(gtk.Dialog):
     def __init__(self, query="", title = "", parent = None):
         gtk.Dialog.__init__(self, title, parent, gtk.DIALOG_MODAL, (gtk.STOCK_CANCEL, gtk.RESPONSE_REJECT, 
                                                                     gtk.STOCK_OK, gtk.RESPONSE_ACCEPT))
@@ -1526,7 +1526,7 @@ class CommandExecutorEditor(ConfigWindowWidget):
         textrenderer.set_property("editable", True)
         treeview.insert_column_with_attributes(
             3, 
-            _("Command"), 
+            _("Arguments"), 
             textrenderer,
             text=3,
             backupdata=4
@@ -2348,7 +2348,7 @@ class ConfigWindow(gobject.GObject):
                 i.set_noprofile()
 
     def on_profile_new_button_clicked(self, button):
-        input_window = InputWindow(query=_("New Name"),
+        input_window = ProfileQueryWindow(query=_("New Name"),
                                    title=_("What is the name for the new profile?"), 
                                    parent = self.widget("config-window"))
         input_window.set_curr_profiles(self.widget("profile-combobox").get_model())
@@ -2363,7 +2363,7 @@ class ConfigWindow(gobject.GObject):
 
 
     def on_profile_rename_button_clicked(self, object):        
-        input_window = InputWindow(query=_("New Name"),
+        input_window = ProfileQueryWindow(query=_("New Name"),
                                    title=_("Specify the new name for the new profile"), 
                                    parent = self.widget("config-window"))
         input_window.set_curr_profiles(self.widget("profile-combobox").get_model())

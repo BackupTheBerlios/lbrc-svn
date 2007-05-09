@@ -2,8 +2,7 @@
 
 from subprocess import call
 
-glade_files = [ "../LBRC_gtk_gui/config.glade", 
-                "../LBRC_gtk_gui/keymouseeditwindow.glade"]
+glade_files = [ "../LBRC_gtk_gui/config.glade"]
 python_files = ["../LBRC-applet",
                 "../LBRC_gtk_gui/applet.py",
                 "../LBRC_gtk_gui/BlueZControl.py",
