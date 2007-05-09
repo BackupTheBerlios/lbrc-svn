@@ -12,6 +12,8 @@ from distutils.command.build import build
 class custom_build(build):
     def run(self):
         call(["dbus_uinput_bridge/build"])
+        call(["pot/gen_locale"])
+        build.run(self)
 
 # patch distutils if it can't cope with the "classifiers" or "download_url"
 # keywords (prior to python 2.3.0).
@@ -62,6 +64,7 @@ setup(name='LBRC',
       keywords = ['remotecontrol', 'bluetooth', 'j2me'],
       packages=['LBRC', 'LBRC_gtk_gui'],
       scripts=['LBRCdbus.py', 'LBRC-applet', 'uinputbridge'],
+      cmdclass = {'build': custom_build},
       data_files=data_files
       )
 
