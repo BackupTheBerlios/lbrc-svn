@@ -87,7 +87,7 @@ class path(object):
         if self._local:
             return osp.join(scriptpath, "pot")
         else:
-            print osp.join(self.data_dir, 'locale')
+            return osp.join(self.data_dir, 'locale')
 
     def get_guidir(self):
         """
