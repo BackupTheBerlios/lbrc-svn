@@ -1,4 +1,5 @@
 #!/bin/bash
+cd dbus_uinput_bridge
 CC='gcc'
 BINDINGTOOL='dbus-binding-tool'
 BASENAME="uinputbridge"
