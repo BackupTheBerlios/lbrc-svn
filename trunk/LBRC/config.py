@@ -180,9 +180,12 @@ class config(object):
         @param absfilename:    Filename to read data from
         """
         config = {}
-        config_file = open(absfilename)
-        config_data = config_file.read()
-        json_reader = json.JsonReader()
-        config = json_reader.read(config_data)
-        config_file.close()
+        try:
+             config_file = open(absfilename)
+             config_data = config_file.read()
+             json_reader = json.JsonReader()
+             config = json_reader.read(config_data)
+             config_file.close()
+        except:
+             config = {}
         return config

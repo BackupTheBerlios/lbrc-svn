@@ -55,6 +55,7 @@ data_files.append(('share/dbus-1/services', ['LBRCdbus.service']))
 data_files.append(('share/doc/python-lbrc', doc))
 data_files.append(('share/doc/python-lbrc/includes', idoc))
 data_files.append(('share/doc/python-lbrc/mappings', mdoc))
+data_files.append(('share/lbrc/', ("lbrc.conf")))
 data_files.append(('share/lbrc/j2me/', ['j2me-build/LBRC.jar', 'j2me-build/LBRC.jad']))
 for (path, dirs, files) in os.walk("pot"):
     if "LBRC.mo" in files:
