@@ -27,7 +27,7 @@ class LBRCSenderController extends Canvas  implements CommandListener {
     
     public void setConnectionUrl(String url) {
     	wait_screen.setTitle("Connecting ...");
-    	wait_screen.setAction("");
+    	wait_screen.setAction("Connecting ...");
     	display.setCurrent(wait_screen);
     	sender = new LBRCSender(this, url);
     }

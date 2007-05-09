@@ -75,8 +75,8 @@ final class LBRCSender implements Runnable {
 			connection = (StreamConnection)Connector.open(this.URL);
 			input = connection.openInputStream();
 			output = connection.openOutputStream();
-		} catch (IOException e) {
-            parent.do_alert("Bluetooth Connection Failed", 4000);
+		} catch (Exception e) {
+            parent.do_alert("Bluetooth Connection Failed:" + e.toString(), 4000);
             tearDown();
             this.parent.remoteServiceClosed();
             return;
@@ -103,7 +103,7 @@ final class LBRCSender implements Runnable {
 				}
 			}
 		} 
-		catch (IOException e){}
+		catch (Exception e){}
 		tearDown();
 		this.parent.remoteServiceClosed();
 	}

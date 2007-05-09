@@ -181,7 +181,10 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 			this.parent.do_alert("LBRC Service not found!", 4000);
 			break;
 		case DiscoveryListener.SERVICE_SEARCH_TERMINATED:
-			//this.parent.do_alert("Inqury Cancled", 4000);
+			this.parent.do_alert("Inqury Canceled", 4000);
+			break;
+		default:
+			this.parent.do_alert("Unknown Response on Service search", 4000);
 			break;
 		}
 	}
