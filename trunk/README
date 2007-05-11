@@ -36,6 +36,10 @@ see below.
 
 Usage
 ===============
+Please note: You can ran LBRC either directly from this directory, then you
+have to call "build_dbus_uinput_bridge" first. Or you can install it system
+wide by running "setup.py build" and "setup.py install".
+
    0. make sure uinput device driver is available (module is called uinput),
       check that "uinputdevice" in "config.conf" points to your device entry for
       uinput (known locations: /dev/input/uinput or /dev/misc/uinput) and this

@@ -35,3 +35,12 @@
     * make sure our dbus service is only started once (next step is to
       switch to dbus activation)
 
+2007-05-11 Matthias Bläsing <matthias.blaesing@rwth-aachen.de>
+	Please note: This is a _short_ summary, please see SVN Log for a detailed log
+	* add configuration gui (thanks to Iuri Gomes Dini)
+	* add setup
+	* add more modules (dbus, mplayer, command executor)
+	* localisation work was done (at least German should be complete)
+	* cleanups in the J2ME client
+	* join the severeal diffent profiles for keyboard/mouse control into one
+	* add BlueZ Control to GUI (you can switch visibility there
