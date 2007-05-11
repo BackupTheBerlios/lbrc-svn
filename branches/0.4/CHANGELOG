@@ -1,0 +1,46 @@
+2007-02-10 Matthias Bläsing <matthias.blaesing@rwth-aachen.de>
+    * Initial Release
+
+2007-02-15 Matthias Bläsing <matthias.blaesing@rwth-aachen.de>
+    * renamed BlueRemote to LBRC (the hopefully final name)
+    * get rid of fixed path to scriptlocation
+      (reported by Petr Fiala)
+    * added mapping file for Sony Ericsson K750i
+      (provided by Petr Fiala)
+    * moved mapping files to seperate directory
+    * updated requirements
+      (reported by Ralf Meyer and Petr Fiala)
+    * added README
+    * added instructions how to enable uinput device and how to configure it
+      (reported by Petr Fiala)
+    * added config.conf (uinput devicefile and default profile)
+    * added profile switching to gui
+    * seperated gui from controller
+      (drops hard dependeny for python gtk2, adds python dbus,
+       needs python glib)
+    * J2ME part now closes, when the server part is shutdown
+
+2007-02-24 Matthias Bläsing <matthias.blaesing@rwth-aachen.de>
+    * switch to async IO in BTServer => no more forking necessary
+    * added tests to BTServer (run the BTServer.py)
+    * Added mappings file for Sony Ericsson K610i
+    * add infrastructure to BTServer.py and LBRCdbus.py to enable
+      deactivation or filtering the connections
+    * beginn documentation in BTServer.py
+    * Cleanup code (spelling, unnecessary calls)
+    * create LBRC Package (first step to real packaging)
+    * create doc dir and move include files and mapping files there
+    * finalize renameing (there were some places that were still waiting
+      for a name change)
+    * make sure our dbus service is only started once (next step is to
+      switch to dbus activation)
+
+2007-05-11 Matthias Bläsing <matthias.blaesing@rwth-aachen.de>
+	Please note: This is a _short_ summary, please see SVN Log for a detailed log
+	* add configuration gui (thanks to Iuri Gomes Dini)
+	* add setup
+	* add more modules (dbus, mplayer, command executor)
+	* localisation work was done (at least German should be complete)
+	* cleanups in the J2ME client
+	* join the severeal diffent profiles for keyboard/mouse control into one
+	* add BlueZ Control to GUI (you can switch visibility there

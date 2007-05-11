@@ -1,0 +1,260 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2007-05-09 16:57+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../LBRC-applet:36
+msgid "Could not connect to DBUS component of LBRC"
+msgstr ""
+
+#: ../LBRC_gtk_gui/applet.py:63
+#, python-format
+msgid ""
+"Profile changed:\n"
+"%(profilename)s"
+msgstr ""
+
+#: ../LBRC_gtk_gui/applet.py:67
+#, python-format
+msgid ""
+"Connect from:\n"
+"%(btname)s (%(btaddress)s)"
+msgstr ""
+
+#: ../LBRC_gtk_gui/applet.py:70
+#, python-format
+msgid ""
+"Disconnect from:\n"
+"%(btname)s (%(btaddress)s)"
+msgstr ""
+
+#: ../LBRC_gtk_gui/applet.py:87
+msgid "Profiles"
+msgstr ""
+
+#: ../LBRC_gtk_gui/applet.py:105 ../LBRC_gtk_gui/config.py:2258
+msgid "System"
+msgstr ""
+
+#: ../LBRC_gtk_gui/BlueZControl.py:72
+msgid "Bluetooth visible"
+msgstr ""
+
+#: ../LBRC_gtk_gui/BlueZControl.py:74
+msgid "Bluetooth visible (automatic hiding)"
+msgstr ""
+
+#: ../LBRC_gtk_gui/BlueZControl.py:76
+msgid "Bluetooth invisible"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:58
+msgid "KEYBOARD"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:59
+msgid "MOUSE BUTTON"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:60
+msgid "MOUSE WHEEL"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:61
+msgid "MOUSE AXIS"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:92
+msgid "Press"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:92
+msgid "Release"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:121 ../LBRC_gtk_gui/config.py:317
+msgid "Param"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:312
+msgid "Param-Type"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:488
+msgid "Basisprofile"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:616
+msgid "Keyboard/Mouse"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:622 ../LBRC_gtk_gui/config.py:915
+#: ../LBRC_gtk_gui/config.py:1476 ../LBRC_gtk_gui/config.py:1889
+msgid "Actions"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:642
+msgid "Cellphone keycode"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:658
+msgid "Event type"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:670
+msgid "Event generated"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:682
+msgid "Repeatfrequency"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:817
+msgid "DBUSCaller"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:825 ../LBRC_gtk_gui/config.py:1426
+#: ../LBRC_gtk_gui/config.py:1850
+msgid "On Initialisation"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:845 ../LBRC_gtk_gui/config.py:958
+#: ../LBRC_gtk_gui/config.py:1052
+msgid "Service"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:855 ../LBRC_gtk_gui/config.py:968
+#: ../LBRC_gtk_gui/config.py:1062
+msgid "Object"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:865 ../LBRC_gtk_gui/config.py:978
+#: ../LBRC_gtk_gui/config.py:1072
+msgid "Interface"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:875 ../LBRC_gtk_gui/config.py:988
+#: ../LBRC_gtk_gui/config.py:1082
+msgid "Method"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:885 ../LBRC_gtk_gui/config.py:998
+#: ../LBRC_gtk_gui/config.py:1092 ../LBRC_gtk_gui/config.py:1456
+#: ../LBRC_gtk_gui/config.py:1588
+msgid "Arguments"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:935 ../LBRC_gtk_gui/config.py:1496
+#: ../LBRC_gtk_gui/config.py:1909
+msgid "Keycode"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:948 ../LBRC_gtk_gui/config.py:1509
+#: ../LBRC_gtk_gui/config.py:1922
+msgid "State"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:1032 ../LBRC_gtk_gui/config.py:1558
+#: ../LBRC_gtk_gui/config.py:1958
+msgid "On Destruction"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:1418
+msgid "CommandExecutor"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:1446 ../LBRC_gtk_gui/config.py:1519
+#: ../LBRC_gtk_gui/config.py:1529 ../LBRC_gtk_gui/config.py:1578
+#: ../LBRC_gtk_gui/config.py:1870 ../LBRC_gtk_gui/config.py:1932
+#: ../LBRC_gtk_gui/config.py:1978
+msgid "Command"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:1842
+msgid "MPlayer"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:2351 ../LBRC_gtk_gui/config.py:2366
+msgid "New Name"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:2352
+msgid "What is the name for the new profile?"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.py:2367
+msgid "Specify the new name for the new profile"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.glade.h:1
+msgid ""
+"<i>Path to UInput Device file please only fill, if you experience problems "
+"with the autodetection</i>"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.glade.h:2
+msgid "Bluetooth Control:"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.glade.h:3
+msgid "Configuration"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.glade.h:4
+msgid "LBRC Configuration"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.glade.h:5
+msgid "Onetime pairing:"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.glade.h:6
+msgid "Persistent profiles: "
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.glade.h:7
+msgid "Profile"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.glade.h:8
+msgid ""
+"Remove pairings initialized by LBRC\n"
+"(Not recommed!)"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.glade.h:10
+msgid "Rename"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.glade.h:11
+msgid "Require a valid pairing for devices"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.glade.h:12
+msgid "Require pairing:"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.glade.h:13
+msgid "Save current profile for next start"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.glade.h:14
+msgid "Show bluetooth controls"
+msgstr ""
+
+#: ../LBRC_gtk_gui/config.glade.h:15
+msgid "UInput Device:"
+msgstr ""
