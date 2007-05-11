@@ -9,19 +9,10 @@ from subprocess import call
 from distutils.core import setup
 from distutils.command.build import build
 
-def gen_locale():
-    for file in glob.glob("pot/*.po"):
-        lang = file[:-3]
-        try:
-            os.makedirs(osp.join(lang, 'LC_MESSAGES'), 0755)
-        except OSError:
-            pass
-        call(['msgfmt', '-o', osp.join(lang, 'LC_MESSAGES', 'LBRC.mo'), file])
 
 class custom_build(build):
     def run(self):
         call(["./build_dbus_uinput_bridge"])
-        gen_locale()
         build.run(self)
 
 # patch distutils if it can't cope with the "classifiers" or "download_url"

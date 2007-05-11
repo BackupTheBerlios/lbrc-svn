@@ -1,4 +1,4 @@
-=====================================================
+2 =====================================================
 === Linux Bluetooth Remote Control ==================
 ===              LBRC              ==================
 =====================================================
@@ -8,6 +8,10 @@ Preface
 This software is provided without any warranty. It should work ok, but
 if it eats your computer, its not my problem.
 
+For Users of 0.3
+================
+You have to install the new J2ME client onto your phone! The wire protocol was
+change in an incompatible way!
 
 Description
 ===========
@@ -48,8 +52,8 @@ Usage
    
    2a. if no error is printed - press CTRL-C, ignore the error and start LBRC-applet
    
-   2b. else run LBRCdbus.py --debug and try to fix the errors or contact lbrc-devel@lists.berlios.de
-       with the error messages.
+   2b. else run LBRCdbus.py --debug and try to fix the errors or contact 
+       lbrc-devel@lists.berlios.de with the error messages.
 
    3. Make your computer visible (see the LBRC applet or another config programm)
       (at least mine is per default not visible)
@@ -123,6 +127,9 @@ GnomeUI Part
         * python-notify
         * python-gnome2-extras (egg.trayicon)
 
+Help/Bugs
+=========
+Please contact lbrc-devel@lists.berlios.de if you experience problems.
 
 Author
 ======
