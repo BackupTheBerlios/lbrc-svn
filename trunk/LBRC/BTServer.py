@@ -20,6 +20,8 @@ import gobject
 import dbus
 import dbus.glib
 
+class MessageToLargeException(Exception): pass
+
 class BTConnection(gobject.GObject):    
     __gsignals__ = {
         'keycode': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_INT, gobject.TYPE_INT64,)),
@@ -58,9 +60,14 @@ class BTConnection(gobject.GObject):
         self.handler['list'] = callback
         
     def _send_query(self, package):
+        # TODO: Handle larger packages on client side (what is needed?!)
         message = (json.write(package) + u"\u0000").encode('utf-8')
         logging.debug(repr(message))
-        self.client_sock.sendall(message)
+        if len(message) > 2048:
+            logging.error("Message to large to be handled on J2ME side. Please report bug!")
+            raise MessageToLargeException()
+        else:
+            self.client_sock.sendall(message)
 
     def handle_incoming_data(self, clientsocket, condition):
         """
