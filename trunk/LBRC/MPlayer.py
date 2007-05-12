@@ -30,6 +30,11 @@ class MPlayer(object):
         In contrast to toggle_onoff this command does not shutdown an already running instance but
         instead turns into a noop.
         
+        - b{remote_fileselect <path>} Display a file selection menu on the phone
+        
+        When <path> is provided, this path is used as base for the selection. If
+        it is omitted, then the selection starts at the users homedir
+        
     For an example see the system wide config file in the MPlayer section.
     """
     def __init__(self, config):
@@ -62,29 +67,29 @@ class MPlayer(object):
         This method is called, when a reply is send from the phone regarding
         the list selection request we send from L{keycode}
         """
-        # This handler will _silently_ fail, if the selected
-        # profile does not exist anymore
-        # TODO: implement exceptions for not exisiting profiles
         logging.debug("MPlayerListReply: " + self.querytype + " " + str(index))
         if self.querytype == 'fileselection':
-            selection = self.querymap[index]
-            if selection[2] == 'f':
-                self._execute_command("loadfile " + selection[1])
+            if index < 0:
                 self.querytype = None
                 self.querymap = None
-            elif selection[2] == 'd':
-                self._create_filelist(base=selection[1])
-                btconnection = self.bluetooth_connector.get_bt_connection()
-                btconnection.send_list_query(_("Select file"), 
-                                             [i[0] for i in self.querymap],
-                                             self._handle_list_reply)
-            #except:
-            #    self.querytype = None
-            #    self.querymap = None
-            
-            
-
-    def _create_filelist(self, base=None):
+                return
+            try:
+                selection = self.querymap[index]
+                if selection[2] == 'f':
+                    self._execute_command('loadfile "' + selection[1] + '"')
+                    self.querytype = None
+                    self.querymap = None
+                elif selection[2] == 'd':
+                    self._query_fileselection(base=selection[1])
+            except:
+                self.querytype = None
+                self.querymap = None
+              
+    def _query_fileselection(self, base=None):
+        """
+        Create a fileselection menu. I{base} refers to the directory the selection
+        is created for. If base is not supplied, the users home directory will be used.
+        """
         self.querymap = []
         if not base:
             base = osp.expanduser("~")
@@ -93,10 +98,26 @@ class MPlayer(object):
             if file[0] == ".":
                 continue
             fullname = osp.join(base, file)
+            file = file.decode('utf-8')
             if osp.isfile(fullname):
                 self.querymap.append((file, fullname, 'f'))
             elif osp.isdir(fullname):
                 self.querymap.append(("[" + file + "]", fullname, 'd'))
+        def sort_filelist(a, b):
+            if a[2] == b[2]:
+                return cmp(a[0], b[0])
+            else:
+                if a[2] == 'd':
+                    return -1
+                else:
+                    return 1
+        self.querymap.sort(sort_filelist)
+        self.querymap.insert(0, ("[..]", osp.normpath(osp.join(base, "..")), 'd'))
+        self.querytype = 'fileselection'
+        btconnection = self.bluetooth_connector.get_bt_connection()
+        btconnection.send_list_query(_("Select file"), 
+                                     [i[0] for i in self.querymap],
+                                     self._handle_list_reply)
 
     def _execute_command(self, command):
         logging.debug("MPlayerCommand:" + command)
@@ -109,12 +130,7 @@ class MPlayer(object):
                     self.mplayer = None
                 elif command == "remote_fileselect":
                     logging.debug("Fileselect started")
-                    self._create_filelist()
-                    btconnection = self.bluetooth_connector.get_bt_connection()
-                    self.querytype = 'fileselection'
-                    btconnection.send_list_query(_("Select file"), 
-                                                 [i[0] for i in self.querymap],
-                                                 self._handle_list_reply)
+                    self._query_fileselection()
                 else:
                     self.mplayer.stdin.write(command + "\n")
                     self.mplayer.stdin.flush()
