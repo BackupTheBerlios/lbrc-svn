@@ -54,6 +54,7 @@ class Applet(object):
         if changed:
             self.lbrc.reload_config()
             self.config.reread()
+            self._fill_profile_menu()
             if self.bluecontrol:
                 self.bluecontrol.set_menus_visible(self.config.get_config_item_fb("show-bluetooth", True))
         config_dialog.disconnect(self.config_close_handler)
@@ -80,14 +81,15 @@ class Applet(object):
             cp = self.lbrc.get_profile()
             self.pid_menu_map[cp].set_active(0)
 
-    def _create_menu(self):
-        self.traymenu = gtk.Menu()
+    def _fill_profile_menu(self):
+        profilemenu = self.profilemenu
         
-        profilemenu = gtk.Menu()
-        menuitem = gtk.MenuItem(_("Profiles"))
-        menuitem.set_submenu(profilemenu)
-        menuitem.show()
-        self.traymenu.add(menuitem)
+        def cleanup(menu_entry, menu):
+            menu_entry.disconnect(menu_entry.handler)
+            menu.remove(menu_entry)
+        
+        profilemenu.foreach(cleanup, profilemenu)
+        
         self.pid_menu_map = {}
         group = None
 
@@ -110,10 +112,21 @@ class Applet(object):
             group = menuitem
             menuitem.config = config
             menuitem.pid = profile
-            menuitem.connect("toggled", self.profile_change)
+            id = menuitem.connect("toggled", self.profile_change)
+            menuitem.handler = id
             menuitem.show_all()
             self.pid_menu_map[(config, profile)] = menuitem
             profilemenu.append(menuitem)
+
+    def _create_menu(self):
+        self.traymenu = gtk.Menu()
+        
+        self.profilemenu = gtk.Menu()
+        menuitem = gtk.MenuItem(_("Profiles"))
+        menuitem.set_submenu(self.profilemenu)
+        self._fill_profile_menu()
+        menuitem.show()
+        self.traymenu.add(menuitem)
         
         menuitem = gtk.SeparatorMenuItem()
         menuitem.show()
