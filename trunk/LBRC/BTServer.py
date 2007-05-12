@@ -46,8 +46,9 @@ class BTConnection(gobject.GObject):
                 keycode = data["keycode"]
                 self.emit('keycode', mapping, keycode)
             elif (data['type'] == "listReply" and self.handler['list']):
-                self.handler['list'](data['selectionIndex'])
+                handler = self.handler['list']
                 self.handler['list'] = None
+                handler(data['selectionIndex'])
             else:
                 logging.debug("Unmatched package: " + str(data))
 
@@ -61,6 +62,7 @@ class BTConnection(gobject.GObject):
         
     def _send_query(self, package):
         # TODO: Handle larger packages on client side (what is needed?!)
+        logging.debug("Sending package:\n" + str(package))
         message = (json.write(package) + u"\u0000").encode('utf-8')
         logging.debug(repr(message))
         if len(message) > 2048:
