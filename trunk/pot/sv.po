@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: lbrc\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2007-03-11 21:06-0300\n"
-"PO-Revision-Date: 2007-03-19 07:55+0100\n"
+"PO-Revision-Date: 2007-03-22 07:46+0100\n"
 "Last-Translator: Daniel Nylander <po@danielnylander.se>\n"
 "Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
 "MIME-Version: 1.0\n"
@@ -50,7 +50,12 @@ msgstr ""
 msgid "Profiles"
 msgstr "Profiler"
 
-#: ../LBRC_gtk_gui/BlueZControl.py:62
+#: ../LBRC_gtk_gui/applet.py:93
+#: ../LBRC_gtk_gui/config.py:328
+msgid "System"
+msgstr "System"
+
+#: ../LBRC_gtk_gui/BlueZControl.py:70
 msgid "Bluetooth visible"
 msgstr "Blåtand synlig"
 
@@ -90,6 +95,10 @@ msgstr "Händelse genererad"
 msgid "Cellphone keycode"
 msgstr "Tangentkod för mobiltelefon"
 
+#: ../LBRC_gtk_gui/config.py:398
+msgid "What is the name for the new profile?"
+msgstr "Vad är namnet för den nya profilen?"
+
 #: ../LBRC_gtk_gui/config.glade.h:1
 msgid "<i>Path to UInput Device file please only fill, if you experience problems with the autodetection</i>"
 msgstr "<i>Sökväg till UInput-enhetsfil, fyll endast i om du upplever problem med automatisk identifiering</i>"
@@ -111,6 +120,7 @@ msgid "Keyboard/Mouse"
 msgstr "Tangentbord/Mus"
 
 #: ../LBRC_gtk_gui/config.glade.h:6
+#: ../LBRC_gtk_gui/keymouseeditwindow.glade.h:4
 msgid "LBRC Configuration"
 msgstr "Konfiguration av LBRC"
 
@@ -133,4 +143,8 @@ msgstr "Visa blåtandskontroller"
 #: ../LBRC_gtk_gui/config.glade.h:11
 msgid "UInput Device:"
 msgstr "UInput-enhet:"
+
+#: ../LBRC_gtk_gui/keymouseeditwindow.glade.h:5
+msgid "Repeat frequency"
+msgstr "Upprepningsfrekvens"
 
