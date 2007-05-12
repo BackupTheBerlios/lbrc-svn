@@ -1,8 +1,11 @@
 #!/usr/bin/python
 
+import os.path as osp
+import os
 from subprocess import Popen, PIPE
 import logging
 from LBRC.path import path
+from LBRC.l10n import _
 
 class MPlayer(object):
     """
@@ -39,9 +42,64 @@ class MPlayer(object):
         self.actions = {}
         self.destruct = []
         self.path = path()
+        self.querytype = None
+        self.querymap = None
         self.mplayer = None
 
+    def set_bluetooth_connector(self, bc):
+        """
+        Set our bluetooth connector, that allows us to issue the presentation
+        of a list, from which the user can choose the new profile
+        
+        @param    bc:    Bluetooth Adapter
+        @type     bc:    L{BTServer}
+        """
+        self.bluetooth_connector = bc 
+
+    
+    def _handle_list_reply(self, index):
+        """
+        This method is called, when a reply is send from the phone regarding
+        the list selection request we send from L{keycode}
+        """
+        # This handler will _silently_ fail, if the selected
+        # profile does not exist anymore
+        # TODO: implement exceptions for not exisiting profiles
+        logging.debug("MPlayerListReply: " + self.querytype + " " + str(index))
+        if self.querytype == 'fileselection':
+            selection = self.querymap[index]
+            if selection[2] == 'f':
+                self._execute_command("loadfile " + selection[1])
+                self.querytype = None
+                self.querymap = None
+            elif selection[2] == 'd':
+                self._create_filelist(base=selection[1])
+                btconnection = self.bluetooth_connector.get_bt_connection()
+                btconnection.send_list_query(_("Select file"), 
+                                             [i[0] for i in self.querymap],
+                                             self._handle_list_reply)
+            #except:
+            #    self.querytype = None
+            #    self.querymap = None
+            
+            
+
+    def _create_filelist(self, base=None):
+        self.querymap = []
+        if not base:
+            base = osp.expanduser("~")
+        files = os.listdir(base)
+        for file in files:
+            if file[0] == ".":
+                continue
+            fullname = osp.join(base, file)
+            if osp.isfile(fullname):
+                self.querymap.append((file, fullname, 'f'))
+            elif osp.isdir(fullname):
+                self.querymap.append(("[" + file + "]", fullname, 'd'))
+
     def _execute_command(self, command):
+        logging.debug("MPlayerCommand:" + command)
         if self.mplayer:
             try:
                 if command == "quit" or \
@@ -49,6 +107,14 @@ class MPlayer(object):
                     self.mplayer.stdin.write("quit\n")
                     self.mplayer.stdin.flush()
                     self.mplayer = None
+                elif command == "remote_fileselect":
+                    logging.debug("Fileselect started")
+                    self._create_filelist()
+                    btconnection = self.bluetooth_connector.get_bt_connection()
+                    self.querytype = 'fileselection'
+                    btconnection.send_list_query(_("Select file"), 
+                                                 [i[0] for i in self.querymap],
+                                                 self._handle_list_reply)
                 else:
                     self.mplayer.stdin.write(command + "\n")
                     self.mplayer.stdin.flush()
