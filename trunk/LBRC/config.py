@@ -41,9 +41,13 @@ class config(object):
         Reread config from disk. There is no distinction between system and user config
         files. Both will be reread.
         """
+        self.user = None
+        self.system = None
         try:
             self.user = self._read_config(self.paths.get_userconfigfile())
         except IOError:
+            pass
+        if not self.user:
             logging.debug(_("Could not open config file: %s"), self.paths.get_userconfigfile())
             self.user = {}
             self.user['generic-config'] = {}
@@ -51,6 +55,8 @@ class config(object):
         try:
             self.system = self._read_config(self.paths.get_systemconfigfile())
         except IOError:
+            pass
+        if not self.system:
             logging.debug(_("Could not open config file: %s"), self.paths.get_systemconfigfile())
             self.system = {}
             self.system['generic-config'] = {}
