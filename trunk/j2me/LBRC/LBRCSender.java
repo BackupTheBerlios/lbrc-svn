@@ -13,7 +13,7 @@ final class LBRCSender implements Runnable {
 	// (read: the j2me part announces what version it 
 	//  speaks and the python part follows)
 	// Transport encoding is UTF-8
-	final private int protocol = 0;
+	final private int protocol = 1;
     private Thread senderThread;
 	private StreamConnection connection;
     private OutputStream output;
@@ -29,10 +29,7 @@ final class LBRCSender implements Runnable {
 	}
 
 	private void handleRequest(JSONObject obj) {
-		if (obj.getString("type").equals("listQuery")) {
-			// TODO: Make sure only one ListRequest is processed at one time
-			parent.doListQuery(obj.getString("title"), obj.getJSONArray("list").getArrayList());
-		}
+		parent.handleRequest(obj);
 	}
 	
 	public void sendListReply(int listindex) {
@@ -102,8 +99,8 @@ final class LBRCSender implements Runnable {
 					}
 				}
 			}
-		} 
-		catch (Exception e){}
+		}
+		catch (IOException e) {}
 		tearDown();
 		this.parent.remoteServiceClosed();
 	}
