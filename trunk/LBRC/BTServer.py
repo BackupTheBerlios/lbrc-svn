@@ -57,10 +57,10 @@ class BTConnection(gobject.GObject):
         package['type'] = "listQuery"
         package['title'] = title
         package['list'] = list
-        self._send_query(package)
+        self.send_query(package)
         self.handler['list'] = callback
         
-    def _send_query(self, package):
+    def send_query(self, package):
         # TODO: Handle larger packages on client side (what is needed?!)
         logging.debug("Sending package:\n" + str(package))
         message = (json.write(package) + u"\u0000").encode('utf-8')
