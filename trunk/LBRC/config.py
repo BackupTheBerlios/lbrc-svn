@@ -1,5 +1,6 @@
 import logging
 import json
+import gobject
 
 from LBRC.path import path
 from LBRC.l10n import _
@@ -26,11 +27,15 @@ class noConfigException(configValueNotFound):
     Raised, when a config is queried, that does not exist
     """
 
-class config(object):
+class config(gobject.GObject):
+    __gsignals__ = {
+                    'config-reread': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ())
+                   }
     """
     The config class is a wrapper around the json on disk configuration format.
     """
     def __init__(self):
+        gobject.GObject.__init__(self)
         self.paths = path()
         self.user = None
         self.system = None
@@ -65,6 +70,7 @@ class config(object):
         self.profile_index = []
         self.profile_index.extend([('system', profile_name) for profile_name in self.system['profiles']])
         self.profile_index.extend([('user', profile_name) for profile_name in self.user['profiles']])
+        self.emit('config-reread')
 
     def get_profile(self, config, profile=None, section=None):
         """
