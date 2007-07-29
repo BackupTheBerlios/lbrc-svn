@@ -14,6 +14,7 @@ if "--debug" in sys.argv:
 else:
     brs = Core()
 try:
+    brs.shutdown_commands.append(lambda: mainloop.quit())
     mainloop = gobject.MainLoop()
     mainloop.run()
 except KeyboardInterrupt:

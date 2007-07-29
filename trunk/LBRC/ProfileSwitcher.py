@@ -66,7 +66,7 @@ class ProfileSwitcher(object):
            keycode == self._keycode and \
            mapping == 1:
             self.profilestore = ps = []
-            for ( type, profile) in self.core.get_profiles():
+            for (type, profile) in self.config.get_profiles():
                 if type == 'system':
                     ps.append([ "%s (%s)" % (profile, _("System")), (type,profile)])
                 else:
@@ -83,8 +83,8 @@ class ProfileSwitcher(object):
         # profile does not exist anymore
         # TODO: implement exceptions for not exisiting profiles
         if index > -1:
-            self.core.set_profile(self.profilestore[index][1][0], 
-                                  self.profilestore[index][1][1])
+            self.core.profile_control.set_profile(self.profilestore[index][1][0], 
+                                                  self.profilestore[index][1][1])
 
     def set_profile(self, config, profile):
         """

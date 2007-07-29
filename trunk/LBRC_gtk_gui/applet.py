@@ -9,14 +9,17 @@ import dbus
 import dbus.glib
 
 from LBRC.path import path
+from LBRC import dinterface
 from LBRC.l10n import _
 from LBRC.config import config
 from BlueZControl import BlueZControl
 from config import ConfigWindow
 
 class Applet(object):
-    def __init__(self, lbrc, **kwds):
-        self.lbrc = lbrc
+    def __init__(self, bus, interface, service, **kwds):
+        self.lbrc_core = dinterface(bus, service, '/core', interface)
+        self.lbrc_profile = dinterface(bus, service, '/profile', interface)
+        self.lbrc_connection = dinterface(bus, service, '/connection', interface)
         self._config = {}
         self.config = config()
         self.paths = path()
@@ -41,18 +44,18 @@ class Applet(object):
         eventbox.add(image)
         eventbox.add_events(gtk.gdk.BUTTON_PRESS)
         eventbox.connect('button-press-event', self.popup_menu)
-        self.lbrc.connect_to_signal("shutdown", lambda: gtk.main_quit())
-        self.lbrc.connect_to_signal("connect_cb", self.connect_cb)
-        self.lbrc.connect_to_signal("disconnect_cb", self.disconnect_cb)
-        self.lbrc.connect_to_signal("profile_change", self.profile_change_cb)
-        self.pid_menu_map[self.lbrc.get_profile()].set_active(1)
+        self.lbrc_core.connect_to_signal("shutdown", lambda: gtk.main_quit())
+        self.lbrc_connection.connect_to_signal("connect_cb", self.connect_cb)
+        self.lbrc_connection.connect_to_signal("disconnect_cb", self.disconnect_cb)
+        self.lbrc_profile.connect_to_signal("profile_changed", self.profile_change_cb)
+        self.pid_menu_map[self.lbrc_profile.get_current_profile()].set_active(1)
         self.trayicon.show_all()
 
         self.config_close_handler = None
 
     def _config_close_handler(self, config_dialog, changed):
         if changed:
-            self.lbrc.reload_config()
+            self.lbrc_core.reload_config()
             self.config.reread()
             self._fill_profile_menu()
             if self.bluecontrol:
@@ -77,8 +80,8 @@ class Applet(object):
 
     def profile_change(self, item):
         if item.active:
-            self.lbrc.set_profile(item.config, item.pid)
-            cp = self.lbrc.get_profile()
+            self.lbrc_profile.set_profile(item.config, item.pid)
+            cp = self.lbrc_profile.get_current_profile()
             self.pid_menu_map[cp].set_active(0)
 
     def _fill_profile_menu(self):
@@ -101,7 +104,7 @@ class Applet(object):
             else:
                 return 1
 
-        for (config, profile) in sorted(self.lbrc.get_profiles(), cmp=sort_func):
+        for (config, profile) in sorted(self.lbrc_profile.get_profiles(), cmp=sort_func):
             itemname = None
             if config == 'system':
                 itemname = "%s (%s)" % (profile, _("System"))
@@ -153,7 +156,7 @@ class Applet(object):
         self.traymenu.show()
 
     def quit(self, *args):
-        self.lbrc.shutdown()
+        self.lbrc_core.shutdown()
     
     def show_config(self, object):
         if not self.config_close_handler:

@@ -91,7 +91,7 @@ class BTConnection(gobject.GObject):
         @return:        always True, as we keep listening on the socket until the connection is shutdown
         """
         self.buffer += clientsocket.recv(1024)
-        logging.debug("In Buffer: " + self.buffer)
+        logging.debug("In Buffer: " + repr(self.buffer))
         self._handle_buffer()
         return True
     

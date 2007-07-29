@@ -72,6 +72,9 @@ class config(gobject.GObject):
         self.profile_index.extend([('user', profile_name) for profile_name in self.user['profiles']])
         self.emit('config-reread')
 
+    def get_profiles(self):
+        return self.profile_index
+
     def get_profile(self, config, profile=None, section=None):
         """
         Fetch profile from config files. If C{profile} or C{section} are set to

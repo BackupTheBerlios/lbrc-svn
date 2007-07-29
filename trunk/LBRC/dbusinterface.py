@@ -41,7 +41,7 @@ class DBUSProfileControl(dbus.service.Object):
     
     @dbus.service.method(DBUSIFACE, out_signature="(ss)")
     def get_current_profile(self):
-        return (self.parent.cur_profile)
+        return self.parent.cur_profile
     
     @dbus.service.method(DBUSIFACE, in_signature='ss', out_signature=None)
     def set_profile(self, config, profileid):
@@ -56,7 +56,7 @@ class ProfileControl(gobject.GObject):
         gobject.GObject.__init__(self)
         self.config = config
         config.connect("config-reread", self.configure_reread_callback)
-        self.cur_profile = None
+        self.cur_profile = (None, None)
 
     def configure_reread_callback(self, config):
         #verify if the current selected profile doesn't exist anymore
@@ -66,14 +66,13 @@ class ProfileControl(gobject.GObject):
             else:
                 self.emit('profile_changed', self.cur_profile[0], self.cur_profile[1])
 
-    def set_profile(self):
+    def set_profile(self, config, profileid):
         if (config, profileid) in self.config.profile_index and \
            not (config, profileid) == self.cur_profile:
             self.cur_profile = (config, profileid)
             self.config.set_config_item('default-profile', self.cur_profile)
             self.emit('profile_changed', self.cur_profile[0], self.cur_profile[1])
             
-    
     def _load_default_profile(self):
         #FIXME: catch error when there's no profiles
         possibilities = self.config.get_config_item("default-profile").values()
@@ -147,13 +146,13 @@ class DBUSLogHandler(logging.Handler, dbus.service.Object):
         dbus.service.Object.__init__(self, busname, path)
         logging.Handler.__init__(self)
 
-    @dbus.service.signal("custom.LBRC", signature='sisssssidsiisisss')
+    @dbus.service.signal(DBUSIFACE, signature='sisssssidsiisisss')
     def logemit(self, name, levelno, levelname, pathname, filename,
               module, funcName, lineno, created, asctime, msecs,
               thread, threadName, process, msg, message, fmessage):
         pass
 
-    @dbus.service.method("custom.LBRC", in_signature='i')
+    @dbus.service.method(DBUSIFACE, in_signature='i')
     def setLevel(self, lvl):
         logging.Handler.setLevel(self, lvl)
     
@@ -188,6 +187,7 @@ class DBUSLogHandler(logging.Handler, dbus.service.Object):
 
 class Core(dbus.service.Object):
     def __init__(self, **kwds):
+        self.shutdown_commands = []
         bus_name = dbus.service.BusName(DBUSNAME, bus=dbus.SessionBus())
         dbus.service.Object.__init__(self, bus_name, "/core")
         
@@ -216,7 +216,7 @@ class Core(dbus.service.Object):
         #load of config data 
         self.reload_config()
 
-    def _profile_change_cb(self, config, profile):
+    def _profile_change_cb(self, profile_control, config, profile):
         for listener in self.event_listener:
             listener.set_profile(config, profile)
 
@@ -229,6 +229,7 @@ class Core(dbus.service.Object):
             try: listener.set_core(self)
             except AttributeError: pass
             self.event_listener.append(listener)
+            logging.debug("Initiablized Event Listener: " + str(constructor))
         except Exception, e: 
             logging.warn("Failed to initalize " + str(constructor) + "\n" + str(e))
             return
@@ -253,3 +254,5 @@ class Core(dbus.service.Object):
         for i in self.event_listener:
             i.shutdown()
         self.btserver.shutdown()
+        for c in self.shutdown_commands:
+            c()
