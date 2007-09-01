@@ -182,8 +182,7 @@ class config(gobject.GObject):
         @type     config:         dictionary
         """
         config_file = open(absfilename, 'w')
-        json_writer = json.JsonWriter()
-        config_data = json_writer.write(config)
+        config_data = json.write(config)
         config_file.write(config_data)
         config_file.close()
     
@@ -198,9 +197,9 @@ class config(gobject.GObject):
         try:
              config_file = open(absfilename)
              config_data = config_file.read()
-             json_reader = json.JsonReader()
-             config = json_reader.read(config_data)
+             config = json.read(config_data)
              config_file.close()
-        except:
+        except Exception, e:
+             logging.error(_("Could not read config file: %s\n%s") % (absfilename, str(e)))
              config = {}
         return config
