@@ -1645,7 +1645,7 @@ class CommandExecutorEditor(ConfigWindowWidget):
             for map in self.section['actions']:
                 args = ''
                 if 'arguments' in map:
-                    args = ", ".join(map['arguments'])
+                    args = ", ".join([str(i) for i in map['arguments']])
                 try:
                     mapping = button_press_state[int(map['mapping'])]
                 except:
