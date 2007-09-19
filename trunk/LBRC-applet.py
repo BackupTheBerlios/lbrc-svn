@@ -20,6 +20,9 @@ logging.getLogger().addHandler(console)
 console.setLevel(logging.WARN)
 console.setFormatter(formatter)
 
+if '--debug' in sys.argv:
+    console.setLevel(logging.DEBUG)
+
 def dbusloghandler(name, levelno, levelname, pathname, filename,
                    module, funcName, lineno, created, asctime,
                    msecs, thread, threadName, process, msg,
