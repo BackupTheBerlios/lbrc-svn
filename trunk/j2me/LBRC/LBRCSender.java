@@ -89,12 +89,15 @@ final class LBRCSender implements Runnable {
 		try {
 			byte[] buffer = new byte[2048];
 			int len = 0;
-			byte in = 0;
+			int in = 0;
 			while(true) {
-				in = (byte) input.read();
-				if(in != 0) {
-					buffer[len] = in;
+				in = input.read();
+				if(in > 0) {
+					buffer[len] = (byte) in;
 					len++;
+				} else if (in == -1 ) {
+					// -1 => Connection was closed, so exit the block
+					break;					
 				} else {
 					try {
 						String string = new String(buffer, 0, len, "UTF-8");
@@ -109,9 +112,7 @@ final class LBRCSender implements Runnable {
 		}
 		catch (IOException e) {
 			// Nokia does reach this block, as read throws IOException, when
-			// the Connection is closed, Sony Ericsson seems to be a bit lazy
-			// and reads garbadge from a closed connection ...
-			// TODO: Find a way to detect closed connection reliable for SE
+			// the Connection is closed
 		}
 		tearDown();
 		this.parent.remoteServiceClosed();
