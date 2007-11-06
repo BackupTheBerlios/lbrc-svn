@@ -73,7 +73,13 @@ final class LBRCSender implements Runnable {
 			input = connection.openInputStream();
 			output = connection.openOutputStream();
 		} catch (Exception e) {
-            parent.do_alert("Bluetooth Connection Failed:" + e.toString(), 4000);
+            parent.do_alert("Bluetooth Connection Failed:" + 
+            		e.toString() + " " +
+            		input.toString() + " " +
+            		output.toString()
+            		, 20000);
+            // Make sure we sleep, so that the error message can be seen ...
+            try { Thread.sleep(20000); } catch (Exception f) {};
             tearDown();
             this.parent.remoteServiceClosed();
             return;
@@ -83,8 +89,9 @@ final class LBRCSender implements Runnable {
 		try {
 			byte[] buffer = new byte[2048];
 			int len = 0;
+			byte in = 0;
 			while(true) {
-				final byte in = (byte) input.read();
+				in = (byte) input.read();
 				if(in != 0) {
 					buffer[len] = in;
 					len++;
@@ -100,7 +107,12 @@ final class LBRCSender implements Runnable {
 				}
 			}
 		}
-		catch (IOException e) {}
+		catch (IOException e) {
+			// Nokia does reach this block, as read throws IOException, when
+			// the Connection is closed, Sony Ericsson seems to be a bit lazy
+			// and reads garbadge from a closed connection ...
+			// TODO: Find a way to detect closed connection reliable for SE
+		}
 		tearDown();
 		this.parent.remoteServiceClosed();
 	}
