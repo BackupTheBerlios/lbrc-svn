@@ -78,8 +78,6 @@ final class LBRCSender implements Runnable {
             		input.toString() + " " +
             		output.toString()
             		, 20000);
-            // Make sure we sleep, so that the error message can be seen ...
-            try { Thread.sleep(20000); } catch (Exception f) {};
             tearDown();
             this.parent.remoteServiceClosed();
             return;

@@ -9,25 +9,24 @@ public class LBRC extends MIDlet {
 	LBRCSenderController interactiveControl;
 	Display display;
 
-    
     public void startApp() {
-		this.display = Display.getDisplay(this);
-		interactiveControl = new LBRCSenderController(this);
-		deviceSelect = new LBRCDeviceSelect(this);
-		deviceSelect.showChooser();
-		deviceSelect.FindDevices();
+    	try {
+			this.display = Display.getDisplay(this);
+			interactiveControl = new LBRCSenderController(this);
+			deviceSelect = new LBRCDeviceSelect(this);
+			deviceSelect.showChooser();
+			deviceSelect.FindDevices();
+    	}catch (Exception e) {
+    		do_alert("Exception: " + e.toString(), 20000);
+    	}
     }
 
-    public void do_alert(String msg,int time_out){
-        if (display.getCurrent() instanceof Alert ){
-            ((Alert)display.getCurrent()).setString(msg);
-            ((Alert)display.getCurrent()).setTimeout(time_out);
-        }else{
-            Alert alert = new Alert("LBRC");
-            alert.setString(msg);
-            alert.setTimeout(time_out);
-            display.setCurrent(alert);
-        }
+    public synchronized void do_alert(String msg,int time_out){
+        Alert alert = new Alert("LBRC");
+        alert.setString(msg);
+        alert.setTimeout(time_out);
+        display.setCurrent(alert);
+    	try { Thread.sleep(time_out); } catch (Exception f) {};
     }
 
 	public void connectRemoteService(ServiceRecord sr) {

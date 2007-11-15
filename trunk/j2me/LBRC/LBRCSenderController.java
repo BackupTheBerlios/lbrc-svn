@@ -1,9 +1,9 @@
 package LBRC;
 
+import java.util.Vector;
 import javax.microedition.lcdui.*;
 import de.enough.polish.util.ArrayList;
 import org.json.*;
-import org.json.text.ParseException;
 
 class LBRCSenderController implements CommandListener {
 	private final static Command exit = new javax.microedition.lcdui.Command("Exit", Command.EXIT, 1);
@@ -12,24 +12,25 @@ class LBRCSenderController implements CommandListener {
 	private LBRC parent;
 	LBRCSender sender;
 	Display display;
-	LBRCKeyEcho key_echo;
-	LBRCPresentationCompanion presentation_editor;
+	LBRCShowModule[] displays;
 	WaitScreen wait_screen;
 	List list_query;
-	Displayable previous;
+	Vector previous = new Vector();
 	
     LBRCSenderController(final LBRC parent) {
 		this.parent = parent;
 		display = Display.getDisplay(this.parent);
 		wait_screen = new WaitScreen();
-		key_echo = new LBRCKeyEcho(this);
-		key_echo.addCommand(LBRCSenderController.back);
-		key_echo.addCommand(LBRCSenderController.exit);
-		key_echo.setCommandListener(this);
-		presentation_editor = new LBRCPresentationCompanion(this);
-		presentation_editor.addCommand(LBRCSenderController.back);
-		presentation_editor.addCommand(LBRCSenderController.exit);
-		presentation_editor.setCommandListener(this);		
+		displays = new LBRCShowModule[3];
+		displays[0] = new LBRCKeyEcho(this, "KeyEcho");
+		displays[1] = new LBRCPresentationControl(this, "PresentationControl");
+		displays[2] = new LBRCVolumeControl(this, "VolumeControl");
+		for(int i=0;i<displays.length; i++) {
+			displays[i].addCommand(LBRCSenderController.back);
+			displays[i].addCommand(LBRCSenderController.exit);
+			displays[i].setCommandListener(this);
+		}
+		previous.addElement(displays[0]);
 		this.sender = null;
     }
     
@@ -47,34 +48,30 @@ class LBRCSenderController implements CommandListener {
     	}
     	list_query.addCommand(back);
     	list_query.setCommandListener(this);
-    	previous = display.getCurrent();
+    	previous.addElement(display.getCurrent());
     	display.setCurrent(list_query);
     }
     
     protected void senderReady() {
-    	display.setCurrent(key_echo);
+    	display.setCurrent(displays[0]);
     }
     
 	public void commandAction(Command com, Displayable dis) {
 		if (com == exit) {
 			this.parent.quit();
-		}
-		if (com == back) {
-			if (display.getCurrent() == key_echo || display.getCurrent() == presentation_editor) {
+		} else if (com == back) {
+			if (list_query == null) {
 				sender.shutdown();
-			}
-			if (list_query != null && display.getCurrent() == list_query) {
+			} else {
 				sender.sendListReply(-1);
-				display.setCurrent(key_echo);
 				list_query = null;
+				previousModule();
 			}
-		}
-		if (com == List.SELECT_COMMAND) {
+		} else if (com == List.SELECT_COMMAND) {
 			if (list_query != null && display.getCurrent() == list_query) {
 				sender.sendListReply(list_query.getSelectedIndex());
-				display.setCurrent(previous);
-				previous = null;
 				list_query = null;
+				previousModule();
 			}
 		}
 	} 
@@ -91,17 +88,61 @@ class LBRCSenderController implements CommandListener {
 		if (obj.getString("type").equals("listQuery")) {
 			// TODO: Make sure only one ListRequest is processed at one time
 			doListQuery(obj.getString("title"), obj.getJSONArray("list").getArrayList());
-		} else if (obj.getString("type").equals("presentationControl") ) {
-			if (obj.getString("command").equals("showModule")) {
-				display.setCurrent(presentation_editor);
-			} else if (obj.getString("command").equals("hideModule")) {
-				display.setCurrent(key_echo);
-			} else if (obj.getString("command").equals("changeSlide")) {
-				presentation_editor.change_slide(obj.getInt("param"));
-			} else if (obj.getString("command").equals("setSlide")) {
-				presentation_editor.set_slide(obj.getInt("param"));
+		} else if (obj.getString("type").equals("displayControl")) {
+			String command = obj.getString("command");
+			if ( command.equals("showModule")) {
+				showModule(obj.getString("param"));
+			} else if (command.equals("previousModule")) {
+				previousModule();
+			} else if (command.equals("hideModule")) {
+				hideModule(obj.getString("param"));
 			}
-		}
-			
+		} else {
+				for(int i=0;i<displays.length;i++) {
+					try {
+						displays[i].handleRequest(obj);
+					} catch (Exception e) {
+						parent.do_alert("Exception in handleRequest (" + displays[i].name + "): " + e.toString(), 5000); 
+					}
+				}
+		} 
 	}
+    
+    protected void hideModule(String module_name) {
+    	try {
+    	if ( ((LBRCShowModule) previous.lastElement()).name.equals(module_name)) {
+    		previousModule();
+    	} else {
+    		for(int i = previous.size()-1; i>1; i--) {
+    			if (((LBRCShowModule) previous.elementAt(i)).name.equals(module_name)) {
+    				previous.removeElementAt(i);
+    				break;
+    			}
+    		}
+    	}
+    	} catch (Exception e) {
+    		parent.do_alert("Exception while hiding: " + e.toString(), 10000);
+    	}
+    }
+    
+    protected void showModule(String module_name) {
+    	Displayable next_display = null;
+    	for(int i=0;i<displays.length;i++) {
+    		if (displays[i].name.equals(module_name)) {
+    			next_display = displays[i];
+    			break;
+    		}
+    	}
+    	if(next_display != null) {
+    		previous.addElement(display.getCurrent());
+    		display.setCurrent(next_display);
+    	} else {
+    		parent.do_alert("Unknown Module requested - Please report Bug!", 10000);
+    	}
+    }
+    
+    protected void previousModule() {
+    	display.setCurrent((Displayable) previous.lastElement());
+    	if ( previous.size() > 1 ) previous.removeElementAt(previous.size()-1);
+    }
 }

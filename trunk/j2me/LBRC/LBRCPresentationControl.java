@@ -1,13 +1,13 @@
 package LBRC;
 
 import javax.microedition.lcdui.*;
+import org.json.*;
 
-public class LBRCPresentationCompanion extends Canvas implements Runnable {
+public class LBRCPresentationControl extends LBRCShowModule implements Runnable {
 	private boolean visible = false;
 	private Thread repaint;
 	private int current_slide = 1;
 	private long last_time = 0;
-	LBRCSenderController parent;
 	
 	public void run() {
 		while (true) {
@@ -27,25 +27,21 @@ public class LBRCPresentationCompanion extends Canvas implements Runnable {
 		visible = false;
 	}
 	
-	LBRCPresentationCompanion(LBRCSenderController parent) {
-		this.parent = parent;
+	LBRCPresentationControl(LBRCSenderController parent, String name) {
+		super(parent, name);
 		this.repaint = new Thread(this);
 		last_time = System.currentTimeMillis();
 		this.repaint.start();
 	}
 
-    protected void keyPressed(final int keyCode) {
-    	if (parent.sender != null) {
-    		parent.sender.sendKey(keyCode, 0);
-    		repaint();
-    	}
-    }
-    
-    protected void keyReleased(final int keyCode) {
-    	if (parent.sender != null) {
-    		parent.sender.sendKey(keyCode, 1);
-    		repaint();
-    	}
+    public void handleRequest(JSONObject obj) {
+    	if (! obj.getString("type").equals(this.name)) return;
+    	String command = obj.getString("command");
+		if (command.equals("changeSlide")) {
+			change_slide(obj.getInt("param"));
+		} else if (command.equals("setSlide")) {
+			set_slide(obj.getInt("param"));
+		}
     }
     
     protected void change_slide(int change) {
@@ -61,8 +57,11 @@ public class LBRCPresentationCompanion extends Canvas implements Runnable {
     }
     
     private String get_formated_timediff() {
-    	int diff = (int) ((System.currentTimeMillis() - last_time) / 1000);
-    	return Integer.toString(diff);
+    	int seconds = (int) ((System.currentTimeMillis() - last_time) / 1000);
+    	int minutes = (int) seconds / 60;
+    	seconds -= 60 * minutes;
+    	if (seconds < 10) return Integer.toString(minutes) + ":0" +Integer.toString(seconds);
+    	else return Integer.toString(minutes) + ":" + Integer.toString(seconds);
     }
     
 	protected void paint(Graphics g) {
@@ -109,7 +108,6 @@ public class LBRCPresentationCompanion extends Canvas implements Runnable {
 					 (width - slide_value_width) / 2,
 				     (int)(1.75 * description_height),
 				     Graphics.LEFT | Graphics.TOP);
-		String t = get_formated_timediff();
 		g.drawString(time_value,
 				 (width - time_value_width) / 2,
 			     (int)(3.0 * description_height + 1.5 * content_height),

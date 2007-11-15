@@ -1,32 +1,26 @@
 package LBRC;
 
 import javax.microedition.lcdui.*;
+import org.json.*;
 
-public class LBRCKeyEcho extends Canvas {
+public class LBRCKeyEcho extends LBRCShowModule {
 	private String pressedKeyName = "No key pressed";
 	private int pressedKey = 0;
-	LBRCSenderController parent;
 	
-	LBRCKeyEcho(LBRCSenderController parent) {
-		this.parent = parent;
+	LBRCKeyEcho(LBRCSenderController parent, String name) {
+		super(parent, name);
 	}
 
     protected void keyPressed(final int keyCode) {
-    	if (parent.sender != null) {
-    		pressedKeyName = getKeyName(keyCode);
-    		pressedKey = keyCode;
-    		parent.sender.sendKey(keyCode, 0);
-    		repaint();
-    	}
+		pressedKeyName = getKeyName(keyCode);
+		pressedKey = keyCode;   	
+		super.keyPressed(keyCode);
     }
     
     protected void keyReleased(final int keyCode) {
-    	if (parent.sender != null) {
-    		pressedKeyName = getKeyName(keyCode);
-    		pressedKey = keyCode;
-    		parent.sender.sendKey(keyCode, 1);
-    		repaint();
-    	}
+		pressedKeyName = getKeyName(keyCode);
+		pressedKey = keyCode;
+		super.keyReleased(keyCode);
     }
 	
 	protected void paint(Graphics g) {
@@ -47,4 +41,6 @@ public class LBRCKeyEcho extends Canvas {
 		g.drawString(key1, offset, f.getHeight() / 2, Graphics.TOP| Graphics.LEFT);
 		g.drawString(key2, offset, f.getHeight() * 2, Graphics.TOP| Graphics.LEFT);
 	}
+	
+	public void handleRequest(JSONObject obj) {}
 }
