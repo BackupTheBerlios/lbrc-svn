@@ -1,5 +1,4 @@
-#!/usr/bin/python
-
+from LBRC.Listener import Listener
 import os.path as osp
 import os
 from subprocess import Popen, PIPE
@@ -7,7 +6,7 @@ import logging
 from LBRC.path import path
 from LBRC.l10n import _
 
-class MPlayer(object):
+class MPlayer(Listener):
     """
     MPlayer
     =======
@@ -42,25 +41,11 @@ class MPlayer(object):
         @param  config:         configuration data
         @type   config:         dictionary
         """
-        self.config = config
-        self.init = []
-        self.actions = {}
-        self.destruct = []
+        Listener.__init__(self, config, "MPlayer")
         self.path = path()
         self.querytype = None
         self.querymap = None
         self.mplayer = None
-
-    def set_bluetooth_connector(self, bc):
-        """
-        Set our bluetooth connector, that allows us to issue the presentation
-        of a list, from which the user can choose the new profile
-        
-        @param    bc:    Bluetooth Adapter
-        @type     bc:    L{BTServer}
-        """
-        self.bluetooth_connector = bc 
-
     
     def _handle_list_reply(self, index):
         """

@@ -50,12 +50,15 @@ while count < 10:
         ok = 1
         break
     except dbus.DBusException, e:
+        logging.warn("DBUS Component not found")
         if count == 0:
             # We got an dbus exception => our service is not running, so
             # try to invoke it (if dbus activation would have worked, we
             # the get_profiles call would have blocked till it was started)
             # But we try the invokation only once!
-            gobject.spawn_async([path().get_binfile("LBRCdbus.py")], 
+            pathhelper = path()
+            logging.debug("DBUS Component: invoking: " + pathhelper.get_binfile("LBRCdbus.py"))
+            gobject.spawn_async([pathhelper.get_binfile("LBRCdbus.py")], 
                                 flags= gobject.SPAWN_STDOUT_TO_DEV_NULL | 
                                        gobject.SPAWN_STDERR_TO_DEV_NULL )
 

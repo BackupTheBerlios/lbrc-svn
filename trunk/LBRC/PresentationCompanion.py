@@ -1,3 +1,4 @@
+from LBRC.Listener import Listener
 import time
 import os.path as osp
 
@@ -7,11 +8,15 @@ class CompanionCommand(object):
         self.description = description
 
     def call(self):
-        query = {'type': 'presentationControl'}
+        query = {'type': 'PresentationControl'}
         if self.description['command'] == 'show':
+            query['type'] = 'displayControl'
             query['command'] = 'showModule'
+            query['param'] = 'PresentationControl'
         elif self.description['command'] == 'hide':
+            query['type'] = 'displayControl'
             query['command'] = 'hideModule'
+            query['param'] = 'PresentationControl'
         elif self.description['command'] == 'nextSlide':
             self.parent.change_slide(1)
             query['command'] = 'changeSlide'
@@ -33,7 +38,7 @@ class CompanionCommand(object):
             if bc:
                 bc.send_query(query)
 
-class PresentationCompanion(object):
+class PresentationCompanion(Listener):
     """
     Class to handle keycodes received by BTServer and issue commands according to them
     """
@@ -42,99 +47,11 @@ class PresentationCompanion(object):
         @param  config:         configuration data
         @type   config:         dictionary
         """
-        self.config = config
+        Listener.__init__(self, config, 'PresentationCompanion', command_class=CompanionCommand)
         self.visible = False
-        self.bluetooth_connector = None
-        self.core = None
         self._write = False
         self.slide = 1
         self.buffer = []
-        self.init = []
-        self.actions = {}
-        self.destruct = []
-        
-    def set_bluetooth_connector(self, bc):
-        """
-        Set our bluetooth connector, that allows us to issue the presentation
-        of a list, from which the user can choose the new profile
-        
-        @param    bc:    Bluetooth Adapter
-        @type     bc:    L{BTServer}
-        """
-        self.bluetooth_connector = bc        
-
-    def set_core(self, core):
-        """
-        Set the core, where the administration of the profiles happens
-        Currently this is dbusinterface
-        
-        @param   core:    Core, where profiles are handled
-        @type    core:    L{dbusinterface}
-        """
-        self.core = core
-        
-    def keycode(self, mapping, keycode):
-        """
-        The method maps the incoming keycode and mapping to the associated
-        command and spawns a subprocess for them.
-
-        @param  mapping:        mapping state of the keycode
-        @type   mapping:        int
-        @param  keycode:        keycode received
-        @type   keycode:        int
-        """
- 
-        event_tuple = (keycode, mapping)
-        if event_tuple in self.actions:
-            for command in self.actions[event_tuple]:
-                command.call()
-    
-    def set_profile(self, config, profile):
-        """
-        Switch to new profile
-
-        @param  profile:    the profile we switch to
-        @type   profile:    string
-        """
-        for command in self.destruct:
-            command.call()
-        self._interpret_profile(config, profile)
-        for command in self.init:
-            command.call()
-                                
-    def _interpret_profile(self, config, profile):
-        """
-        Interpret the profile data from the profile.conf(s) and push the commands into
-        an array and call it, when the appropriate keycodes and mappings are received.
-
-        If no mapping is provided, we assume mapping = 0 => keypress
-        """
-        self.init = []
-        self.actions = {}
-        self.destruct = []
-        try:
-            for init in self.config.get_profile(config, profile, 'PresentationCompanion')['init']:
-                self.init.append(CompanionCommand(self, init))
-        except:
-            pass
-        try:
-            for destruct in self.config.get_profile(config, profile, 'PresentationCompanion')['destruct']:
-                self.destruct.append(CompanionCommand(self, destruct))
-        except:
-            pass
-       
-        try:
-            for action in self.config.get_profile(config, profile, 'PresentationCompanion')['actions']:
-                try:
-                    mapping = int(action['mapping'])
-                except:
-                    mapping = 0
-                event_tuple = (int(action['keycode']), mapping)
-                if not event_tuple in self.actions:
-                    self.actions[event_tuple] = []
-                self.actions[event_tuple].append(CompanionCommand(self, action))
-        except:
-            pass
     
     def change_slide(self, slide_change):
         self.slide = self.slide + int(slide_change)
@@ -173,6 +90,3 @@ class PresentationCompanion(object):
             f.close()
             
         self.buffer = []
-    
-    def shutdown(self):
-        pass

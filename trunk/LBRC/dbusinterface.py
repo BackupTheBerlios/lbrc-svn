@@ -8,6 +8,7 @@ from LBRC.MPlayer import MPlayer
 from LBRC.PresentationCompanion import PresentationCompanion
 from LBRC.ProfileSwitcher import ProfileSwitcher
 from LBRC.UinputDispatcher import UinputDispatcher
+from LBRC.VolumeControl import VolumeControl
 from LBRC.config import config
 from LBRC.path import path
 import LBRC.consts as co
@@ -207,14 +208,18 @@ class Core(dbus.service.Object):
         self.event_listener = []
         
         for i in (UinputDispatcher, CommandExecutor, DBUSCaller, ProfileSwitcher, 
-                  MPlayer, PresentationCompanion):
+                  MPlayer, PresentationCompanion, VolumeControl):
             self._register_listener(i)
 
+        logging.debug("Register done")
         self.profile_control.connect("profile_changed", self._profile_change_cb)
+        logging.debug("Initial Profile set")
         self.btserver.connect('keycode', self._dispatch)
+        logging.debug("Init dispatcher")
 
         #load of config data 
         self.reload_config()
+        logging.debug("Reload config")
 
     def _profile_change_cb(self, profile_control, config, profile):
         for listener in self.event_listener:

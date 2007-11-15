@@ -1,7 +1,8 @@
+from LBRC.Listener import Listener
 import logging
 from LBRC.l10n import _
 
-class ProfileSwitcher(object):
+class ProfileSwitcher(Listener):
     """
     This is the ProfileSwitcher Plugin. It's prinziply a "normal" plugin, but
     it is configured in the generic-config section, so that one global key
@@ -19,35 +20,10 @@ class ProfileSwitcher(object):
         @param  config:         configuration data
         @type   config:         L{LBRC.config}
         """
-        self.config = config
-        self.init = []
-        self.actions = {}
-        self.descruct = []
-        self.bluetooth_connector = None
-        self.core = None
+        Listener.__init__(self, config, "ProfileSwitcher")
         self.profilestore = []
         # Default Value for Profileswitcher Keycode will be the star key
-        self._keycode = self.config.get_config_item_fb("profile-switch", 42)
-
-    def set_bluetooth_connector(self, bc):
-        """
-        Set our bluetooth connector, that allows us to issue the presentation
-        of a list, from which the user can choose the new profile
-        
-        @param    bc:    Bluetooth Adapter
-        @type     bc:    L{BTServer}
-        """
-        self.bluetooth_connector = bc        
-
-    def set_core(self, core):
-        """
-        Set the core, where the administration of the profiles happens
-        Currently this is dbusinterface
-        
-        @param   core:    Core, where profiles are handled
-        @type    core:    L{dbusinterface}
-        """
-        self.core = core
+        self._keycode = self.config.get_config_item_fb("profile-switch", 42)     
 
     def keycode(self, mapping, keycode):
         """
@@ -90,14 +66,9 @@ class ProfileSwitcher(object):
         """
         Switch to new profile - here a noop method, as the key
         is defined globally.
-
-        @param  profile:    the profile we switch to
-        @type   profile:    string
         """
         pass
 
     def shutdown(self):
         # TODO: Create list selection cancel method
         pass
-        #for command in self.destruct:
-        #    command.call()
