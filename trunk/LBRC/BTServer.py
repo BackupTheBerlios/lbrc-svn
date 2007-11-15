@@ -436,10 +436,9 @@ class BTServer(gobject.GObject):
         except dbus.dbus_bindings.DBusException:
             return False
 
-def print_args(*args):
-    print args
-
 def stand_alone_test(*args):
+    def print_args(*args):
+        print args
     import gobject
     bt = BTServer()
     bt.connect("keycode", print_args, 'keycode')
