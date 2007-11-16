@@ -34,7 +34,7 @@ public class LBRCPresentationControl extends LBRCShowModule implements Runnable 
 		this.repaint.start();
 	}
 
-    public void handleRequest(JSONObject obj) {
+    public synchronized void handleRequest(JSONObject obj) {
     	if (! obj.getString("type").equals(this.name)) return;
     	String command = obj.getString("command");
 		if (command.equals("changeSlide")) {

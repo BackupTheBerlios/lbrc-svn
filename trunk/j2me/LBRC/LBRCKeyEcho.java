@@ -42,5 +42,5 @@ public class LBRCKeyEcho extends LBRCShowModule {
 		g.drawString(key2, offset, f.getHeight() * 2, Graphics.TOP| Graphics.LEFT);
 	}
 	
-	public void handleRequest(JSONObject obj) {}
+	public synchronized void handleRequest(JSONObject obj) {}
 }

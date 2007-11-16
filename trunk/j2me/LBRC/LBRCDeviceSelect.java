@@ -91,6 +91,7 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 			}
 		}
 	}
+	
 	public void FindDevices() {
 		waitScreen.setTitle("LBRC - Scan");
 		waitScreen.setAction("Scanning for devices");

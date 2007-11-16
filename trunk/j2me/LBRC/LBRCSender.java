@@ -54,7 +54,7 @@ final class LBRCSender implements Runnable {
 		send(init);
 	}
 	
-	private void send(JSONObject message) {
+	public void send(JSONObject message) {
 		try {
 			if (output != null) {
 				String stringified = message.toString() + "\u0000";

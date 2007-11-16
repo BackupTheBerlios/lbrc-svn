@@ -12,7 +12,7 @@ public class LBRCVolumeControl extends LBRCShowModule {
 		this.elements = new Vector();
 	}
 	
-	public void handleRequest(JSONObject obj) {
+	public synchronized void handleRequest(JSONObject obj) {
 		if (! obj.getString("type").equals(this.name)) return;
 		String command = obj.getString("command");
 		if(command.equals("updateVolumes")) {
