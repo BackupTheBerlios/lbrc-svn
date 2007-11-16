@@ -49,6 +49,8 @@ class BTConnection(gobject.GObject):
                 handler = self.handler['list']
                 self.handler['list'] = None
                 handler(data['selectionIndex'])
+            elif (data['type'] == 'debugMessage'):
+                logging.debug("PHONE (%(function)s): %(message)s" % data )
             else:
                 logging.debug("Unmatched package: " + str(data))
 
