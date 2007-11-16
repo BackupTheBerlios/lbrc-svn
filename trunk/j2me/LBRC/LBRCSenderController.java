@@ -31,11 +31,14 @@ class LBRCSenderController implements CommandListener {
 			displays[i].addCommand(LBRCSenderController.exit);
 			displays[i].setCommandListener(this);
 		}
-		previous.addElement(displays[0]);
 		this.sender = null;
     }
     
     public void setConnectionUrl(String url) {
+    	// We flush the previous vector on each new connect
+    	// and we make sure we always have KeyEcho as fallback
+    	previous.removeAllElements();
+    	previous.addElement(displays[0]);
     	wait_screen.setTitle("Connecting ...");
     	wait_screen.setAction("Connecting ...");
     	display.setCurrent(wait_screen);
