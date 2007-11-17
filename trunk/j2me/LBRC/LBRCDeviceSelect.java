@@ -27,6 +27,7 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 	java.util.Vector services;
 	LocalDevice local;
 	DiscoveryAgent agent;
+	final private UUID lbrc_uuid = new UUID("9c6c8dce954511dca3c10011d8388a56", false);
 	int state;
 	int search;
 	
@@ -78,8 +79,8 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 			if (dis == deviceDisplayList) {
 				if (deviceDisplayList.getSelectedIndex() >= 0) {
 					int[] attributes = { 0x100 }; // the name of the service
-					UUID[] uuids = new UUID[1];
-					uuids[0] = new UUID(0x1002); // browsable services
+					UUID[] uuids = new UUID[] {lbrc_uuid};
+					//uuids[0] = new UUID(0x1002); // browsable services
 					FindServices( attributes,
 							      uuids, 
 							      (RemoteDevice) devices.elementAt(deviceDisplayList.getSelectedIndex()
@@ -159,19 +160,11 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 		display.setCurrent(deviceDisplayList);
 		switch (respCode) {
 		case DiscoveryListener.SERVICE_SEARCH_COMPLETED:
-			for (int x = 0; x < services.size(); x++)
-				try {
-					ServiceRecord sr = (ServiceRecord) services.elementAt(x);
-					DataElement ser_de = sr.getAttributeValue(0x100);
-					String service_name = (String) ser_de.getValue();
-					if (service_name.equals("LBRC")) {
-						this.parent.connectRemoteService(sr);
-						break;
-					}
-				} catch (Exception e) {
-					this.parent.do_alert("Error in adding services ", 1000);
-				}
-			break;
+			for (int x = 0; x < services.size(); x++) {
+				ServiceRecord sr = (ServiceRecord) services.elementAt(x);
+				this.parent.connectRemoteService(sr);
+				break;
+			}
 		case DiscoveryListener.SERVICE_SEARCH_DEVICE_NOT_REACHABLE:
 			this.parent.do_alert("Device not Reachable", 4000);
 			break;
