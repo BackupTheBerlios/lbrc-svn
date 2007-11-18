@@ -1,6 +1,5 @@
 package LBRC;
 
-import javax.bluetooth.DataElement;
 import javax.bluetooth.DeviceClass;
 import javax.bluetooth.DiscoveryAgent;
 import javax.bluetooth.DiscoveryListener;
@@ -165,6 +164,7 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 				this.parent.connectRemoteService(sr);
 				break;
 			}
+			break;
 		case DiscoveryListener.SERVICE_SEARCH_DEVICE_NOT_REACHABLE:
 			this.parent.do_alert("Device not Reachable", 4000);
 			break;
