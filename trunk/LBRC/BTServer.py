@@ -71,7 +71,10 @@ class BTConnection(gobject.GObject):
             logging.error("Message to large to be handled on J2ME side. Please report bug!")
             raise MessageToLargeException()
         else:
-            self.client_sock.sendall(message)
+            try:
+                self.client_sock.sendall(message)
+            except bluetooth.BluetoothError:
+                logging.debug("Trying to send while remote side was disconnected")
 
     def handle_incoming_data(self, clientsocket, condition):
         """
@@ -162,7 +165,7 @@ class BTServer(gobject.GObject):
         else:
             raise AttributeError, 'unknown property %s' % property.name
 
-    def __init__(self, name = "LBRC", serverid = "a1e7"):
+    def __init__(self, name = "LBRC", serverid = "9c6c8dce-9545-11dc-a3c1-0011d8388a56"):
         """
         @param  serverid:   ID associated to the service we announce
         @type   serverid:   string (hexadecimal)
@@ -176,7 +179,7 @@ class BTServer(gobject.GObject):
         self.serverid = serverid
         self.connectable = 'yes'
         self.filter = {}
-        self.port = bluetooth.get_available_port( bluetooth.RFCOMM )
+        
         self.connected = None
         self.bluetooth_connection = None
         self.bluetooth_keycode = None
@@ -188,21 +191,55 @@ class BTServer(gobject.GObject):
 
         self.server_io_watch = None
 
+        self.port = bluetooth.get_available_port( bluetooth.RFCOMM )
         self.server_sock = bluetooth.BluetoothSocket( bluetooth.RFCOMM )
         self.server_sock.bind(("", self.port))
         self.server_sock.listen(1)
+        
+        self.bluez_db = dinterface(dbus.SystemBus(), 'org.bluez', '/org/bluez', 'org.bluez.Database')
+        self.advertise_id = None
 
         self._register_bluez_signals()
         self._switch_connectable()
-        
+
+    def _advertise_service(self, state=False):
+        if not state and self.advertise_id:
+            self.bluez_db.RemoveServiceRecord(self.advertise_id)
+            self.advertise_id = None
+        elif state and not self.advertise_id:
+            service_record = \
+"""
+<?xml version="1.0" encoding="UTF-8" ?>
+<record>
+        <attribute id="0x0001">
+             <uuid value="%(serviceid)s" />
+        </attribute>
+        <attribute id="0x0004">
+                <sequence>
+                        <sequence>
+                                <uuid value="0x0100" />
+                        </sequence>
+                        <sequence>
+                                <uuid value="0x0003" />
+                                <uint8 value="%(channel)i" />
+                        </sequence>
+                </sequence>
+        </attribute>
+        <attribute id="0x0100">
+            <text value="%(name)s" name="name"/>
+        </attribute>
+</record>
+""" % {'serviceid': self.serverid, 'name': self.name, 'channel': int(self.port) }
+            self.advertise_id = self.bluez_db.AddServiceRecordFromXML(service_record)
+
     def _switch_connectable(self):
         if (self.connectable == 'yes' or self.connectable == 'filtered') and not self.server_io_watch:
             self.server_io_watch = gobject.io_add_watch(self.server_sock, gobject.IO_IN, self.handle_connection)
             if BTServer.is_bluez_up():
-                bluetooth.advertise_service(self.server_sock, self.name, self.serverid)
+                self._advertise_service(True)
         elif self.connectable == 'no' and not self.connected:
             if BTServer.is_bluez_up():
-                bluetooth.stop_advertising(self.server_sock)
+                self._advertise_service(False)
             gobject.source_remove(self.server_io_watch)
             self.server_io_watch = None
         self.emit('connectable_event', self.connectable)
@@ -310,7 +347,7 @@ class BTServer(gobject.GObject):
         self.connected = None
         if self.connectable == 'yes' or self.connectable == 'filtered':
             self.server_io_watch = gobject.io_add_watch(self.server_sock, gobject.IO_IN, self.handle_connection)
-            bluetooth.advertise_service(self.server_sock, self.name, self.serverid)
+            self._advertise_service(True)
         return False
 
     def handle_connection(self, serversocket, condition):
@@ -341,7 +378,7 @@ class BTServer(gobject.GObject):
         @rtype:         bool
         @return:        always False, as we only allow one concurrent connection
         """
-        bluetooth.stop_advertising(self.server_sock)
+        self._advertise_service(False)
 
         self.client_sock,client_address = self.server_sock.accept()        
         logging.debug("Serversocket: " + str(self.server_sock.getsockname()))
@@ -351,20 +388,20 @@ class BTServer(gobject.GObject):
             (self.connectable == 'filtered' and client_address[0] in self.filter))):
 
             self.connected = client_address
-            self.emit("connect", client_address[0], client_address[1])
 
             self.bluetooth_connection = BTConnection(self.client_sock)
             self.bluetooth_keycode = self.bluetooth_connection.connect(
                                                    "keycode", lambda btc, mp, kc: self.emit("keycode", mp, kc))
             
             self.server_io_watch = gobject.io_add_watch(self.client_sock, gobject.IO_HUP, self.handle_disconnection)
+            self.emit("connect", client_address[0], client_address[1])
         else:
             logging.debug("BTServer: Closing remote connection")
             self.client_sock.close()
             self.client_sock = None
             if self.connectable == 'filtered':
                 self.server_io_watch = gobject.io_add_watch(self.server_sock, gobject.IO_IN, self.handle_connection)
-                bluetooth.advertise_service(self.server_sock, self.name, self.serverid)
+                self._advertise_service(True)
         return False
 
     def _check_pairing(self, client_address):
