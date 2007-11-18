@@ -110,6 +110,16 @@ class Listener(object):
         for command in self.init:
             command.call()
         logging.debug(self.name + ": set_profile finished")
-                
+    
+    def connection_closed(self):
+        logging.debug(self.name + ": connection closed - running destruct actions")
+        for command in self.destruct:
+            command.call()
+    
+    def connection_established(self):
+        logging.debug(self.name + ": connection established - running init actions")
+        for command in self.init:
+            command.call()
+    
     def shutdown(self):
         pass

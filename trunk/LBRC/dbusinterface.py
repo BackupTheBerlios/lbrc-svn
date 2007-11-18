@@ -112,10 +112,16 @@ class ConnectionControl(dbus.service.Object):
     def __init__(self, busname, path, btserver):
         dbus.service.Object.__init__(self,busname, path)
         self.btserver = btserver
-        self.btserver.connect('connect', lambda btserver, btadress, port: 
-                                         self.connect_cb(bluetooth.lookup_name(btadress), btadress, port))
-        self.btserver.connect('disconnect', lambda btserver, btadress, port:
-                                         self.disconnect_cb(bluetooth.lookup_name(btadress), btadress, port))
+        self.btserver.connect('connect', self._connect_cb)
+        self.btserver.connect('disconnect', self._disconnect_cb)
+    
+    def _connect_cb(self,btserver, btadress, port):
+        self.connect_cb(bluetooth.lookup_name(btadress), btadress, port)
+        return True
+        
+    def _disconnect_cb(self, btserver, btadress, port):
+        self.disconnect_cb(bluetooth.lookup_name(btadress), btadress, port)
+        return True
     
     @dbus.service.method(DBUSIFACE, out_signature='')
     def set_connectable_on(self):
@@ -135,12 +141,11 @@ class ConnectionControl(dbus.service.Object):
 
     @dbus.service.signal(DBUSIFACE, signature="ssi")
     def connect_cb(self, btname, btadress, port):
-        pass
+        logging.debug("connect_cb: " + str(btname) + " " + str(btadress) + " " + str(port))
 
     @dbus.service.signal(DBUSIFACE, signature="ssi")
     def disconnect_cb(self, btname, btadress, port):
         logging.debug("disconnect_cb: " + str(btname) + " " + str(btadress) + " " + str(port))
-        pass
 
 class DBUSLogHandler(logging.Handler, dbus.service.Object):
     def __init__(self, busname, path):
@@ -217,9 +222,30 @@ class Core(dbus.service.Object):
         self.btserver.connect('keycode', self._dispatch)
         logging.debug("Init dispatcher")
 
+        self.btserver.connect("connect", self._connection_established_cb)
+        self.btserver.connect("disconnect", self._connection_closed_cb)
+
         #load of config data 
         self.reload_config()
         logging.debug("Reload config")
+
+    def _connection_closed_cb(self, server, bluetoothaddress, port):
+        logging.debug("_connection_closed_cb called")
+        for listener in self.event_listener:
+            try:
+                listener.connection_closed()
+            except AttributeError:
+                pass
+        return False
+            
+    def _connection_established_cb(self, server, bluetoothaddress, port):
+        logging.debug("_connection_established_cb called")
+        for listener in self.event_listener:
+            try:
+                listener.connection_established()
+            except AttributeError:
+                pass
+        return False
 
     def _profile_change_cb(self, profile_control, config, profile):
         for listener in self.event_listener:
