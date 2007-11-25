@@ -219,6 +219,9 @@ public class JSONArray {
     public double getDouble(int index)
             throws NoSuchElementException, NumberFormatException {
         Object o = get(index);
+        if (o instanceof Integer) {
+        	return ((Integer) o).doubleValue();
+        }
         if (o instanceof Number) {
             return ((Number) o).doubleValue();
         }
