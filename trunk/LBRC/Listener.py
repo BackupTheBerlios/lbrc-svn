@@ -94,7 +94,7 @@ class Listener(object):
         if event_tuple in self.actions:
             for command in self.actions[event_tuple]:
                 command.call()
-        logging.debug(self.name + ": set_profile finished")
+        logging.debug(self.name + ": keycode finished")
 
     def set_profile(self, config, profile):
         """
