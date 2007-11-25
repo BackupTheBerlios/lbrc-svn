@@ -116,11 +116,11 @@ class ConnectionControl(dbus.service.Object):
         self.btserver.connect('disconnect', self._disconnect_cb)
     
     def _connect_cb(self,btserver, btadress, port):
-        self.connect_cb(bluetooth.lookup_name(btadress), btadress, port)
+        self.connect_cb(str(bluetooth.lookup_name(btadress)), btadress, port)
         return True
         
     def _disconnect_cb(self, btserver, btadress, port):
-        self.disconnect_cb(bluetooth.lookup_name(btadress), btadress, port)
+        self.disconnect_cb(str(bluetooth.lookup_name(btadress)), btadress, port)
         return True
     
     @dbus.service.method(DBUSIFACE, out_signature='')
