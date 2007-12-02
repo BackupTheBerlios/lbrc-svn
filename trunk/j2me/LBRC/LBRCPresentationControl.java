@@ -3,7 +3,7 @@ package LBRC;
 import javax.microedition.lcdui.*;
 import org.json.*;
 
-public class LBRCPresentationControl extends LBRCShowModule implements Runnable {
+public class LBRCPresentationControl extends LBRCShowModuleCanvas implements Runnable {
 	private boolean visible = false;
 	private Thread repaint;
 	private int current_slide = 1;

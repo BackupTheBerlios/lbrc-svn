@@ -4,7 +4,7 @@ import javax.microedition.lcdui.*;
 import org.json.*;
 import java.util.Vector;
 
-public class LBRCVolumeControl extends LBRCShowModule {
+public class LBRCVolumeControl extends LBRCShowModuleCanvas {
 	private Vector elements;
 	
 	LBRCVolumeControl(LBRCSenderController parent, String name) {
