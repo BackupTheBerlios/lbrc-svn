@@ -22,7 +22,7 @@ class LBRCSenderController implements CommandListener {
 		this.parent = parent;
 		display = Display.getDisplay(this.parent);
 		wait_screen = new WaitScreen();
-		displays = new LBRCShowModuleCanvas[3];
+		displays = new LBRCShowModule[3];
 		displays[0] = new LBRCKeyEcho(this, "KeyEcho");
 		displays[1] = new LBRCPresentationControl(this, "PresentationControl");
 		displays[2] = new LBRCVolumeControl(this, "VolumeControl");

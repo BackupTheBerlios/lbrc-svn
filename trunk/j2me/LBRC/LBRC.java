@@ -10,14 +10,18 @@ public class LBRC extends MIDlet {
 	Display display;
 
     public void startApp() {
+    	this.display = Display.getDisplay(this);
     	try {
-			this.display = Display.getDisplay(this);
 			interactiveControl = new LBRCSenderController(this);
+    	}catch (Exception e) {
+    		do_alert("Exception in initializing SenderController" + e.toString(), 20000);
+    	}
+    	try {
 			deviceSelect = new LBRCDeviceSelect(this);
 			deviceSelect.showChooser();
 			deviceSelect.FindDevices();
     	}catch (Exception e) {
-    		do_alert("Exception: " + e.toString(), 20000);
+    		do_alert("Exception in Deviceselect: " + e.toString(), 20000);
     	}
     }
 

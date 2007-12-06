@@ -2,14 +2,16 @@ package LBRC;
 
 import javax.microedition.lcdui.*;
 import org.json.*;
-import java.util.Vector;
+import java.util.*;
 
-public class LBRCVolumeControl extends LBRCShowModuleCanvas {
-	private Vector elements;
+public class LBRCVolumeControl extends LBRCShowModuleFormular {
+	private Hashtable volume_data;
+	private Hashtable visible_elements;
 	
 	LBRCVolumeControl(LBRCSenderController parent, String name) {
 		super(parent, name);
-		this.elements = new Vector();
+		visible_elements = new Hashtable();
+		volume_data = new Hashtable();
 	}
 	
 	public synchronized void handleRequest(JSONObject obj) {
@@ -17,42 +19,38 @@ public class LBRCVolumeControl extends LBRCShowModuleCanvas {
 		String command = obj.getString("command");
 		if(command.equals("updateVolumes")) {
 			JSONArray volumes = obj.getJSONArray("volumeData");
-			synchronized(elements) {
-				elements.removeAllElements();
-				elements.ensureCapacity(volumes.length());
+			synchronized(this.volume_data) {
+				this.volume_data.clear();
 				for(int i=0;i<volumes.length();i++) {
-					elements.addElement(volumes.getJSONArray(i));
+					JSONArray contents = volumes.getJSONArray(i);
+					this.volume_data.put(contents.getString(0), contents);
 				}
+				updateVolume();
 			}
 		}
-		this.repaint();
+
 	}
 	
-	protected void paint(Graphics g) {
-		g.setColor(255, 255, 255);
-		g.fillRect(0, 0, getWidth(), getHeight());
-		int width = g.getClipWidth() - g.getClipX();
-		//int height = g.getClipHeight() - g.getClipY();
-		g.setColor(0, 0, 0);
-		Font f = g.getFont();
-		int fh = f.getHeight();
-		int space_offset = f.stringWidth(" ");
-		synchronized(elements) {
-			for(int i = 0; i<elements.size(); i++) {
-				JSONArray data = (JSONArray) elements.elementAt(i);
-				String vlabel = data.getString(0);
-				int vvalue = data.getInt(1);
-				double sum_offset = i * 3.5 * fh;
-				int label_y_offset = (int) (sum_offset + 0.5 * fh);
-				int bar_y_offset =  (int) (sum_offset + 2 * fh);
-				int bar_width = width * vvalue / 100;
-				int bar_height = fh;
-				g.setColor(0, 0, 0);
-				g.drawString(vlabel, space_offset, label_y_offset, Graphics.TOP|Graphics.LEFT);
-				g.setColor(119,83,255);
-				g.fillRect(0, bar_y_offset, bar_width, bar_height);
-				g.setColor(175,153,255);
-				g.fillRect(bar_width, bar_y_offset, width - bar_width, bar_height);	
+	private void updateVolume() {
+		Enumeration enum_key_visible_elements = visible_elements.keys();
+		while(enum_key_visible_elements.hasMoreElements()){
+			String key = (String) enum_key_visible_elements.nextElement();
+			if ( ! volume_data.containsKey(key) ) {
+				Integer element = (Integer) visible_elements.get(key);
+				this.delete(element.intValue());
+				visible_elements.remove(key);
+			}
+		}
+		Enumeration enum_key_volume_data = volume_data.keys();
+		while(enum_key_volume_data.hasMoreElements()) {
+			String key = (String) enum_key_volume_data.nextElement();
+			JSONArray vol_dat = (JSONArray) volume_data.get(key);
+			if ( ! visible_elements.contains(key)) {
+				Gauge gauge = new Gauge(vol_dat.getString(0), false, 100, vol_dat.getInt(1)); 
+				visible_elements.put(key, gauge);
+			} else {
+				Gauge gauge = (Gauge) visible_elements.get(key);
+				gauge.setValue(vol_dat.getInt(1));
 			}
 		}
 	}
