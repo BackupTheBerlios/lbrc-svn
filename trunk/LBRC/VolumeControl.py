@@ -148,7 +148,7 @@ class VolumeControl(Listener):
         logging.debug("end _getVolume")
         volume = int(100 * mixer.get_volume(track)[0] / track.max_volume)
         mixer.set_state(gst.STATE_NULL)
-        return str(volume)
+        return volume
 
     def sendVolumeUpdate(self):
         query = {'type': "VolumeControl",

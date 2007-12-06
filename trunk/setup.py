@@ -55,7 +55,7 @@ for (path, dirs, files) in os.walk("pot"):
 
 setup(name='LBRC',
       description = 'Linux Bluetooth Remote Control',
-      version='0.4',
+      version='0.5',
       author = 'Matthias Blaesing',
       author_email = 'matthias.blaesing@rwth-aachen.de',
       url = 'http://lbrc.berlios.de/',
