@@ -62,7 +62,7 @@ setup(name='LBRC',
       platforms = ['linux'],
       keywords = ['remotecontrol', 'bluetooth', 'j2me'],
       packages=['LBRC', 'LBRC_gtk_gui'],
-      scripts=['LBRCdbus.py', 'LBRC-applet.py', 'uinputbridge'],
+      scripts=['LBRCdbus', 'LBRC-applet', 'uinputbridge'],
       cmdclass = {'build': custom_build},
       data_files=data_files
       )

@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 from LBRC.l10n import _
 from LBRC.BTServer import BTServer
 from LBRC.CommandExecutor import CommandExecutor

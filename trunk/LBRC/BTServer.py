@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: UTF-8 -*-
 #
 # TODO: maybe rework connection handling (create a separate class for the connection?!)

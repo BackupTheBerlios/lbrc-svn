@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 from LBRC import dinterface
 import dbus
 import logging

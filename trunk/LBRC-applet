@@ -57,8 +57,8 @@ while count < 10:
             # the get_profiles call would have blocked till it was started)
             # But we try the invokation only once!
             pathhelper = path()
-            logging.debug("DBUS Component: invoking: " + pathhelper.get_binfile("LBRCdbus.py"))
-            gobject.spawn_async([pathhelper.get_binfile("LBRCdbus.py")], 
+            logging.debug("DBUS Component: invoking: " + pathhelper.get_binfile("LBRCdbus"))
+            gobject.spawn_async([pathhelper.get_binfile("LBRCdbus")], 
                                 flags= gobject.SPAWN_STDOUT_TO_DEV_NULL | 
                                        gobject.SPAWN_STDERR_TO_DEV_NULL )
 

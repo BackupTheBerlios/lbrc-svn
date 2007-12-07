@@ -1,6 +1,4 @@
-#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# 
 # LBRC Configuration Editor.
 # Copyright (C) 2007 LBRC team.
 # Authors: 

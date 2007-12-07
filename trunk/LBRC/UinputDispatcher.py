@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 import os, struct, fcntl, time
 import os.path as osp
 import logging
