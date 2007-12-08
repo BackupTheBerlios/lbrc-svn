@@ -2,7 +2,7 @@ Source: lbrc
 Section: python
 Priority: optional
 Maintainer: Matthias Bläsing <matthias.blaesing@rwth-aachen.de>
-Build-Depends: python (>= 2.3.5-11), debhelper (>= 5.0.37.2), cdbs, libdbus-glib-1-dev, python-all-dev, python-central (>= 0.5)
+Build-Depends: python (>= 2.3.5-11), debhelper (>= 5.0.37.2), cdbs, libdbus-glib-1-dev, python-all-dev, python-support
 XS-Python-Version: all
 Standards-Version: 3.7.3
 
@@ -12,7 +12,7 @@ XB-Python-Version: ${python:Versions}
 Depends: ${python:Depends}, python-json, python-dbus, python-gtk2, python-bluez, python-gnome2-extras
 Description: Linux Bluetooth Remote Control
  Allows a J2ME device to control the Linux PC. This application allows:
- * injection of mouse/keyboard events into the kernel
- * execution of custom commands (commandline + dbus)
- * remote volume control
- * controlling a mplayer instance
+ 	* injection of mouse/keyboard events into the kernel
+ 	* execution of custom commands (commandline + dbus)
+ 	* remote volume control
+ 	* controlling a mplayer instance
