@@ -13,4 +13,6 @@ Depends: ${python:Depends}, python-json, python-dbus, python-gtk2, python-bluez,
 Description: Linux Bluetooth Remote Control
  Allows a J2ME device to control the Linux PC. This application allows:
  * injection of mouse/keyboard events into the kernel
- * execution of custom commands
+ * execution of custom commands (commandline + dbus)
+ * remote volume control
+ * controlling a mplayer instance
