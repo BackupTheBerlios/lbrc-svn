@@ -1,8 +1,8 @@
 MIDlet-1: LBRC,/res/Blue.png,LBRC.LBRC
-MIDlet-Jar-Size: 55068
+MIDlet-Jar-Size: 54058
 MIDlet-Jar-URL: LBRC.jar
 MIDlet-Name: Linux Bluetooth Remote Control
 MIDlet-Vendor: LBRC Team
-MIDlet-Version: 1.2.13
+MIDlet-Version: 1.2.4
 MicroEdition-Configuration: CLDC-1.1
 MicroEdition-Profile: MIDP-2.0

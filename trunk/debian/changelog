@@ -1,6 +1,6 @@
-lbrc (0.5) unstable; urgency=low
+lbrc (0.4+svn198) unstable; urgency=low
 
-  * New upstream version
+  * First upload to debian (Closes: #424909)
 
  -- Matthias Bläsing <matthias.blaesing@rwth-aachen.de>  Thu,  06 Dec 2007 20:22:00 +0100
 
