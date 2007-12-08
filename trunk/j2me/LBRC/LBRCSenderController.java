@@ -27,10 +27,9 @@ class LBRCSenderController implements CommandListener {
 		displays[1] = new LBRCPresentationControl(this, "PresentationControl");
 		displays[2] = new LBRCVolumeControl(this, "VolumeControl");
 		for(int i=0;i<displays.length; i++) {
-			Displayable disp = (Displayable) displays[i];
-			disp.addCommand(LBRCSenderController.back);
-			disp.addCommand(LBRCSenderController.exit);
-			disp.setCommandListener(this);
+			displays[i].addCommand(LBRCSenderController.back);
+			displays[i].addCommand(LBRCSenderController.exit);
+			displays[i].setCommandListener(this);
 		}
 		this.sender = null;
     }
@@ -69,7 +68,7 @@ class LBRCSenderController implements CommandListener {
     }
     
     protected void senderReady() {
-    	display.setCurrent((Displayable) displays[0]);
+    	display.setCurrent(displays[0]);
     }
     
 	public void commandAction(Command com, Displayable dis) {
@@ -119,7 +118,7 @@ class LBRCSenderController implements CommandListener {
 					try {
 						displays[i].handleRequest(obj);
 					} catch (Exception e) {
-						parent.do_alert("Exception in handleRequest (" + displays[i].getName() + "): " + e.toString(), 5000); 
+						parent.do_alert("Exception in handleRequest (" + displays[i].name + "): " + e.toString(), 5000); 
 					}
 				}
 		}
@@ -131,13 +130,13 @@ class LBRCSenderController implements CommandListener {
     protected void hideModule(String module_name) {
     	synchronized(previous) {
     		doDebug("hideModule", "To Hide Module: " + module_name + " (" + getPreviousList() + ")");
-	    	if ( ((LBRCShowModuleCanvas) display.getCurrent()).name.equals(module_name)) {
+	    	if ( ((LBRCShowModule) display.getCurrent()).name.equals(module_name)) {
 	    		doDebug("hideModule", "Found and hiding: " + module_name + " (" + getPreviousList() + ")");
 	    		previousModule();
 	    	} else {
 	    		doDebug("hideModule", "Not Found and going through history: " + module_name + " (" + getPreviousList() + ")");
 	    		for(int i = previous.size()-1; i>1; i--) {
-	    			if (((LBRCShowModuleCanvas) previous.elementAt(i)).name.equals(module_name)) {
+	    			if (((LBRCShowModule) previous.elementAt(i)).name.equals(module_name)) {
 	    				previous.removeElementAt(i);
 	    				break;
 	    			}
@@ -150,8 +149,8 @@ class LBRCSenderController implements CommandListener {
     	synchronized(previous) {
 	    	Displayable next_display = null;
 	    	for(int i=0;i<displays.length;i++) {
-	    		if (displays[i].getName().equals(module_name)) {
-	    			next_display = (Displayable) displays[i];
+	    		if (displays[i].name.equals(module_name)) {
+	    			next_display = displays[i];
 	    			break;
 	    		}
 	    	}
@@ -173,7 +172,7 @@ class LBRCSenderController implements CommandListener {
     		if ( previous.size() > 1 ) { 
     			String name = "unknown";
     			try {
-    				LBRCShowModuleCanvas last_element = (LBRCShowModuleCanvas) previous.lastElement();
+    				LBRCShowModule last_element = (LBRCShowModule) previous.lastElement();
     				name = last_element.name;
     			} catch (Exception e) {}
     			previous.removeElementAt(previous.size()-1);
@@ -188,7 +187,7 @@ class LBRCSenderController implements CommandListener {
     		for(int i=0; i<previous.size();i++){
     			String name = "unkown";
     			try {
-    				LBRCShowModuleCanvas last_element = (LBRCShowModuleCanvas) previous.elementAt(i);
+    				LBRCShowModule last_element = (LBRCShowModule) previous.elementAt(i);
     				name = last_element.name;
     			} catch (Exception e){}
     			if (i>0) return_string.append(", ");

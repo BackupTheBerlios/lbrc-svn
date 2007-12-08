@@ -3,21 +3,21 @@ package LBRC;
 import javax.microedition.lcdui.*;
 import org.json.*;
 
-public class LBRCKeyEcho extends LBRCShowModuleCanvas {
+public class LBRCKeyEcho extends LBRCShowModule {
 	private String pressedKeyName = "No key pressed";
 	private int pressedKey = 0;
 	
 	LBRCKeyEcho(LBRCSenderController parent, String name) {
 		super(parent, name);
 	}
-	
-	public void keyPressed(final int keyCode) {
+
+    protected void keyPressed(final int keyCode) {
 		pressedKeyName = getKeyName(keyCode);
 		pressedKey = keyCode;   	
 		super.keyPressed(keyCode);
     }
     
-	public void keyReleased(final int keyCode) {
+    protected void keyReleased(final int keyCode) {
 		pressedKeyName = getKeyName(keyCode);
 		pressedKey = keyCode;
 		super.keyReleased(keyCode);
