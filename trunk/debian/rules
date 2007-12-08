@@ -5,9 +5,6 @@ DEB_PYTHON_SYSTEM = pycentral
 include /usr/share/cdbs/1/rules/debhelper.mk
 include /usr/share/cdbs/1/class/python-distutils.mk
 
-clean::
-	# Get rid of svn directories from checkout
-	find . -iname ".svn" -type d -print0 | xargs -0 rm -rf
-
 install/$(DEB_PYTHON_MODULE_PACKAGE)::
+	# Get rid of the empty /usr/lib dir
 	rm -r debian/$(DEB_PYTHON_MODULE_PACKAGE)/usr/lib
