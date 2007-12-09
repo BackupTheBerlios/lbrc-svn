@@ -1,8 +1,8 @@
-lbrc (0.4+svn208) unstable; urgency=low
+lbrc (0.4+svn209) unstable; urgency=low
 
   * First upload to debian (Closes: #424909)
 
- -- Matthias Bläsing <matthias.blaesing@rwth-aachen.de>  Thu,  06 Dec 2007 20:22:00 +0100
+ -- Matthias Bläsing <matthias.blaesing@rwth-aachen.de>  Sun,  09 Dec 2007 16:51:00 +0100
  
 lbrc (0.4+svn202) unstable; urgency=low
 
