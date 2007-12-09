@@ -1,6 +1,6 @@
 package LBRC;
-import org.json.*;
+import org.json.me.*;
 
 public interface LBRCRequestHandler {
-	public void handleRequest(JSONObject obj);
+	public void handleRequest(JSONObject obj) throws JSONException;
 }

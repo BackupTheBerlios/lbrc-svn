@@ -5,8 +5,7 @@ import javax.microedition.io.StreamConnection;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.InputStream;
-import org.json.*;
-import org.json.text.ParseException;
+import org.json.me.*;
 
 final class LBRCSender implements Runnable {
 	// Make the protocol upgradeable 
@@ -34,23 +33,38 @@ final class LBRCSender implements Runnable {
 	
 	public void sendListReply(int listindex) {
 		JSONObject lr = new JSONObject();
-		lr.put("type", "listReply");
-		lr.put("selectionIndex", listindex);
+		try {
+			lr.put("type", "listReply");
+			lr.put("selectionIndex", listindex);
+		} catch (JSONException e) {
+			parent.do_alert("Error while encoding JSON:" + e.toString(), 5000);
+			return;
+		}
 		send(lr);
 	}
 	
 	public void sendKey(int keyCode, int mapping) {
 		JSONObject keycode = new JSONObject();
-		keycode.put("type", "keyCode");
-		keycode.put("keycode", keyCode);
-		keycode.put("mapping", mapping);
+		try {
+			keycode.put("type", "keyCode");
+			keycode.put("keycode", keyCode);
+			keycode.put("mapping", mapping);
+		} catch (JSONException e) {
+			parent.do_alert("Error while encoding JSON:" + e.toString(), 5000);
+			return;
+		}
 		send(keycode);
 	}
 	
 	private void initCall() {
 		JSONObject init = new JSONObject();
-		init.put("type", "init");
-		init.put("protocol", protocol);
+		try {
+			init.put("type", "init");
+			init.put("protocol", protocol);
+		} catch (JSONException e) {
+			parent.do_alert("Error while encoding JSON:" + e.toString(), 5000);
+			return;
+		}
 		send(init);
 	}
 	
@@ -102,8 +116,8 @@ final class LBRCSender implements Runnable {
 						JSONObject obj = new JSONObject(string);
 						handleRequest(obj);
 						len = 0;
-					} catch (ParseException e) {
-						this.parent.do_alert("Received bogus package from server", 4000);
+					} catch (JSONException e) {
+						this.parent.do_alert("Received bogus package from server" + e.toString(), 4000);
 					}
 				}
 			}

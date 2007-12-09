@@ -1,7 +1,7 @@
 package LBRC;
 
 import javax.microedition.lcdui.*;
-import org.json.*;
+import org.json.me.*;
 
 public class LBRCPresentationControl extends LBRCShowModule implements Runnable {
 	private boolean visible = false;
@@ -34,7 +34,7 @@ public class LBRCPresentationControl extends LBRCShowModule implements Runnable 
 		this.repaint.start();
 	}
 
-    public synchronized void handleRequest(JSONObject obj) {
+    public synchronized void handleRequest(JSONObject obj) throws JSONException {
     	if (! obj.getString("type").equals(this.name)) return;
     	String command = obj.getString("command");
 		if (command.equals("changeSlide")) {

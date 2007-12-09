@@ -1,7 +1,7 @@
 package LBRC;
 
 import javax.microedition.lcdui.*;
-import org.json.*;
+import org.json.me.*;
 import java.util.Vector;
 
 public class LBRCVolumeControl extends LBRCShowModule {
@@ -12,7 +12,7 @@ public class LBRCVolumeControl extends LBRCShowModule {
 		this.elements = new Vector();
 	}
 	
-	public synchronized void handleRequest(JSONObject obj) {
+	public synchronized void handleRequest(JSONObject obj) throws JSONException {
 		if (! obj.getString("type").equals(this.name)) return;
 		String command = obj.getString("command");
 		if(command.equals("updateVolumes")) {
@@ -40,8 +40,14 @@ public class LBRCVolumeControl extends LBRCShowModule {
 		synchronized(elements) {
 			for(int i = 0; i<elements.size(); i++) {
 				JSONArray data = (JSONArray) elements.elementAt(i);
-				String vlabel = data.getString(0);
-				int vvalue = data.getInt(1);
+				String vlabel = "";
+				int vvalue = 0;
+				try {
+					vlabel = data.getString(0);
+					vvalue = ((Integer) data.get(1)).intValue();
+				} catch (JSONException e) {
+					continue;
+				}
 				double sum_offset = i * 3.5 * fh;
 				int label_y_offset = (int) (sum_offset + 0.5 * fh);
 				int bar_y_offset =  (int) (sum_offset + 2 * fh);

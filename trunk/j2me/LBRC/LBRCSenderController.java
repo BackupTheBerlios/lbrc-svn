@@ -3,8 +3,7 @@ package LBRC;
 import java.util.Vector;
 import java.lang.StringBuffer;
 import javax.microedition.lcdui.*;
-import de.enough.polish.util.ArrayList;
-import org.json.*;
+import org.json.me.*;
 
 class LBRCSenderController implements CommandListener {
 	private final static Command exit = new javax.microedition.lcdui.Command("Exit", Command.EXIT, 1);
@@ -45,10 +44,12 @@ class LBRCSenderController implements CommandListener {
     	sender = new LBRCSender(this, url);
     }
  
-    public void doListQuery(String title, ArrayList entries) {
+    public void doListQuery(String title, JSONArray entries) {
     	list_query = new List(title, Choice.IMPLICIT);
-    	for(int i=0;i<entries.size();i++) {
-    		list_query.append(entries.get(i).toString(), null);
+    	for(int i=0;i<entries.length();i++) {
+    		try {
+    			list_query.append(((String)entries.get(i)).toString(), null);
+    		} catch (JSONException e) {}
     	}
     	list_query.addCommand(back);
     	list_query.setCommandListener(this);
@@ -59,10 +60,15 @@ class LBRCSenderController implements CommandListener {
     public void doDebug(String function, String message) {
     	if (sender != null) {
     		JSONObject debug_query = new JSONObject();
-    		debug_query.put("type", "debugMessage");
-    		debug_query.put("level", "debug");
-    		debug_query.put("function", function);
-    		debug_query.put("message", message);
+    		try {
+	    		debug_query.put("type", "debugMessage");
+	    		debug_query.put("level", "debug");
+	    		debug_query.put("function", function);
+	    		debug_query.put("message", message);
+    		} catch (JSONException e) {
+    			parent.do_alert("Error while encoding JSON for debug", 1000);
+    			return;
+    		}
     		sender.send(debug_query);
     	}
     }
@@ -103,7 +109,7 @@ class LBRCSenderController implements CommandListener {
     	try {
 		if (obj.getString("type").equals("listQuery")) {
 			// TODO: Make sure only one ListRequest is processed at one time
-			doListQuery(obj.getString("title"), obj.getJSONArray("list").getArrayList());
+			doListQuery(obj.getString("title"), obj.getJSONArray("list"));
 		} else if (obj.getString("type").equals("displayControl")) {
 			String command = obj.getString("command");
 			if ( command.equals("showModule")) {

@@ -1,7 +1,7 @@
 package LBRC;
 
 import javax.microedition.lcdui.*;
-import org.json.*;
+import org.json.me.*;
 
 public class LBRCKeyEcho extends LBRCShowModule {
 	private String pressedKeyName = "No key pressed";
