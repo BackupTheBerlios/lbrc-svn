@@ -44,3 +44,15 @@
 	* cleanups in the J2ME client
 	* join the severeal diffent profiles for keyboard/mouse control into one
 	* add BlueZ Control to GUI (you can switch visibility there
+	
+2007-12-26 Matthias Bläsing <matthias.blaesing@rwth-aachen.de>
+	Please note: This is a _short_ summary, please see SVN Log for a detailed log
+	* handle non-existing config more gracefully (was a crasher)
+    * MPlayer allows to select files and play them
+    * add a module to aid presentation control (stopwatch and log of duration of slides)
+    * make CommanExecutor more robust
+    * add --debug to dbus backend and to the frontend
+    * better compatibility with bluetooth socket implementations
+    * add visual feed back to VolumeContol Applet
+    * move VolumeControl to gstreamer (should enable easy control of OSS and Pulseaudio)
+    * switch to a simpler and more clearly licensed JSON Parser
