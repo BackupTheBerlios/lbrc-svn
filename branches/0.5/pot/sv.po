@@ -1,0 +1,150 @@
+# Swedish translation for lbrc.
+# Copyright (C) 2007 Free Software Foundation, Inc.
+# This file is distributed under the same license as the lbrc package.
+# Daniel Nylander <po@danielnylander.se>, 2007.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: lbrc\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2007-03-11 21:06-0300\n"
+"PO-Revision-Date: 2007-03-22 07:46+0100\n"
+"Last-Translator: Daniel Nylander <po@danielnylander.se>\n"
+"Language-Team: Swedish <tp-sv@listor.tp-sv.se>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: ../LBRC-applet:35
+msgid "Could not connect to DBUS component of LBRC"
+msgstr "Kunde inte ansluta till DBUS-komponenten för LBRC"
+
+#: ../LBRC_gtk_gui/applet.py:49
+#, python-format
+msgid ""
+"Profile changed:\n"
+"%(profilename)s"
+msgstr ""
+"Profilen ändrad:\n"
+"%(profilename)s"
+
+#: ../LBRC_gtk_gui/applet.py:53
+#, python-format
+msgid ""
+"Connect from:\n"
+"%(btname)s (%(btaddress)s)"
+msgstr ""
+"Anslutning från:\n"
+"%(btname)s (%(btaddress)s)"
+
+#: ../LBRC_gtk_gui/applet.py:56
+#, python-format
+msgid ""
+"Disconnect from:\n"
+"%(btname)s (%(btaddress)s)"
+msgstr ""
+"Frånkoppling från:\n"
+"%(btname)s (%(btaddress)s)"
+
+#: ../LBRC_gtk_gui/applet.py:72
+msgid "Profiles"
+msgstr "Profiler"
+
+#: ../LBRC_gtk_gui/applet.py:93
+#: ../LBRC_gtk_gui/config.py:328
+msgid "System"
+msgstr "System"
+
+#: ../LBRC_gtk_gui/BlueZControl.py:70
+msgid "Bluetooth visible"
+msgstr "Blåtand synlig"
+
+#: ../LBRC_gtk_gui/BlueZControl.py:64
+msgid "Bluetooth visible (automatic hiding)"
+msgstr "Blåtand synlig (döljs automatiskt)"
+
+#: ../LBRC_gtk_gui/BlueZControl.py:66
+msgid "Bluetooth invisible"
+msgstr "Blåtand osynlig"
+
+#: ../LBRC_gtk_gui/config.py:32
+msgid "KEYBOARD"
+msgstr "TANGENTBORD"
+
+#: ../LBRC_gtk_gui/config.py:32
+msgid "MOUSE BUTTON"
+msgstr "MUSKNAPP"
+
+#: ../LBRC_gtk_gui/config.py:32
+msgid "MOUSE WHEEL"
+msgstr "MUSHJUL"
+
+#: ../LBRC_gtk_gui/config.py:32
+msgid "MOUSE AXIS"
+msgstr "MUSAXEL"
+
+#: ../LBRC_gtk_gui/config.py:125
+msgid "Event type"
+msgstr "Händelsetyp"
+
+#: ../LBRC_gtk_gui/config.py:126
+msgid "Event generated"
+msgstr "Händelse genererad"
+
+#: ../LBRC_gtk_gui/config.py:127
+msgid "Cellphone keycode"
+msgstr "Tangentkod för mobiltelefon"
+
+#: ../LBRC_gtk_gui/config.py:398
+msgid "What is the name for the new profile?"
+msgstr "Vad är namnet för den nya profilen?"
+
+#: ../LBRC_gtk_gui/config.glade.h:1
+msgid "<i>Path to UInput Device file please only fill, if you experience problems with the autodetection</i>"
+msgstr "<i>Sökväg till UInput-enhetsfil, fyll endast i om du upplever problem med automatisk identifiering</i>"
+
+#: ../LBRC_gtk_gui/config.glade.h:2
+msgid "Bluetooth Control:"
+msgstr "Blåtandskontroll:"
+
+#: ../LBRC_gtk_gui/config.glade.h:3
+msgid "Commands"
+msgstr "Kommandon"
+
+#: ../LBRC_gtk_gui/config.glade.h:4
+msgid "Configuration"
+msgstr "Konfiguration"
+
+#: ../LBRC_gtk_gui/config.glade.h:5
+msgid "Keyboard/Mouse"
+msgstr "Tangentbord/Mus"
+
+#: ../LBRC_gtk_gui/config.glade.h:6
+#: ../LBRC_gtk_gui/keymouseeditwindow.glade.h:4
+msgid "LBRC Configuration"
+msgstr "Konfiguration av LBRC"
+
+#: ../LBRC_gtk_gui/config.glade.h:7
+msgid "Persistent profiles: "
+msgstr "Bestående profiler: "
+
+#: ../LBRC_gtk_gui/config.glade.h:8
+msgid "Profile"
+msgstr "Profil"
+
+#: ../LBRC_gtk_gui/config.glade.h:9
+msgid "Save current profile for next start"
+msgstr "Spara aktuell profil för nästa start"
+
+#: ../LBRC_gtk_gui/config.glade.h:10
+msgid "Show bluetooth controls"
+msgstr "Visa blåtandskontroller"
+
+#: ../LBRC_gtk_gui/config.glade.h:11
+msgid "UInput Device:"
+msgstr "UInput-enhet:"
+
+#: ../LBRC_gtk_gui/keymouseeditwindow.glade.h:5
+msgid "Repeat frequency"
+msgstr "Upprepningsfrekvens"
+
