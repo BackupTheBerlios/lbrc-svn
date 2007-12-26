@@ -277,21 +277,69 @@ public class JSONArray {
             "] is not a JSONObject.");
     }
 
-
+    /**
+     * Get the int value associated with a key. If the number value is too
+     * large for an int, it will be clipped.
+     *
+     * @param key   A key string.
+     * @return      The integer value.
+     * @throws   JSONException if the key is not found or if the value cannot
+     *  be converted to an integer.
+     */
+    public int getInt(int key) throws JSONException {
+        Object o = get(key);
+        if (o instanceof Byte) {
+            return ((Byte)o).byteValue();
+        } else if (o instanceof Short) {
+            return ((Short)o).shortValue();
+        } else if (o instanceof Integer) {
+            return ((Integer)o).intValue();
+        } else if (o instanceof Long) {
+            return (int) ((Long)o).longValue();
 //#if CLDC!="1.0"
-//#     /**
-//#      * Get the long value associated with an index.
-//#      *
-//#      * @param index The index must be between 0 and length() - 1.
-//#      * @return      The value.
-//#      * @throws   JSONException If the key is not found or if the value cannot
-//#      *  be converted to a number.
-//#      */
-//#     public long getLong(int index) throws JSONException {
-//#         Object o = get(index);
-//#         return (long)getDouble(index);
-//#     }
+//#         } else if (o instanceof Float) {
+//#             return (int) ((Float)o).floatValue();
+//#         } else if (o instanceof Double) {
+//#             return (int) ((Double)o).doubleValue();
+//#         } else if (o instanceof String) {
+//#             return (int) getDouble(key);
 //#endif
+        } 
+        throw new JSONException("JSONArray[" + Integer.toString(key) +
+            "] is not a number.");
+    }
+    
+    /**
+     * Get the long value associated with a key. If the number value is too
+     * long for a long, it will be clipped.
+     *
+     * @param key   A key string.
+     * @return      The long value.
+     * @throws   JSONException if the key is not found or if the value cannot
+     *  be converted to a long.
+     */
+    public long getLong(int key) throws JSONException {
+        Object o = get(key);
+        if (o instanceof Byte) {
+            return ((Byte)o).byteValue();
+        } else if (o instanceof Short) {
+            return ((Short)o).shortValue();
+        } else if (o instanceof Integer) {
+            return ((Integer)o).intValue();
+        } else if (o instanceof Long) {
+            return ((Long)o).longValue();
+//#if CLDC!="1.0"
+//#         } else if (o instanceof Float) {
+//#             return (long) ((Float)o).floatValue();
+//#         } else if (o instanceof Double) {
+//#             return (long) ((Double)o).doubleValue();
+//#         } else if (o instanceof String) {
+//#             return (long) getDouble(key);
+//#endif
+        } 
+        throw new JSONException("JSONObject[" + Integer.toString(key) +
+            "] is not a number.");
+    }
 
     /**
      * Get the string associated with an index.
@@ -751,7 +799,6 @@ public class JSONArray {
         }
         return this;
     }
-
 
     /**
      * Produce a JSONObject by combining a JSONArray of names with the values
