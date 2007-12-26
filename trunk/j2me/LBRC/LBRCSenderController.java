@@ -48,7 +48,7 @@ class LBRCSenderController implements CommandListener {
     	list_query = new List(title, Choice.IMPLICIT);
     	for(int i=0;i<entries.length();i++) {
     		try {
-    			list_query.append(((String)entries.get(i)).toString(), null);
+    			list_query.append(entries.getString(i), null);
     		} catch (JSONException e) {}
     	}
     	list_query.addCommand(back);

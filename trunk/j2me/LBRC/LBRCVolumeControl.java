@@ -44,7 +44,7 @@ public class LBRCVolumeControl extends LBRCShowModule {
 				int vvalue = 0;
 				try {
 					vlabel = data.getString(0);
-					vvalue = ((Integer) data.get(1)).intValue();
+					vvalue = data.getInt(1);
 				} catch (JSONException e) {
 					continue;
 				}
