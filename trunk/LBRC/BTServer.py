@@ -1,6 +1,5 @@
 # -*- coding: UTF-8 -*-
 #
-# TODO: maybe rework connection handling (create a separate class for the connection?!)
 # TODO: react to config changes (currently the configs are checked on demand, so no problem - currently!)
 
 __extra_epydoc_fields__ = [('signal', 'Signal', 'Signals')]

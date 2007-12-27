@@ -9,6 +9,7 @@ from LBRC.UinputDispatcher import UinputDispatcher
 from LBRC.VolumeControl import VolumeControl
 from LBRC.config import config
 from LBRC.path import path
+from LBRC import dinterface
 import LBRC.consts as co
 
 import bluetooth
@@ -113,12 +114,23 @@ class ConnectionControl(dbus.service.Object):
         self.btserver.connect('connect', self._connect_cb)
         self.btserver.connect('disconnect', self._disconnect_cb)
     
+    @staticmethod
+    def _lookup_bluetooth_name(bluetooth_address):
+        # TODO: Handle no adapters
+        # TODO: Handles RequestDefered return type + NotAvailable
+        bluez_manager = dinterface(dbus.SystemBus(), 'org.bluez', '/org/bluez', 'org.bluez.Manager')
+        try:
+            default_adapter = dinterface(dbus.SystemBus(), 'org.bluez', bluez_manager.DefaultAdapter(), 'org.bluez.Adapter')
+            return default_adapter.GetRemoteName(bluetooth_address)
+        except dbus.exceptions.DBusException:
+            return bluetooth_address
+    
     def _connect_cb(self,btserver, btadress, port):
-        self.connect_cb(str(bluetooth.lookup_name(btadress)), btadress, port)
+        self.connect_cb(self._lookup_bluetooth_name(btadress), btadress, port)
         return True
         
     def _disconnect_cb(self, btserver, btadress, port):
-        self.disconnect_cb(str(bluetooth.lookup_name(btadress)), btadress, port)
+        self.disconnect_cb(self._lookup_bluetooth_name(btadress), btadress, port)
         return True
     
     @dbus.service.method(DBUSIFACE, out_signature='')
