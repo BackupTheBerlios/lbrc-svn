@@ -9,7 +9,7 @@ from LBRC.config import config
 import pygtk
 pygtk.require("2.0")
 import bluetooth
-import cjson
+import LBRC.json as json
 import os
 import math
 import re
@@ -38,7 +38,7 @@ class BTConnection(gobject.GObject):
         # or we only see a partital package, that we feed back into the buffer
         self.buffer = packets.pop()            
         for packet in packets:
-            data = cjson.decode(packet.encode('utf-8'))
+            data = json.read(packet.encode('utf-8'))
             if (data['type'] == "keyCode"):
                 mapping = data["mapping"]
                 keycode = data["keycode"]
@@ -63,7 +63,7 @@ class BTConnection(gobject.GObject):
     def send_query(self, package):
         # TODO: Handle larger packages on client side (what is needed?!)
         logging.debug("Sending package:\n" + str(package))
-        message = (cjson.encode(package) + u"\u0000").encode('utf-8')
+        message = (json.write(package) + u"\u0000").encode('utf-8')
         logging.debug(repr(message))
         if len(message) > 2048:
             logging.error("Message to large to be handled on J2ME side. Please report bug!")
