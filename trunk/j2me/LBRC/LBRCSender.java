@@ -107,6 +107,14 @@ final class LBRCSender implements Runnable {
 				if(in > 0) {
 					buffer[len] = (byte) in;
 					len++;
+					/* when there is the risk of a buffer overflow, increase buffer */
+					if (len == buffer.length) {
+						byte[] new_buffer = new byte[buffer.length + 2048];
+						for(int i=0; i<buffer.length;i++) {
+							new_buffer[i] = buffer[i];
+						}
+						buffer = new_buffer;
+					}
 				} else if (in == -1 ) {
 					// -1 => Connection was closed, so exit the block
 					break;					
@@ -116,6 +124,7 @@ final class LBRCSender implements Runnable {
 						JSONObject obj = new JSONObject(string);
 						handleRequest(obj);
 						len = 0;
+						buffer = new byte[2048];
 					} catch (JSONException e) {
 						this.parent.do_alert("Received bogus package from server" + e.toString(), 4000);
 					}
