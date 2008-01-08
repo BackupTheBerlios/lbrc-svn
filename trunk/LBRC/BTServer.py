@@ -189,9 +189,9 @@ class BTServer(gobject.GObject):
 
         self.server_io_watch = None
 
-        self.port = bluetooth.get_available_port( bluetooth.RFCOMM )
         self.server_sock = bluetooth.BluetoothSocket( bluetooth.RFCOMM )
-        self.server_sock.bind(("", self.port))
+        self.server_sock.bind(("", bluetooth.PORT_ANY))
+        (addr, self.port) = self.server_sock.getsockname();
         self.server_sock.listen(1)
         
         self.bluez_db = dinterface(dbus.SystemBus(), 'org.bluez', '/org/bluez', 'org.bluez.Database')
