@@ -68,8 +68,14 @@ class config(gobject.GObject):
             self.system['profiles'] = {}
     
         self.profile_index = []
-        self.profile_index.extend([('system', profile_name) for profile_name in self.system['profiles']])
-        self.profile_index.extend([('user', profile_name) for profile_name in self.user['profiles']])
+        try:
+            self.profile_index.extend([('system', profile_name) for profile_name in self.system['profiles']])
+        except Exception:
+            pass
+        try:
+            self.profile_index.extend([('user', profile_name) for profile_name in self.user['profiles']])
+        except Exception:
+            pass
         self.emit('config-reread')
 
     def get_profiles(self):
