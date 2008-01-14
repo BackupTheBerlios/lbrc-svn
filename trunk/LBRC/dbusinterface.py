@@ -45,7 +45,7 @@ class DBUSProfileControl(dbus.service.Object):
     
     @dbus.service.method(DBUSIFACE, in_signature='ss', out_signature=None)
     def set_profile(self, config, profileid):
-        self.parent.set_profile(config, profileid)
+        self.parent.set_profile(str(config), str(profileid))
 
 class ProfileControl(gobject.GObject):
     __gsignals__ = {
