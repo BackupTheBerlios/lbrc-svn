@@ -2,9 +2,14 @@ from LBRC.Listener import Listener
 import os.path as osp
 import os
 from subprocess import Popen, PIPE
-import logging
 from LBRC.path import path
 from LBRC.l10n import _
+
+class FIFO(object):
+    """
+    Just a wrapper
+    """
+    pass
 
 class MPlayer(Listener):
     """
@@ -59,7 +64,7 @@ class MPlayer(Listener):
         This method is called, when a reply is send from the phone regarding
         the list selection request we send from L{keycode}
         """
-        logging.debug("MPlayerListReply: " + self.querytype + " " + str(index))
+        self.logger.debug("ListReply: " + self.querytype + " " + str(index))
         if self.querytype == 'fileselection':
             if index < 0:
                 self.querytype = None
@@ -112,7 +117,7 @@ class MPlayer(Listener):
                                      self._handle_list_reply)
 
     def _execute_command(self, command):
-        logging.debug("MPlayerCommand:" + command)
+        self.logger.debug("Command:" + command)
         if self.mplayer:
             try:
                 if command == "quit" or \
@@ -142,14 +147,14 @@ class MPlayer(Listener):
             elif "connect_fifo" == command[0:12]:
                 fifo = command[13:]
                 if not os.path.exists(fifo):
-                    logging.debug("FIFO does not exist: %s" % fifo)
+                    self.logger.debug("FIFO does not exist: %s" % fifo)
                     return
                 self.mplayer = FIFO()
                 try:
                     fd = os.open(fifo, os.O_NONBLOCK | os.O_WRONLY)
                     self.mplayer.stdin = os.fdopen(fd, "w")
                 except Exception, e:
-                    logging.error("Failed to open FIFO: %s\n%s" % (fifo, str(e)))
+                    self.logger.error("Failed to open FIFO: %s\n%s" % (fifo, str(e)))
                     self.mplayer = None
 
     def keycode(self, mapping, keycode):
