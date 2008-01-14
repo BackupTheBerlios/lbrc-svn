@@ -4,6 +4,7 @@ import gobject
 
 class Command(object):
     def __init__(self, description):
+        self.logger = logging.getLogger("LBRC.Listener.CommandExecutor")
         self.description = description
 
     def _to_array(self):
@@ -14,7 +15,7 @@ class Command(object):
         return command_line
     
     def call(self):
-        logging.debug("CommandExecutor - Calling: " + str(self._to_array()))
+        self.logger.debug("Calling: " + str(self._to_array()))
         gobject.spawn_async( self._to_array(), 
                              flags= gobject.SPAWN_STDOUT_TO_DEV_NULL | 
                                     gobject.SPAWN_STDERR_TO_DEV_NULL )

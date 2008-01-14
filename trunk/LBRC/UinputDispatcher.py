@@ -9,10 +9,11 @@ import LBRC.consts as co
 from LBRC import dinterface
 from LBRC.config import configValueNotFound
 from LBRC.path import path
+from LBRC.Listener import Listener
 
 class UinputServiceStartException(Exception): pass
 
-class UinputDispatcher( object ):
+class UinputDispatcher( Listener ):
     """
     The UinputDispatcher translates keycodes from the phone into input events, that are
     injected into the kernel. When the class is instanciated, the uinput device is opened
@@ -30,21 +31,17 @@ class UinputDispatcher( object ):
         @param  config:         configuration data
         @type   config:         dictionary
         """
+        Listener.__init__(self, config, "UInputDispatcher")
+        
         self.path = path()
         
         self.invoked = {}
-
-        self.config = config
         
         self.uinput_dev = None
         self.uinputbridge = None
         
         self._start_uinput_bridge()
         self._open_uinput_dev()
-        
-        self.init = []
-        self.actions = {}
-        self.destruct = []
 
     def _start_uinput_bridge(self):
         db = dinterface(dbus.SessionBus(), "org.freedesktop.DBus", "/", "org.freedesktop.DBus")
@@ -85,7 +82,7 @@ class UinputDispatcher( object ):
         @param  profile:    the profile we switch to
         @type   profile:    string
         """
-        logging.debug( "UinputDispatcher: set_profile(%s, %s)" % ( config, profile ) )
+        self.logger.debug("set_profile(%s, %s)" % ( config, profile ) )
         # Stop pending events
         for invoked in self.invoked.values():
             for i in invoked:
@@ -112,7 +109,7 @@ class UinputDispatcher( object ):
         @param    profile:   ID of the currently selected Profile
         @type     profile:   String
         """
-        logging.debug( "UinputDispatcher: _interpret_profile(%s, %s)" % ( config, profile ) )
+        self.logger.debug("_interpret_profile(%s, %s)" % ( config, profile ) )
         
         self.init = []
         self.actions = {}
@@ -123,13 +120,13 @@ class UinputDispatcher( object ):
         try:
             _actions = self.config.get_profile( config, profile, 'UinputDispatcher')['actions']
         except KeyError:
-            logging.debug("UinputDispatcher: actions section not found")
+            self.logger.debug("actions section not found")
         except configValueNotFound:
-            logging.debug("UinputDispatcher: Error fetching config section for %s profile from %s config" % (config, profile))
+            self.logger.debug("Error fetching config section for %s profile from %s config" % (config, profile))
             
         if _actions:
             for action in _actions:
-                logging.debug( str( action ) )
+                self.logger.debug( str( action ) )
                 event_tuple = ( int( action['keycode'] ), 0 )
                 if not self.actions.has_key( event_tuple ):
                     self.actions[event_tuple] = []
@@ -145,7 +142,7 @@ class UinputDispatcher( object ):
                 event.set_uinput_dev( self.uinput_dev, self.uinputbridge )
                 self.actions[event_tuple].append(event)
         else:
-            logging.debug( "UinputDispatcher: No actions were defined")
+            self.logger.debug("No actions were defined")
 
     def keycode( self, mapping, keycode ):
         """
@@ -159,7 +156,7 @@ class UinputDispatcher( object ):
         @param  keycode:        keycode received
         @type   keycode:        integer
         """
-        logging.debug( 'Keycode: %i, Mapping: %i' % ( keycode, mapping ) )
+        self.logger.debug( 'Keycode: %i, Mapping: %i' % ( keycode, mapping ) )
         event_tuple = ( keycode, mapping )
 
         if mapping == 0:
@@ -168,13 +165,13 @@ class UinputDispatcher( object ):
             release_event_tuple = ( keycode, 0 )
 
         if release_event_tuple in self.invoked:
-            logging.debug( 'Stopping invoked UinputEvents' )
+            self.logger.debug( 'Stopping invoked UinputEvents' )
             for event in self.invoked[release_event_tuple]:
                 event.stop()
             del self.invoked[release_event_tuple]
 
         if event_tuple in self.actions:
-            logging.debug( 'Invoked UinputEvents' )
+            self.logger.debug( 'Invoked UinputEvents' )
             for entry in self.actions[event_tuple]:
                 if not event_tuple in self.invoked:
                     self.invoked[event_tuple] = []
@@ -191,15 +188,15 @@ class UinputDispatcher( object ):
         @type     place:    String
         """
         # TODO: add check, that we are faced with a device file
-        logging.debug( 'Examing %s as uinput device' % ( place, ) )
+        self.logger.debug( 'Examing %s as uinput device' % ( place, ) )
         if osp.exists( place ):
             if not os.access( place, os.R_OK | os.W_OK ):
-                logging.warning( '%s looks like a uinput device node, but you lack necessary permissions' % ( place, ) )
+                self.logger.warning( '%s looks like a uinput device node, but you lack necessary permissions' % ( place, ) )
             else:
-                logging.debug( 'Asuming we found a suitable uinput device node: %s' % ( place, ) )
+                self.logger.debug( 'Asuming we found a suitable uinput device node: %s' % ( place, ) )
                 return True
         else:
-            logging.debug( 'The place does not exist!' )
+            self.logger.debug( 'The place does not exist!' )
         return False
 
     def _guess_uinput_dev(self):
@@ -217,21 +214,22 @@ class UinputDispatcher( object ):
             if self._check_uinput_dev(place):
                 return place
 
-        logging.debug( 'None of the well known places for uinput device was found to be ok, beginning search' )
+        self.logger.debug( 'None of the well known places for uinput device was found to be ok, beginning search' )
         possible_places = []
         for root, dirs, files in os.walk( '/dev' ):
             if 'uinput' in files:
                 if not osp.join( root, 'uinput' ) in known_places:
                     place = osp.join( root, 'uinput' )
                     if self._check_uinput_dev(place):
-                        logging.debug( 'Possible device node: %s' % (place, ) )
+                        self.logger.debug( 'Possible device node: %s' % (place, ) )
                         return place
-        logging.error( 'No device node found, that looks like a uinput device node - is the kernel module loaded?' )
+        self.logger.error( 'No device node found, that looks like a uinput device node - is the kernel module loaded?' )
 
 class Event( object ):
     def __init__( self ):
         # (keycode,mapping) => [callback_id, calls]
         # dictionaries, for handling repeats and cleanups of repeats
+        self.logger = logging.getLogger("LBRC.Listener.Event")
         self.repeathandler = []
         self.cleanup = []
         self.commands = []
@@ -321,12 +319,12 @@ class Event( object ):
         @param  param:      parameter for the event
         @type   param:      int
         """
-        logging.debug( "Event: %i, %i, %i" % ( event, descriptor, param ) )
+        self.logger.debug("%i, %i, %i" % ( event, descriptor, param ) )
         self.uinputbridge.SendEvent(self.uinput_dev, event, descriptor, param)
         #os.write( self.uinput_dev, struct.pack( "LLHHl", time.time(), 0, event, descriptor, param ) )
 
     def activate( self ):
-        logging.debug( "Event activated: " + self.type )
+        self.logger.debug( "activated: " + self.type )
         self._send_commands( self.commands, 0, 0 )
         if self.repeat_freq:
             self.repeathandler = []

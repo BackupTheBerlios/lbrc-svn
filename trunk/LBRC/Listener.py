@@ -6,9 +6,10 @@ class UndefinedCommandClass(Exception):
 
 class Listener(object):
     def __init__(self, config, name, **kwargs):
-        logging.debug(name + ": __init__ begin")
-        self.config = config
         self.name = name
+        self.logger = logging.getLogger('LBRC.Listener.' + self.name)
+        self.logger.debug("__init__ begin")
+        self.config = config
         if 'command_class' in kwargs:
             self.command_class = kwargs['command_class']
         else:
@@ -18,8 +19,14 @@ class Listener(object):
         self.init = []
         self.actions = {}
         self.destruct = []
-        logging.debug(name + ": __init__ done")
-        
+        self.logger.debug("__init__ of baseclass done")
+    
+    def _debug(self, message):
+        self.logger.debug(message)
+    
+    def _error(self, message):
+        self.logger.error(message)
+    
     def _interpret_profile(self, config, profile):
         """
         Interpret the profile data from the profile.conf(s) and push the commands into
@@ -27,7 +34,7 @@ class Listener(object):
 
         If no mapping is provided, we assume mapping = 0 => keypress
         """
-        logging.debug(self.name + ": _interpret_profile called")
+        self.logger.debug("_interpret_profile called")
         if not self.command_class:
             raise UndefinedCommandClass()
         self.init = []
@@ -37,13 +44,13 @@ class Listener(object):
             for init in self.config.get_profile(config, profile, self.name)['init']:
                 self.init.append(self.command_class(self, init))
         except:
-            logging.debug(self.name + ": failure while interprating init")
+            self.logger.debug("failure while interprating init")
             
         try:
             for destruct in self.config.get_profile(config, profile, self.name)['destruct']:
                 self.destruct.append(self.command_class(self, destruct))
         except:
-            logging.debug(self.name + ": failure while interprating destruct")
+            self.logger.debug("failure while interprating destruct")
        
         try:
             for action in self.config.get_profile(config, profile, self.name)['actions']:
@@ -56,8 +63,8 @@ class Listener(object):
                     self.actions[event_tuple] = []
                 self.actions[event_tuple].append(self.command_class(self, action))
         except:
-            logging.debug(self.name + ": failure while interprating actions")
-        logging.debug(self.name + ": _interpret_profile finished")
+            self.logger.debug("failure while interprating actions")
+        self.logger.debug("_interpret_profile finished")
         
     def set_bluetooth_connector(self, bc):
         """
@@ -89,12 +96,12 @@ class Listener(object):
         @param  keycode:        keycode received
         @type   keycode:        int
         """
-        logging.debug(self.name + ": keycode called")
+        self.logger.debug("keycode called")
         event_tuple = (keycode, mapping)
         if event_tuple in self.actions:
             for command in self.actions[event_tuple]:
                 command.call()
-        logging.debug(self.name + ": keycode finished")
+        self.logger.debug("keycode finished")
 
     def set_profile(self, config, profile):
         """
@@ -103,21 +110,21 @@ class Listener(object):
         @param  profile:    the profile we switch to
         @type   profile:    string
         """
-        logging.debug(self.name + ": set_profile called")
+        self.logger.debug("set_profile called")
         for command in self.destruct:
             command.call()
         self._interpret_profile(config, profile)
         for command in self.init:
             command.call()
-        logging.debug(self.name + ": set_profile finished")
+        self.logger.debug("set_profile finished")
     
     def connection_closed(self):
-        logging.debug(self.name + ": connection closed - running destruct actions")
+        self.logger.debug("connection closed - running destruct actions")
         for command in self.destruct:
             command.call()
     
     def connection_established(self):
-        logging.debug(self.name + ": connection established - running init actions")
+        self.logger.debug("connection established - running init actions")
         for command in self.init:
             command.call()
     
