@@ -34,6 +34,13 @@ class MPlayer(Listener):
         When <path> is provided, this path is used as base for the selection. If
         it is omitted, then the selection starts at the users homedir
         
+        - b{connect_fifo <fifo_path>} Connect to a running mplayer instance
+        
+        Connect to a mplayer instance, that is running in slave mode and listens
+        on the fifo supplied by <fifo_path>
+        
+        - b{disconnect_fifo} Disconnect from running mplayer
+        
     For an example see the system wide config file in the MPlayer section.
     """
     def __init__(self, config):
@@ -113,9 +120,14 @@ class MPlayer(Listener):
                     self.mplayer.stdin.write("quit\n")
                     self.mplayer.stdin.flush()
                     self.mplayer = None
-                elif command == "remote_fileselect":
-                    logging.debug("Fileselect started")
-                    self._query_fileselection()
+                elif command.startswith("remote_fileselect"):
+                    if len(command) > 18:
+                        self._query_fileselection(command[18:])
+                    else:
+                        self._query_fileselection()
+                elif command == 'disconnect_fifo':
+                    self.mplayer.stdin.close()
+                    self.mplayer = None
                 else:
                     self.mplayer.stdin.write(command + "\n")
                     self.mplayer.stdin.flush()
@@ -127,6 +139,18 @@ class MPlayer(Listener):
                 self.mplayer = Popen(["mplayer",  "-slave", "-idle", "-quiet"], stdin=PIPE)
                 self.mplayer.stdin.write("loadfile " + self.path.get_datafile("LBRCback.avi") + "\n")
                 self.mplayer.stdin.write("pause\n")
+            elif "connect_fifo" == command[0:12]:
+                fifo = command[13:]
+                if not os.path.exists(fifo):
+                    logging.debug("FIFO does not exist: %s" % fifo)
+                    return
+                self.mplayer = FIFO()
+                try:
+                    fd = os.open(fifo, os.O_NONBLOCK | os.O_WRONLY)
+                    self.mplayer.stdin = os.fdopen(fd, "w")
+                except Exception, e:
+                    logging.error("Failed to open FIFO: %s\n%s" % (fifo, str(e)))
+                    self.mplayer = None
 
     def keycode(self, mapping, keycode):
         """
