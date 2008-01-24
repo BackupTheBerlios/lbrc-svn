@@ -188,15 +188,16 @@ class UinputDispatcher( Listener ):
         @type     place:    String
         """
         # TODO: add check, that we are faced with a device file
-        self.logger.debug( 'Examing %s as uinput device' % ( place, ) )
+        logger = logging.getLogger('LBRC.Listener.UInputDispatcher')
+        logger.debug( 'Examing %s as uinput device' % ( place, ) )
         if osp.exists( place ):
             if not os.access( place, os.R_OK | os.W_OK ):
-                self.logger.warning( '%s looks like a uinput device node, but you lack necessary permissions' % ( place, ) )
+                logger.warn( '%s looks like a uinput device node, but you lack necessary permissions' % ( place, ) )
             else:
-                self.logger.debug( 'Asuming we found a suitable uinput device node: %s' % ( place, ) )
+                logger.debug( 'Asuming we found a suitable uinput device node: %s' % ( place, ) )
                 return True
         else:
-            self.logger.debug( 'The place does not exist!' )
+            logger.debug( 'The place does not exist!' )
         return False
 
     def _guess_uinput_dev(self):
