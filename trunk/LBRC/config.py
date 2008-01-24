@@ -36,6 +36,7 @@ class config(gobject.GObject):
     """
     def __init__(self):
         gobject.GObject.__init__(self)
+        self.logger = logging.getLogger("LBRC.Config")
         self.paths = path()
         self.user = None
         self.system = None
@@ -53,7 +54,7 @@ class config(gobject.GObject):
         except IOError:
             pass
         if not self.user:
-            logging.debug(_("Could not open config file: %s"), self.paths.get_userconfigfile())
+            self.logger.debug(_("Could not open config file: %s"), self.paths.get_userconfigfile())
             self.user = {}
             self.user['generic-config'] = {}
             self.user['profiles'] = {}
@@ -62,7 +63,7 @@ class config(gobject.GObject):
         except IOError:
             pass
         if not self.system:
-            logging.debug(_("Could not open config file: %s"), self.paths.get_systemconfigfile())
+            self.logger.debug(_("Could not open config file: %s"), self.paths.get_systemconfigfile())
             self.system = {}
             self.system['generic-config'] = {}
             self.system['profiles'] = {}
@@ -175,7 +176,7 @@ class config(gobject.GObject):
         try:
             self._write_config(self.paths.get_userconfigfile(), self.user)
         except Exception, e:
-            logging.error(_("Could not write config file: %s\n%s") % (self.paths.get_userconfigfile(), str(e)))
+            self.logger.error(_("Could not write config file: %s\n%s") % (self.paths.get_userconfigfile(), str(e)))
     
     @staticmethod
     def _write_config(absfilename, config):
@@ -206,6 +207,6 @@ class config(gobject.GObject):
              config = json.read(config_data)
              config_file.close()
         except Exception, e:
-             logging.error(_("Could not read config file: %s\n%s") % (absfilename, str(e)))
+             self.logger.error(_("Could not read config file: %s\n%s") % (absfilename, str(e)))
              config = {}
         return config
