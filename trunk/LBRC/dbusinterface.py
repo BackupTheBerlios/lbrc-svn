@@ -110,6 +110,7 @@ class AccessControl(dbus.service.Object):
 class ConnectionControl(dbus.service.Object):
     def __init__(self, busname, path, btserver):
         dbus.service.Object.__init__(self,busname, path)
+        self.logger = logging.getLogger("LBRC.ConnectionControl")
         self.btserver = btserver
         self.btserver.connect('connect', self._connect_cb)
         self.btserver.connect('disconnect', self._disconnect_cb)
@@ -151,11 +152,11 @@ class ConnectionControl(dbus.service.Object):
 
     @dbus.service.signal(DBUSIFACE, signature="ssi")
     def connect_cb(self, btname, btadress, port):
-        logging.debug("connect_cb: " + str(btname) + " " + str(btadress) + " " + str(port))
+        self.logger.debug("connect_cb: " + str(btname) + " " + str(btadress) + " " + str(port))
 
     @dbus.service.signal(DBUSIFACE, signature="ssi")
     def disconnect_cb(self, btname, btadress, port):
-        logging.debug("disconnect_cb: " + str(btname) + " " + str(btadress) + " " + str(port))
+        self.logger.debug("disconnect_cb: " + str(btname) + " " + str(btadress) + " " + str(port))
 
 class DBUSLogHandler(logging.Handler, dbus.service.Object):
     def __init__(self, busname, path):
@@ -203,6 +204,7 @@ class DBUSLogHandler(logging.Handler, dbus.service.Object):
 
 class Core(dbus.service.Object):
     def __init__(self, **kwds):
+        self.logger = logging.getLogger('LBRC')
         self.shutdown_commands = []
         bus_name = dbus.service.BusName(DBUSNAME, bus=dbus.SessionBus())
         dbus.service.Object.__init__(self, bus_name, "/core")
@@ -226,21 +228,21 @@ class Core(dbus.service.Object):
                   MPlayer, PresentationCompanion, VolumeControl):
             self._register_listener(i)
 
-        logging.debug("Register done")
+        self.logger.debug("Register done")
         self.profile_control.connect("profile_changed", self._profile_change_cb)
-        logging.debug("Initial Profile set")
+        self.logger.debug("Initial Profile set")
         self.btserver.connect('keycode', self._dispatch)
-        logging.debug("Init dispatcher")
+        self.logger.debug("Init dispatcher")
 
         self.btserver.connect("connect", self._connection_established_cb)
         self.btserver.connect("disconnect", self._connection_closed_cb)
 
         #load of config data 
         self.reload_config()
-        logging.debug("Reload config")
+        self.logger.debug("Reload config")
 
     def _connection_closed_cb(self, server, bluetoothaddress, port):
-        logging.debug("_connection_closed_cb called")
+        self.logger.debug("_connection_closed_cb called")
         for listener in self.event_listener:
             try:
                 listener.connection_closed()
@@ -249,7 +251,7 @@ class Core(dbus.service.Object):
         return False
             
     def _connection_established_cb(self, server, bluetoothaddress, port):
-        logging.debug("_connection_established_cb called")
+        self.logger.debug("_connection_established_cb called")
         for listener in self.event_listener:
             try:
                 listener.connection_established()
@@ -270,9 +272,9 @@ class Core(dbus.service.Object):
             try: listener.set_core(self)
             except AttributeError: pass
             self.event_listener.append(listener)
-            logging.debug("Initiablized Event Listener: " + str(constructor))
+            self.logger.debug("Initiablized Event Listener: " + str(constructor))
         except Exception, e: 
-            logging.warn("Failed to initalize " + str(constructor) + "\n" + str(e))
+            self.logger.warn("Failed to initalize " + str(constructor) + "\n" + str(e))
             return
 
     def _dispatch(self, btserver, map, keycode):
