@@ -10,9 +10,6 @@ import pygtk
 pygtk.require("2.0")
 import bluetooth
 import LBRC.json as json
-import os
-import math
-import re
 import logging
 import gobject
 import dbus
@@ -24,6 +21,7 @@ class BTConnection(gobject.GObject):
     }
     def __init__(self, client_sock):
         gobject.GObject.__init__(self)
+        self.logger = logging.getLogger('LBRC.BTConnection')
         self.handler = {}
         self.handler['list'] = None
         self.buffer = ""
@@ -46,9 +44,9 @@ class BTConnection(gobject.GObject):
                 self.handler['list'] = None
                 handler(data['selectionIndex'])
             elif (data['type'] == 'debugMessage'):
-                logging.debug("PHONE (%(function)s): %(message)s" % data )
+                self.logger.debug("PHONE (%(function)s): %(message)s" % data )
             else:
-                logging.debug("Unmatched package: " + str(data))
+                self.logger.debug("Unmatched package: " + str(data))
 
     def send_list_query(self, title, list, callback):
         package = {}
@@ -60,13 +58,13 @@ class BTConnection(gobject.GObject):
         
     def send_query(self, package):
         # TODO: Handle larger packages on client side (what is needed?!)
-        logging.debug("Sending package:\n" + str(package))
+        self.logger.debug("Sending package:" + str(package))
         message = (json.write(package) + u"\u0000").encode('utf-8')
-        logging.debug(repr(message))
+        self.logger.debug(repr(message))
         try:
             self.client_sock.sendall(message)
         except bluetooth.BluetoothError:
-            logging.debug("Trying to send while remote side was disconnected")
+            self.logger.debug("Trying to send while remote side was disconnected")
 
     def handle_incoming_data(self, clientsocket, condition):
         """
@@ -88,7 +86,7 @@ class BTConnection(gobject.GObject):
         @return:        always True, as we keep listening on the socket until the connection is shutdown
         """
         self.buffer += clientsocket.recv(1024)
-        logging.debug("In Buffer: " + repr(self.buffer))
+        self.logger.debug("In Buffer: " + repr(self.buffer))
         self._handle_buffer()
         return True
     
@@ -167,6 +165,7 @@ class BTServer(gobject.GObject):
         @return:    BTServer object
         """
         gobject.GObject.__init__(self)
+        self.logger = logging.getLogger('LBRC.BTServer')
         self.name = name
         self.serverid = serverid
         self.connectable = 'yes'
@@ -322,7 +321,7 @@ class BTServer(gobject.GObject):
         @rtype:         bool
         @return:        always False, as we only allow one concurrent connection
         """
-        logging.debug('BTServer: %s disconnected' % (self.connected[0],))
+        self.logger.debug('BTServer: %s disconnected' % (self.connected[0],))
         if self.bluetooth_keycode:
             self.bluetooth_connection.disconnect(self.bluetooth_keycode)
             self.bluetooth_keycode = None
@@ -330,9 +329,9 @@ class BTServer(gobject.GObject):
         self.server_io_watch = None
         self.client_sock = None
         if self.connected[0] in self.paired_by_us:
-            logging.debug('BTServer: We paired this device')
+            self.logger.debug('BTServer: We paired this device')
             if self.config.get_config_item_fb("remove-pairing", False):
-                logging.debug('BTServer: We remove the pairing for this device')
+                self.logger.debug('BTServer: We remove the pairing for this device')
                 self.paired_by_us[self.connected[0]].RemoveBonding(self.connected[0])
             del self.paired_by_us[self.connected[0]]
         self.emit("disconnect", self.connected[0], self.connected[1])
@@ -373,7 +372,7 @@ class BTServer(gobject.GObject):
         self._advertise_service(False)
 
         self.client_sock,client_address = self.server_sock.accept()        
-        logging.debug("Serversocket: " + str(self.server_sock.getsockname()))
+        self.logger.debug("Serversocket: " + str(self.server_sock.getsockname()))
 
         if ( self._check_pairing(client_address) and
             (self.connectable == 'yes' or 
@@ -388,7 +387,7 @@ class BTServer(gobject.GObject):
             self.server_io_watch = gobject.io_add_watch(self.client_sock, gobject.IO_HUP, self.handle_disconnection)
             self.emit("connect", client_address[0], client_address[1])
         else:
-            logging.debug("BTServer: Closing remote connection")
+            self.logger.debug("Closing remote connection")
             self.client_sock.close()
             self.client_sock = None
             if self.connectable == 'filtered':
@@ -399,9 +398,9 @@ class BTServer(gobject.GObject):
     def _check_pairing(self, client_address):
         # Check whether we need pairing!
         if not self.config.get_config_item_fb("require-pairing", True):
-            logging.debug('BTServer: Pairing not required')
+            self.logger.debug('Pairing not required')
             return True
-        logging.debug('BTServer: Check for pairing')
+        self.logger.debug('Check for pairing')
         manager = dinterface(dbus.SystemBus(), 'org.bluez', '/org/bluez', 'org.bluez.Manager')
         adapters = manager.ListAdapters()
         paired = False
@@ -412,25 +411,25 @@ class BTServer(gobject.GObject):
                 break
             
         if not paired:
-            logging.debug('We see a new device, that was not yet allowed to connect. Beginning pairing!')
-            logging.debug('Search for adapter, that reaches the phone')
+            self.logger.debug('We see a new device, that was not yet allowed to connect. Beginning pairing!')
+            self.logger.debug('Search for adapter, that reaches the phone')
             for adapter in adapters:
                 adapter = dinterface(dbus.SystemBus(), 'org.bluez', adapter, 'org.bluez.Adapter')
                 # We asume that an adapter that can resolve the name is the "right" adapter
                 try:
                     name = adapter.GetRemoteName(client_address[0])
-                    logging.debug('Got name %s - will try to create bonding' % (name, ))
+                    self.logger.debug('Got name %s - will try to create bonding' % (name, ))
                     adapter.CreateBonding(client_address[0])
-                    logging.debug('Bonding returned')
+                    self.logger.debug('Bonding returned')
                     if adapter.HasBonding(client_address[0]):
-                        logging.debug('Bonding successfull')
+                        self.logger.debug('Bonding successfull')
                         paired = True
                         self.paired_by_us[client_address[0]] = adapter
                     else:
-                        logging.debug('Bonding failed')
+                        self.logger.debug('Bonding failed')
                     break
                 except:
-                    logging.debug('Exception in BondingCreation (DBUS Methods)')
+                    self.logger.debug('Exception in BondingCreation (DBUS Methods)')
                     pass
         return paired
 
