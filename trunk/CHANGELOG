@@ -56,3 +56,14 @@
     * add visual feed back to VolumeContol Applet
     * move VolumeControl to gstreamer (should enable easy control of OSS and Pulseaudio)
     * switch to a simpler and more clearly licensed JSON Parser
+
+2008-02-02 Matthias Bläsing <matthias.blaesing@rwth-aachen.de>
+    Please note: This is a _short_ summary, please see SVN Log for a detailed log
+    * add better compatibility on j2me part - fixes problem with Nokia 6085
+      (reported and tested by Arthur Brown)
+    * better structured logging (use different loggers for each part)
+    * remove 2kb packet size limit for server<->client bluetooth connection
+    * add FIFO support in MPlayer module
+    * fixed bug that caused config file to be corrupted
+    * fix bug in json parser when parsing empty objects and output better
+      formated json
