@@ -78,8 +78,9 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 			if (dis == deviceDisplayList) {
 				if (deviceDisplayList.getSelectedIndex() >= 0) {
 					int[] attributes = { 0x100 }; // the name of the service
-					UUID[] uuids = new UUID[] {lbrc_uuid};
-					//uuids[0] = new UUID(0x1002); // browsable services
+					//UUID[] uuids = new UUID[] {lbrc_uuid};
+					UUID[] uuids = new UUID[1];
+					uuids[0] = new UUID(0x1002); // browsable services
 					FindServices( attributes,
 							      uuids, 
 							      (RemoteDevice) devices.elementAt(deviceDisplayList.getSelectedIndex()
@@ -161,8 +162,11 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 		case DiscoveryListener.SERVICE_SEARCH_COMPLETED:
 			for (int x = 0; x < services.size(); x++) {
 				ServiceRecord sr = (ServiceRecord) services.elementAt(x);
-				this.parent.connectRemoteService(sr);
-				break;
+				String name = (String) sr.getAttributeValue(0x0100).getValue();
+				if (name.equals("LBRC")) {
+					this.parent.connectRemoteService(sr);
+					break;
+				}
 			}
 			break;
 		case DiscoveryListener.SERVICE_SEARCH_DEVICE_NOT_REACHABLE:
@@ -172,7 +176,7 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 			this.parent.do_alert("Service serch error", 4000);
 			break;
 		case DiscoveryListener.SERVICE_SEARCH_NO_RECORDS:
-			this.parent.do_alert("LBRC Service not found!", 4000);
+			this.parent.do_alert("LBRC Service not found! Length of service list: " + services.size(), 4000);
 			break;
 		case DiscoveryListener.SERVICE_SEARCH_TERMINATED:
 			this.parent.do_alert("Inqury Canceled", 4000);
