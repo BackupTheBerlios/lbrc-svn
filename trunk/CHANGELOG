@@ -67,3 +67,4 @@
     * fixed bug that caused config file to be corrupted
     * fix bug in json parser when parsing empty objects and output better
       formated json
+    * remove deprecated api usage (breaks LBRC on newer bluez versions)

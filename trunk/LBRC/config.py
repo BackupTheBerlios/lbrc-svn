@@ -207,6 +207,6 @@ class config(gobject.GObject):
              config = json.read(config_data)
              config_file.close()
         except Exception, e:
-             self.logger.error(_("Could not read config file: %s\n%s") % (absfilename, str(e)))
+             logging.getLogger('LBRC.Config').exception(_("Could not read config file: %s") % absfilename)
              config = {}
         return config
