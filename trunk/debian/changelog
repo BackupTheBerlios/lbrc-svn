@@ -1,3 +1,9 @@
+lbrc (0.6.1) unstable; urgency=low
+
+  * fix encoding problem in python versions newer than 2.4
+  
+ -- Matthias Bläsing <matthias.blaesing@rwth-aachen.de>  Sun,  03. Feb 2008 17:12:00 +0100
+
 lbrc (0.6) unstable; urgency=low
 
   * New upstream version

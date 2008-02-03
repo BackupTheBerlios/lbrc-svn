@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2007-05-09 16:57+0200\n"
+"POT-Creation-Date: 2008-01-24 13:59+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -16,37 +16,37 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: ../LBRC-applet:36
+#: ../LBRC-applet:70
 msgid "Could not connect to DBUS component of LBRC"
 msgstr ""
 
-#: ../LBRC_gtk_gui/applet.py:63
+#: ../LBRC_gtk_gui/applet.py:65
 #, python-format
 msgid ""
 "Profile changed:\n"
 "%(profilename)s"
 msgstr ""
 
-#: ../LBRC_gtk_gui/applet.py:67
+#: ../LBRC_gtk_gui/applet.py:69
 #, python-format
 msgid ""
 "Connect from:\n"
 "%(btname)s (%(btaddress)s)"
 msgstr ""
 
-#: ../LBRC_gtk_gui/applet.py:70
+#: ../LBRC_gtk_gui/applet.py:72
 #, python-format
 msgid ""
 "Disconnect from:\n"
 "%(btname)s (%(btaddress)s)"
 msgstr ""
 
-#: ../LBRC_gtk_gui/applet.py:87
-msgid "Profiles"
+#: ../LBRC_gtk_gui/applet.py:108 ../LBRC_gtk_gui/config.py:2256
+msgid "System"
 msgstr ""
 
-#: ../LBRC_gtk_gui/applet.py:105 ../LBRC_gtk_gui/config.py:2258
-msgid "System"
+#: ../LBRC_gtk_gui/applet.py:126
+msgid "Profiles"
 msgstr ""
 
 #: ../LBRC_gtk_gui/BlueZControl.py:72
@@ -61,141 +61,140 @@ msgstr ""
 msgid "Bluetooth invisible"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:58
+#: ../LBRC_gtk_gui/config.py:56
 msgid "KEYBOARD"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:59
+#: ../LBRC_gtk_gui/config.py:57
 msgid "MOUSE BUTTON"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:60
+#: ../LBRC_gtk_gui/config.py:58
 msgid "MOUSE WHEEL"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:61
+#: ../LBRC_gtk_gui/config.py:59
 msgid "MOUSE AXIS"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:92
+#: ../LBRC_gtk_gui/config.py:90
 msgid "Press"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:92
+#: ../LBRC_gtk_gui/config.py:90
 msgid "Release"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:121 ../LBRC_gtk_gui/config.py:317
+#: ../LBRC_gtk_gui/config.py:119 ../LBRC_gtk_gui/config.py:315
 msgid "Param"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:312
+#: ../LBRC_gtk_gui/config.py:310
 msgid "Param-Type"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:488
+#: ../LBRC_gtk_gui/config.py:486
 msgid "Basisprofile"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:616
+#: ../LBRC_gtk_gui/config.py:614
 msgid "Keyboard/Mouse"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:622 ../LBRC_gtk_gui/config.py:915
-#: ../LBRC_gtk_gui/config.py:1476 ../LBRC_gtk_gui/config.py:1889
+#: ../LBRC_gtk_gui/config.py:620 ../LBRC_gtk_gui/config.py:913
+#: ../LBRC_gtk_gui/config.py:1474 ../LBRC_gtk_gui/config.py:1887
 msgid "Actions"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:642
+#: ../LBRC_gtk_gui/config.py:640
 msgid "Cellphone keycode"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:658
+#: ../LBRC_gtk_gui/config.py:656
 msgid "Event type"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:670
+#: ../LBRC_gtk_gui/config.py:668
 msgid "Event generated"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:682
+#: ../LBRC_gtk_gui/config.py:680
 msgid "Repeatfrequency"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:817
+#: ../LBRC_gtk_gui/config.py:815
 msgid "DBUSCaller"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:825 ../LBRC_gtk_gui/config.py:1426
-#: ../LBRC_gtk_gui/config.py:1850
+#: ../LBRC_gtk_gui/config.py:823 ../LBRC_gtk_gui/config.py:1424
+#: ../LBRC_gtk_gui/config.py:1848
 msgid "On Initialisation"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:845 ../LBRC_gtk_gui/config.py:958
-#: ../LBRC_gtk_gui/config.py:1052
+#: ../LBRC_gtk_gui/config.py:843 ../LBRC_gtk_gui/config.py:956
+#: ../LBRC_gtk_gui/config.py:1050
 msgid "Service"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:855 ../LBRC_gtk_gui/config.py:968
-#: ../LBRC_gtk_gui/config.py:1062
+#: ../LBRC_gtk_gui/config.py:853 ../LBRC_gtk_gui/config.py:966
+#: ../LBRC_gtk_gui/config.py:1060
 msgid "Object"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:865 ../LBRC_gtk_gui/config.py:978
-#: ../LBRC_gtk_gui/config.py:1072
+#: ../LBRC_gtk_gui/config.py:863 ../LBRC_gtk_gui/config.py:976
+#: ../LBRC_gtk_gui/config.py:1070
 msgid "Interface"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:875 ../LBRC_gtk_gui/config.py:988
-#: ../LBRC_gtk_gui/config.py:1082
+#: ../LBRC_gtk_gui/config.py:873 ../LBRC_gtk_gui/config.py:986
+#: ../LBRC_gtk_gui/config.py:1080
 msgid "Method"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:885 ../LBRC_gtk_gui/config.py:998
-#: ../LBRC_gtk_gui/config.py:1092 ../LBRC_gtk_gui/config.py:1456
-#: ../LBRC_gtk_gui/config.py:1588
+#: ../LBRC_gtk_gui/config.py:883 ../LBRC_gtk_gui/config.py:996
+#: ../LBRC_gtk_gui/config.py:1090 ../LBRC_gtk_gui/config.py:1454
+#: ../LBRC_gtk_gui/config.py:1527 ../LBRC_gtk_gui/config.py:1586
 msgid "Arguments"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:935 ../LBRC_gtk_gui/config.py:1496
-#: ../LBRC_gtk_gui/config.py:1909
+#: ../LBRC_gtk_gui/config.py:933 ../LBRC_gtk_gui/config.py:1494
+#: ../LBRC_gtk_gui/config.py:1907
 msgid "Keycode"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:948 ../LBRC_gtk_gui/config.py:1509
-#: ../LBRC_gtk_gui/config.py:1922
+#: ../LBRC_gtk_gui/config.py:946 ../LBRC_gtk_gui/config.py:1507
+#: ../LBRC_gtk_gui/config.py:1920
 msgid "State"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:1032 ../LBRC_gtk_gui/config.py:1558
-#: ../LBRC_gtk_gui/config.py:1958
+#: ../LBRC_gtk_gui/config.py:1030 ../LBRC_gtk_gui/config.py:1556
+#: ../LBRC_gtk_gui/config.py:1956
 msgid "On Destruction"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:1418
+#: ../LBRC_gtk_gui/config.py:1416
 msgid "CommandExecutor"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:1446 ../LBRC_gtk_gui/config.py:1519
-#: ../LBRC_gtk_gui/config.py:1529 ../LBRC_gtk_gui/config.py:1578
-#: ../LBRC_gtk_gui/config.py:1870 ../LBRC_gtk_gui/config.py:1932
-#: ../LBRC_gtk_gui/config.py:1978
+#: ../LBRC_gtk_gui/config.py:1444 ../LBRC_gtk_gui/config.py:1517
+#: ../LBRC_gtk_gui/config.py:1576 ../LBRC_gtk_gui/config.py:1868
+#: ../LBRC_gtk_gui/config.py:1930 ../LBRC_gtk_gui/config.py:1976
 msgid "Command"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:1842
+#: ../LBRC_gtk_gui/config.py:1840
 msgid "MPlayer"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:2351 ../LBRC_gtk_gui/config.py:2366
+#: ../LBRC_gtk_gui/config.py:2349 ../LBRC_gtk_gui/config.py:2364
 msgid "New Name"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:2352
+#: ../LBRC_gtk_gui/config.py:2350
 msgid "What is the name for the new profile?"
 msgstr ""
 
-#: ../LBRC_gtk_gui/config.py:2367
+#: ../LBRC_gtk_gui/config.py:2365
 msgid "Specify the new name for the new profile"
 msgstr ""
 
