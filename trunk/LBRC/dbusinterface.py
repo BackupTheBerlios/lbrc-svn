@@ -163,7 +163,7 @@ class DBUSLogHandler(logging.Handler, dbus.service.Object):
         dbus.service.Object.__init__(self, busname, path)
         logging.Handler.__init__(self)
 
-    @dbus.service.signal(DBUSIFACE, signature='sisssssidsiisisss')
+    @dbus.service.signal(DBUSIFACE, signature='sisssssidsixsisss')
     def logemit(self, name, levelno, levelname, pathname, filename,
               module, funcName, lineno, created, asctime, msecs,
               thread, threadName, process, msg, message, fmessage):
