@@ -71,9 +71,11 @@ class UinputDispatcher( Listener ):
                 device_file = location
         if not device_file:
             device_file = self._guess_uinput_dev()
-        self.uinput_dev = self.uinputbridge.SetupDevice(device_file, 
-                                                        "Linux Bluetooth Remote Control", 
-                                                        dbus.UInt16(co.input["BUS_BLUETOOTH"]))
+        if device_file:
+            self.uinput_dev = self.uinputbridge.SetupDevice(
+                                        device_file, 
+                                        "Linux Bluetooth Remote Control", 
+                                        dbus.UInt16(co.input["BUS_BLUETOOTH"]))
  
     def set_profile( self, config, profile ):
         """
