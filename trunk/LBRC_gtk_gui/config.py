@@ -68,11 +68,11 @@ for i in xrange(0,13):
     types_values['key'][1].append("F" + str(i))
 
 # Fill width small keys (a-z)
-for i in xrange(97, 123):
-    types_values['key'][1].append(chr(i))
+#for i in xrange(97, 123):
+#    types_values['key'][1].append(chr(i))
 
 # Fill with cap keys (A-Z)
-for i in xrange(65, 90):
+for i in xrange(65, 91):
     types_values['key'][1].append(chr(i))
 
 # Create gtk-liststores mentioned above

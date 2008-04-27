@@ -221,6 +221,7 @@ class BTServer(gobject.GObject):
         </attribute>
 </record>
 """ % {'serviceid': self.serverid, 'name': self.name, 'channel': int(self.port) }
+            self.logger.debug('Trying to register service: %s' % service_record)
             self.advertise_id = self.bluez_db.AddServiceRecordFromXML(service_record)
 
     def _switch_connectable(self):
