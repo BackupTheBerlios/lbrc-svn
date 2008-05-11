@@ -68,3 +68,10 @@
     * fix bug in json parser when parsing empty objects and output better
       formated json
     * remove deprecated api usage (breaks LBRC on newer bluez versions)
+    
+2008-05-11 Matthias Bläsing <matthias.blaesing@rwth-aachen.de>
+	* Add debug output for SDP registration
+	* fix character selection in GUI config for the uinput-dispatcher
+	  (reported by Alexander Fell)
+	* Check uniput device in UInputDispatcher before passing it to the dbusbridge
+	* adjust dbus-signature in loghandler (reported and fix tested by Danial Pässler)
