@@ -1,0 +1,3 @@
+[D-BUS Service]
+Name=de.berlios.lbrc
+Exec=/usr/bin/LBRCdbus

@@ -1,0 +1,24 @@
+#!/usr/bin/python
+
+from LBRC.dbusinterface import Core
+import sys
+import logging
+import gobject
+logging.getLogger('').setLevel(logging.DEBUG)
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+formatter = logging.Formatter('%(name)-35s: %(levelname)-8s %(message)s')
+console.setFormatter(formatter)
+logging.getLogger('').addHandler(console)
+if "--debug" in sys.argv:
+    console.setLevel(logging.DEBUG)
+    brs = Core(debug=logging.DEBUG)
+else:
+    brs = Core()
+try:
+    brs.shutdown_commands.append(lambda: mainloop.quit())
+    mainloop = gobject.MainLoop()
+    mainloop.run()
+except KeyboardInterrupt:
+    brs.shutdown()
+    mainloop.quit()
