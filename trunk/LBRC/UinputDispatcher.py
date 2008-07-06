@@ -97,7 +97,8 @@ class UinputDispatcher( Listener ):
         for invoked in self.invoked.values():
             for i in invoked:
                 i.stop()
-        self.uinputbridge.CloseDevice(self.uinput_dev)
+        if self.uinput_dev:
+            self.uinputbridge.CloseDevice(self.uinput_dev)
 
     def _interpret_profile( self, config, profile ):
         """
