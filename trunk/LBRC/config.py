@@ -72,11 +72,11 @@ class config(gobject.GObject):
         self.profile_index = []
         try:
             self.profile_index.extend([('system', profile_name) for profile_name in self.system['profiles']])
-        except:
+        except KeyError:
             self.logger.debug("Error while adding system profiles - None defined?")
         try:
             self.profile_index.extend([('user', profile_name) for profile_name in self.user['profiles']])
-        except:
+        except KeyError:
             self.logger.debug("Error while adding user profiles - Probably none defined!")
         # pylint: disable-msg=E1101
         self.emit('config-reread')
@@ -146,10 +146,10 @@ class config(gobject.GObject):
         """
         try:
             return self.user['generic-config'][name]
-        except:
+        except KeyError:
             try:
                 return self.system['generic-config'][name]
-            except:
+            except KeyError:
                 return default
 
     def get_config_item(self, name):
@@ -162,27 +162,24 @@ class config(gobject.GObject):
         @type     name:     String
         """
         result = {}
-        try:
+
+        if 'generic-config' in self.user and \
+            name in self.user['generic-config']:
             result['user'] = self.user['generic-config'][name]
-        except:
-            pass
-        try:
+        if 'generic-config' in self.system and \
+            name in self.system['generic-config']:
             result['system'] = self.system['generic-config'][name]
-        except:
-            pass
+            
         return result
 
     def write(self):
         """
         Write user configuration to file
         """
-        try:
-            self._write_config(self.paths.get_userconfigfile(), self.user)
-        except Exception, e:
-            self.logger.error(_("Could not write config file: %s\n%s") % (self.paths.get_userconfigfile(), str(e)))
+        self._write_config(self.paths.get_userconfigfile(), self.user)
     
     @staticmethod
-    def _write_config(absfilename, config_file):
+    def _write_config(absfilename, source_config_data):
         """
         Serialize configuration stored in C{config} and write to file
         
@@ -191,10 +188,17 @@ class config(gobject.GObject):
         @param    config:         dictionary holding the config data
         @type     config:         dictionary
         """
-        config_file = open(absfilename, 'w')
-        config_data = json.write(config_file, pretty_print=True)
-        config_file.write(config_data)
-        config_file.close()
+        try:
+            config_file = open(absfilename, 'w')
+            config_data = json.write(source_config_data, pretty_print=True)
+            config_file.write(config_data)
+            config_file.close()
+        except IOError:
+            logging.getLogger('LBRC.Config').exception(
+                                _("Error while writing to: %s") % absfilename)
+        except json.ReadException:
+            logging.getLogger('LBRC.Config').exception(
+                                _("Error while encoding config data to json"))
     
     @staticmethod
     def _read_config(absfilename):
@@ -209,7 +213,10 @@ class config(gobject.GObject):
             config_data = config_file.read()
             config_hash = json.read(config_data)
             config_file.close()
-        except:
-            logging.getLogger('LBRC.Config').exception(_("Could not read config file: %s") % absfilename)
-            config_hash = {}
+        except IOError:
+            logging.getLogger('LBRC.Config').exception(
+                                _("Error while opening: %s") % absfilename)
+        except json.ReadException:
+            logging.getLogger('LBRC.Config').exception(
+                                _("Error while interpreting json data in file: %s") % absfilename)
         return config_hash

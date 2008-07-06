@@ -248,7 +248,7 @@ class Event( object ):
         self.uinput_dev = uinput_dev
         self.uinputbridge = uinputbridge
 
-    def _lin_mouse_freq( self, x, n ):
+    def cb_lin_mouse_freq( self, x, n ):
         """
         linear speed up, stopped at 500 (more can't be handled by the mainloop call back)
         """
@@ -257,17 +257,17 @@ class Event( object ):
             freq = 500
         return freq
 
-    def _lin_mouse_step( self, x, n ):
+    def cb_lin_mouse_step( self, x, n):
         """
         length of stepps for mouse movement
         """
-        freq = self._lin_mouse_freq( x, n )
+        freq = self.cb_lin_mouse_freq( x, n )
         if( freq < 500 ):
             return 2
         else:
             return 3
 
-    def _const_key( self, x, n ):
+    def cb_const_key( self, x, n):
         """
         key repeat is only issued, after 1/2 second, after that
         1/20 s
@@ -351,11 +351,11 @@ class MouseAxisEvent( Event ):
         axis = co.input["REL_" + action['map_to'][1:2]]
         direction = action['map_to'][0:1]
         self.repeat_freq = 10
-        self.repeat_func = self._lin_mouse_freq
+        self.repeat_func = self.cb_lin_mouse_freq
         if direction == "-":
-            self.commands = [( co.input['EV_REL'], axis, lambda x, y: -1 * self._lin_mouse_step( x, y ) )]
+            self.commands = [( co.input['EV_REL'], axis, lambda x, y: -1 * self.cb_lin_mouse_step( x, y ) )]
         else:
-            self.commands = [( co.input['EV_REL'], axis, lambda x, y: self._lin_mouse_step( x, y ) )]
+            self.commands = [( co.input['EV_REL'], axis, lambda x, y: self.cb_lin_mouse_step( x, y ) )]
 
 class MouseWheelEvent( Event ):
     def __init__( self, action ):
@@ -391,4 +391,4 @@ class KeyPressEvent( Event ):
             
         if 'repeat_freq' in action:
             self.repeat_freq = int( action['repeat_freq'] )
-            self.repeat_func = self._const_key
+            self.repeat_func = self.cb_const_key

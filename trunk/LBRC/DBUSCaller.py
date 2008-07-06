@@ -1,6 +1,7 @@
 from LBRC.Listener import Listener
 from LBRC import dinterface
 import dbus
+from dbus.exceptions import DBusException
 import logging
 
 class DBUSCall(object):
@@ -32,14 +33,21 @@ class DBUSCall(object):
                 argument = i[(sep+1):]
                 self.arguments.append(self._translator[arg_type](argument))
         try:
-            if action['bus'] == 'system':
+            if 'bus' in action and action['bus'] == 'system':
                 self.bus = dbus.SystemBus()
-        except:
-            self.bus = dbus.SessionBus()
+            else:
+                self.bus = dbus.SessionBus()
+        except DBusException:
+            self.bus = None
+                
     def call(self):
-        self.logger.debug(str((self.bus, self.service, self.object, self.interface)))
-        iface = dinterface(self.bus, self.service, self.object, self.interface)
-        iface.__getattr__(self.method).__call__(*self.arguments)
+        if(self.bus):
+            self.logger.debug(str((self.bus, self.service, self.object, self.interface)))
+            iface = dinterface(self.bus, self.service, self.object, self.interface)
+            # This is intendet (black magic, but has to be called this way!): 
+            # pylint: disable-msg=W0142
+            iface.__getattr__(self.method).__call__(*self.arguments)
+            # pylint: enable-msg=W0142
 
 class DBUSCaller(Listener):
     """
