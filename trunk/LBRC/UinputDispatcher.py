@@ -1,10 +1,10 @@
-import os, struct, fcntl, time
+import os
+import time
 import os.path as osp
 import logging
 import gobject
 import dbus
 import dbus.glib
-import time
 import LBRC.consts as co
 from LBRC import dinterface
 from LBRC.config import configValueNotFound
@@ -190,11 +190,12 @@ class UinputDispatcher( Listener ):
         @param    place:    a path to a potential uinput device
         @type     place:    String
         """
-        # TODO: add check, that we are faced with a device file
         logger = logging.getLogger('LBRC.Listener.UInputDispatcher')
         logger.debug( 'Examing %s as uinput device' % ( place, ) )
         if osp.exists( place ):
-            if not os.access( place, os.R_OK | os.W_OK ):
+            if not (os.stat(place).st_dev):
+                logger.warn( '%s does not look like a device node! Check uinput module!' % ( place, ) )
+            elif not os.access( place, os.R_OK | os.W_OK ):
                 logger.warn( '%s looks like a uinput device node, but you lack necessary permissions' % ( place, ) )
             else:
                 logger.debug( 'Asuming we found a suitable uinput device node: %s' % ( place, ) )
@@ -219,8 +220,7 @@ class UinputDispatcher( Listener ):
                 return place
 
         self.logger.debug( 'None of the well known places for uinput device was found to be ok, beginning search' )
-        possible_places = []
-        for root, dirs, files in os.walk( '/dev' ):
+        for root, _, files in os.walk( '/dev' ):
             if 'uinput' in files:
                 if not osp.join( root, 'uinput' ) in known_places:
                     place = osp.join( root, 'uinput' )
@@ -238,9 +238,11 @@ class Event( object ):
         self.cleanup = []
         self.commands = []
         self.repeat_freq = 0
-        self.repeat_func = None
+        self.repeat_func = lambda x, n: x
         self.repeat_commands = []
         self.type = 'Generic Event'
+        self.uinput_dev = None
+        self.uinputbridge = None
 
     def set_uinput_dev( self, uinput_dev, uinputbridge ):
         self.uinput_dev = uinput_dev
@@ -259,7 +261,7 @@ class Event( object ):
         """
         length of stepps for mouse movement
         """
-        freq = self._lin_mouse_freq( x, n );
+        freq = self._lin_mouse_freq( x, n )
         if( freq < 500 ):
             return 2
         else:
@@ -388,5 +390,5 @@ class KeyPressEvent( Event ):
             self.cleanup.insert( 0, ( co.input['EV_KEY'], k, 0 ) )
             
         if 'repeat_freq' in action:
-             self.repeat_freq = int( action['repeat_freq'] )
-             self.repeat_func = self._const_key
+            self.repeat_freq = int( action['repeat_freq'] )
+            self.repeat_func = self._const_key

@@ -2,7 +2,6 @@ from LBRC.Listener import Listener
 from LBRC import dinterface
 import dbus
 import logging
-from LBRC.config import configValueNotFound
 
 class DBUSCall(object):
     _translator = {
@@ -17,8 +16,10 @@ class DBUSCall(object):
                    'string': dbus.String,
                    'double': dbus.Double,
                    }
+    
     def __init__(self, parent, action):
         self.logger = logging.getLogger('LBRC.Listener.DBUSCall')
+        self.parent = parent
         self.service = action['service']
         self.object = action['object']
         self.interface = action['interface']
@@ -27,9 +28,9 @@ class DBUSCall(object):
         if 'arguments' in action:
             for i in action['arguments']:
                 sep = i.find(":")
-                type = i[:sep]
+                arg_type = i[:sep]
                 argument = i[(sep+1):]
-                self.arguments.append(self._translator[type](argument))
+                self.arguments.append(self._translator[arg_type](argument))
         try:
             if action['bus'] == 'system':
                 self.bus = dbus.SystemBus()

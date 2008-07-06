@@ -28,18 +28,19 @@ class noConfigException(configValueNotFound):
     """
 
 class config(gobject.GObject):
-    __gsignals__ = {
-                    'config-reread': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ())
-                   }
     """
     The config class is a wrapper around the json on disk configuration format.
     """
+    __gsignals__ = {
+                    'config-reread': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ())
+                   }
     def __init__(self):
         gobject.GObject.__init__(self)
         self.logger = logging.getLogger("LBRC.Config")
         self.paths = path()
         self.user = None
         self.system = None
+        self.profile_index = []
         self.reread()
     
     def reread(self):
@@ -52,18 +53,18 @@ class config(gobject.GObject):
         try:
             self.user = self._read_config(self.paths.get_userconfigfile())
         except IOError:
-            pass
-        if not self.user:
             self.logger.debug(_("Could not open config file: %s"), self.paths.get_userconfigfile())
+        
+        if not self.user:
             self.user = {}
             self.user['generic-config'] = {}
             self.user['profiles'] = {}
         try:
             self.system = self._read_config(self.paths.get_systemconfigfile())
         except IOError:
-            pass
-        if not self.system:
             self.logger.debug(_("Could not open config file: %s"), self.paths.get_systemconfigfile())
+        
+        if not self.system:
             self.system = {}
             self.system['generic-config'] = {}
             self.system['profiles'] = {}
@@ -71,18 +72,20 @@ class config(gobject.GObject):
         self.profile_index = []
         try:
             self.profile_index.extend([('system', profile_name) for profile_name in self.system['profiles']])
-        except Exception:
-            pass
+        except:
+            self.logger.debug("Error while adding system profiles - None defined?")
         try:
             self.profile_index.extend([('user', profile_name) for profile_name in self.user['profiles']])
-        except Exception:
-            pass
+        except:
+            self.logger.debug("Error while adding user profiles - Probably none defined!")
+        # pylint: disable-msg=E1101
         self.emit('config-reread')
+        # pylint: enable-msg=E1101
 
     def get_profiles(self):
         return self.profile_index
 
-    def get_profile(self, config, profile=None, section=None):
+    def get_profile(self, config_file, profile=None, section=None):
         """
         Fetch profile from config files. If C{profile} or C{section} are set to
         C{None} or completly omitted, the whole config/profile is returned. If
@@ -99,9 +102,9 @@ class config(gobject.GObject):
         _profile = None
         _section = None
         try:
-            if config == 'user':
+            if config_file == 'user':
                 _config = self.user['profiles']
-            elif config == 'system':
+            elif config_file == 'system':
                 _config = self.system['profiles']
             _profile = _config[profile]
             _section = _profile[section]
@@ -179,7 +182,7 @@ class config(gobject.GObject):
             self.logger.error(_("Could not write config file: %s\n%s") % (self.paths.get_userconfigfile(), str(e)))
     
     @staticmethod
-    def _write_config(absfilename, config):
+    def _write_config(absfilename, config_file):
         """
         Serialize configuration stored in C{config} and write to file
         
@@ -189,7 +192,7 @@ class config(gobject.GObject):
         @type     config:         dictionary
         """
         config_file = open(absfilename, 'w')
-        config_data = json.write(config, pretty_print=True)
+        config_data = json.write(config_file, pretty_print=True)
         config_file.write(config_data)
         config_file.close()
     
@@ -200,13 +203,13 @@ class config(gobject.GObject):
         
         @param absfilename:    Filename to read data from
         """
-        config = {}
+        config_hash = {}
         try:
-             config_file = open(absfilename)
-             config_data = config_file.read()
-             config = json.read(config_data)
-             config_file.close()
-        except Exception, e:
-             logging.getLogger('LBRC.Config').exception(_("Could not read config file: %s") % absfilename)
-             config = {}
-        return config
+            config_file = open(absfilename)
+            config_data = config_file.read()
+            config_hash = json.read(config_data)
+            config_file.close()
+        except:
+            logging.getLogger('LBRC.Config').exception(_("Could not read config file: %s") % absfilename)
+            config_hash = {}
+        return config_hash
