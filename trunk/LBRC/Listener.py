@@ -1,4 +1,5 @@
 import logging
+from config import configValueNotFound
 
 class UndefinedCommandClass(Exception):
     """Raised, if the default _interpret_profile of Listener is used, but no
@@ -43,27 +44,28 @@ class Listener(object):
         try:
             for init in self.config.get_profile(config, profile, self.name)['init']:
                 self.init.append(self.command_class(self, init))
-        except:
-            self.logger.debug("failure while interprating init")
-            
+        except (configValueNotFound, KeyError), e:
+            self.logger.debug("failure while interprating init: %s", repr(e))
         try:
             for destruct in self.config.get_profile(config, profile, self.name)['destruct']:
                 self.destruct.append(self.command_class(self, destruct))
-        except:
-            self.logger.debug("failure while interprating destruct")
+        except (configValueNotFound, KeyError), e:
+            self.logger.debug("failure while interprating destruct: %s", repr(e))
        
         try:
+            print self.config.get_profile(config, profile, self.name)['actions']
             for action in self.config.get_profile(config, profile, self.name)['actions']:
                 try:
                     mapping = int(action['mapping'])
-                except:
+                except (TypeError, KeyError):
                     mapping = 0
                 event_tuple = (int(action['keycode']), mapping)
                 if not event_tuple in self.actions:
                     self.actions[event_tuple] = []
                 self.actions[event_tuple].append(self.command_class(self, action))
-        except:
-            self.logger.debug("failure while interprating actions")
+        except (configValueNotFound, KeyError), e:
+            self.logger.debug("failure while interprating actions: %s", repr(e))
+
         self.logger.debug("_interpret_profile finished")
         
     def set_bluetooth_connector(self, bc):
