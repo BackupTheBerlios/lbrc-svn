@@ -18,7 +18,7 @@ class DBUSCall(object):
                    'double': dbus.Double,
                    }
     def __init__(self, parent, action):
-        self.logger = logger.getLogger('LBRC.Listener.DBUSCall')
+        self.logger = logging.getLogger('LBRC.Listener.DBUSCall')
         self.service = action['service']
         self.object = action['object']
         self.interface = action['interface']
