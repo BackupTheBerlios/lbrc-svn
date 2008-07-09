@@ -3,7 +3,8 @@ import logging
 import gobject
 
 class Command(object):
-    def __init__(self, description):
+    def __init__(self, parent, description):
+        self.parent = parent
         self.logger = logging.getLogger("LBRC.Listener.CommandExecutor")
         self.description = description
 
