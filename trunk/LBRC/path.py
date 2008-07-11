@@ -1,8 +1,4 @@
-# These entries are for packagers
-# To make them take effect you have to set them all!
-# 
-# PLEASE MODIFY ONLY IF NEEDED
-#
+"""Module/Class providing some detection for the installation paths"""
 # Theses cases are covered by the module:
 #
 # - FHS Installations
@@ -13,66 +9,85 @@
 #
 # Please note: Only the installation into /usr/local or
 # /usr will activate dbus activation!
-#
-#
-# TODO:
-# - add "all in one detection and configuration"
 
-prefix = ""
-bin_dir = ""
-data_dir = ""
-config_dirs = []
+# These entries are for packagers
+# PLEASE MODIFY ONLY IF NEEDED - YOU HAVE BEEN WARNED!
+#
+# To make them take effect you have to set them all!
+# These will superseed every other detection scheme
+_BIN_DIR = ""
+_DATA_DIR = ""
+_CONFIG_DIRS = []
+# Set _PREFIX if installed into a prefix other than the fhs ones
+# is superseeded by the above options, superseeds fhs detection
+_PREFIX = ""
 
 import os.path as osp
 import sys
 
-scriptpath = osp.dirname(osp.abspath(sys.argv[0]))
+_SCRIPTPATH = osp.dirname(osp.abspath(sys.argv[0]))
 
 class path(object):
-    @classmethod
-    def _class_init(cls):
-        cls._local = False
-        if (not cls._init_fixed() and
-            not cls._init_prefix() and
-            not cls._init_fhs()):
-            cls._local = True
+    """LBRC.path is a singleton holding the paths necessary to run LBRC
+    consider it readonly - you have been warned!"""
+    def __new__(cls, *args):
+        try:
+            return cls._singleton
+        except AttributeError:
+            # Create singleton - so do some magic here - its intended
+            # pylint: disable-msg=W0142
+            cls._singleton = super(path, cls).__new__(cls, *args)
+            # pylint: enable-msg=W0142
+            return cls._singleton
+        
+    def __init__(self):
+        self._local = False
+        self.bin_dir = None
+        self.data_dir = None
+        self.config_dirs = None
+        if (not self._init_fixed() and
+            not self._init_prefix() and
+            not self._init_fhs()):
+            self._local = True
 
-    @classmethod
-    def _init_prefix(cls):
-        if prefix:
-            cls.bin_dir = osp.join(prefix, 'bin')
-            cls.data_dir = osp.join(data_dir, 'share')
-            cls.config_dir = ['/etc', osp.join(prefix, 'share', 'lbrc')]
+    def _init_prefix(self):
+        """If _PREFIX is defined, init path to be based on that"""
+        if _PREFIX:
+            self.bin_dir = osp.join(_PREFIX, 'bin')
+            self.data_dir = osp.join(_PREFIX, 'share')
+            self.config_dirs = ['/etc', osp.join(_PREFIX, 'share', 'lbrc')]
             return True
         return False
 
-    @classmethod
-    def _init_fixed(cls):
-        if bin_dir and data_dir and config_dirs:
-            cls.bin_dir = bin_dir
-            cls.data_dir = data_dir
-            cls.config_dirs = config_dirs
+    def _init_fixed(self):
+        """Some people have their own ideas about the filesystem layout
+        this allows them to have their ideas realised"""
+        if _BIN_DIR and _DATA_DIR and _CONFIG_DIRS:
+            self.bin_dir = _BIN_DIR
+            self.data_dir = _DATA_DIR
+            self.config_dirs = _CONFIG_DIRS
             return True
         else:
             return False
 
-    @classmethod
-    def _init_fhs(cls):
+    def _init_fhs(self):
+        """The FHS allows several places for LBRC to reside - take these
+        into account and adjust paths accordingly"""
         if osp.isfile('/usr/local/share/lbrc/j2me/LBRC.jar'):
-            cls.bin_dir = '/usr/local/bin'
-            cls.data_dir = '/usr/local/share'
-            cls.config_dirs = ['/usr/local/etc', '/etc',
+            self.bin_dir = '/usr/local/bin'
+            self.data_dir = '/usr/local/share'
+            self.config_dirs = ['/usr/local/etc', '/etc',
                                '/usr/local/share/lbrc/']
             return True
         elif osp.isfile('/usr/share/lbrc/j2me/LBRC.jar'):
-            cls.bin_dir = '/usr/bin'
-            cls.data_dir = '/usr/share'
-            cls.config_dirs = ['/etc', '/usr/share/lbrc/']
+            self.bin_dir = '/usr/bin'
+            self.data_dir = '/usr/share'
+            self.config_dirs = ['/etc', '/usr/share/lbrc/']
             return True
         elif osp.isfile('/opt/lbrc/share/lbrc/j2me/LBRC.jar'):
-            cls.bin_dir = '/opt/lbrc/bin'
-            cls.data_dir = '/opt/lbrc/share'
-            cls.config_dirs = ['/etc', '/opt/etc', '/opt/lbrc/share/lbrc']
+            self.bin_dir = '/opt/lbrc/bin'
+            self.data_dir = '/opt/lbrc/share'
+            self.config_dirs = ['/etc', '/opt/etc', '/opt/lbrc/share/lbrc']
             return True
         return False
 
@@ -85,7 +100,7 @@ class path(object):
         @rtype:     string
         """
         if self._local:
-            return osp.join(scriptpath, "pot")
+            return osp.join(_SCRIPTPATH, "pot")
         else:
             return osp.join(self.data_dir, 'locale')
 
@@ -98,11 +113,12 @@ class path(object):
         @rtype:     string
         """
         if self._local:
-            return osp.join(scriptpath, "LBRC_gtk_gui")
+            return osp.join(_SCRIPTPATH, "LBRC_gtk_gui")
         else:
             return osp.join(self.data_dir, 'lbrc')
 
-    def get_userconfigfile(self):
+    @staticmethod
+    def get_userconfigfile():
         """
         Returns absolute path to the user config file
         
@@ -119,12 +135,12 @@ class path(object):
         @rtype:     string
         """
         if self._local:
-            return osp.join(scriptpath, "lbrc.conf")
+            return osp.join(_SCRIPTPATH, "lbrc.conf")
         else:
             for location in self.config_dirs:
-                f = osp.join(location, "lbrc.conf")
-                if osp.isfile(f):
-                    return f
+                fullfilename = osp.join(location, "lbrc.conf")
+                if osp.isfile(fullfilename):
+                    return fullfilename
 
     def get_configfiles(self):
         """
@@ -136,9 +152,9 @@ class path(object):
         """
         paths = []
 
-        for f in self.get_systemconfigfile(),self.get_userconfigfile():
-            if osp.isfile(f):
-                paths.append(f)
+        for filename in self.get_systemconfigfile(), self.get_userconfigfile():
+            if osp.isfile(filename):
+                paths.append(filename)
 
         return paths
 
@@ -152,7 +168,7 @@ class path(object):
         @rtype:     string
         """
         if self._local:
-            return osp.join(scriptpath, name)
+            return osp.join(_SCRIPTPATH, name)
         else:
             return osp.join(self.data_dir, 'lbrc', name)
 
@@ -166,8 +182,6 @@ class path(object):
         @rtype:     string
         """
         if self._local:
-            return osp.join(scriptpath, name)
+            return osp.join(_SCRIPTPATH, name)
         else:
             return osp.join(self.bin_dir, name)
-
-path._class_init()
