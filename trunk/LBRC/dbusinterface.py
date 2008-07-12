@@ -6,6 +6,7 @@ from LBRC.MPlayer import MPlayer
 from LBRC.PresentationCompanion import PresentationCompanion
 from LBRC.ProfileSwitcher import ProfileSwitcher
 from LBRC.UinputDispatcher import UinputDispatcher
+from LBRC.XInput import XInput
 from LBRC.VolumeControl import VolumeControl
 from LBRC.config import config
 from LBRC.path import path
@@ -225,7 +226,7 @@ class Core(dbus.service.Object):
         self.event_listener = []
         
         for i in (UinputDispatcher, CommandExecutor, DBUSCaller, ProfileSwitcher, 
-                  MPlayer, PresentationCompanion, VolumeControl):
+                  MPlayer, PresentationCompanion, VolumeControl, XInput):
             self._register_listener(i)
 
         self.logger.debug("Register done")
