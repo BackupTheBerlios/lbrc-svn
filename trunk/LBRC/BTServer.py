@@ -1,6 +1,13 @@
+"""BTServer module holds classes to handle bluetooth connections for LBRC"""
 # -*- coding: UTF-8 -*-
 #
-# TODO: react to config changes (currently the configs are checked on demand, so no problem - currently!)
+# TODO: react to config changes (currently the configs are checked on demand, 
+#       so no problem - currently!)
+#
+# Not sure whether it's a problem in the gobject bindings or
+# a false positive, but never the less descendants of gobject.GObject
+# have the methods warned as missing by E1101
+# pylint: disable-msg=E1101  
 
 __extra_epydoc_fields__ = [('signal', 'Signal', 'Signals')]
 
@@ -14,10 +21,22 @@ import logging
 import gobject
 import dbus
 import dbus.glib
+        
+class BTConnection(gobject.GObject):
+    """
+    Class to handle a concrete bluetooth connection
 
-class BTConnection(gobject.GObject):    
+    @signal: keycode: (mapping, keycode)
+
+        The signal is fired when a data package is received. The package is
+        decoded and the mapping and keycode is extracted. Mapping refers to the
+        press state (0 => pressed, 1 => released), the keycode is defined by
+        the phone (or a JSR)
+
+    """
     __gsignals__ = {
-        'keycode': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_INT, gobject.TYPE_INT64,)),
+        'keycode': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, 
+                                    (gobject.TYPE_INT, gobject.TYPE_INT64,)),
     }
     def __init__(self, client_sock):
         gobject.GObject.__init__(self)
@@ -26,12 +45,17 @@ class BTConnection(gobject.GObject):
         self.handler['list'] = None
         self.buffer = ""
         self.client_sock = client_sock
-        self.client_io_watch = gobject.io_add_watch(self.client_sock, gobject.IO_IN, self.handle_incoming_data)
+        self.client_io_watch = gobject.io_add_watch(
+                                           self.client_sock,
+                                           gobject.IO_IN, 
+                                           self.cb_handle_incoming_data)
         
     def _handle_buffer(self):
+        """Analyse buffer of received data and act accordingly"""
         packets = self.buffer.split(u"\u0000")
-        # The last packet is either empty (if the last packet was completely send
-        # or we only see a partital package, that we feed back into the buffer
+        # The last packet is either empty (if the last packet was completely 
+        # send or we only see a partital package, that we feed back into the 
+        # buffer
         self.buffer = packets.pop()            
         for packet in packets:
             data = json.read(packet.encode('utf-8'))
@@ -48,25 +72,28 @@ class BTConnection(gobject.GObject):
             else:
                 self.logger.debug("Unmatched package: " + str(data))
 
-    def send_list_query(self, title, list, callback):
+    def send_list_query(self, title, list_input, callback):
+        """Prepare a query to the mobile, that contains a list from which
+        the user has to select one entry"""
         package = {}
         package['type'] = "listQuery"
         package['title'] = title
-        package['list'] = list
+        package['list'] = list_input
         self.send_query(package)
         self.handler['list'] = callback
         
     def send_query(self, package):
-        # TODO: Handle larger packages on client side (what is needed?!)
+        """Send query to phone serialized as json data"""
         self.logger.debug("Sending package:" + str(package))
         message = (json.write(package) + u"\u0000").encode('utf-8')
         self.logger.debug(repr(message))
         try:
             self.client_sock.sendall(message)
         except bluetooth.BluetoothError:
-            self.logger.debug("Trying to send while remote side was disconnected")
+            self.logger.debug(
+                            "Trying to send while remote side was disconnected")
 
-    def handle_incoming_data(self, clientsocket, condition):
+    def cb_handle_incoming_data(self, clientsocket, condition):
         """
         Handle incoming data from the client. The data is coded as json objects,
         that are terminated by the NUL char. For the connection we assume a
@@ -91,6 +118,7 @@ class BTConnection(gobject.GObject):
         return True
     
     def shutdown(self):
+        """Run on shutdown to clear the connection"""
         gobject.source_remove( self.client_io_watch )
 
 class BTServer(gobject.GObject):
@@ -126,10 +154,14 @@ class BTServer(gobject.GObject):
         The signal is fired when changes to the filter are done
     """
     __gsignals__ = {
-        'keycode': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_INT, gobject.TYPE_INT64,)),
-        'connect': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING, gobject.TYPE_INT)),
-        'disconnect': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING, gobject.TYPE_INT)),
-        'connectable_event': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING,)),
+        'keycode': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, 
+                                    (gobject.TYPE_INT, gobject.TYPE_INT64,)),
+        'connect': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, 
+                                    (gobject.TYPE_STRING, gobject.TYPE_INT)),
+        'disconnect': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,
+                                    (gobject.TYPE_STRING, gobject.TYPE_INT)),
+        'connectable_event': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE,
+                                    (gobject.TYPE_STRING,)),
         'updated_filter': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ())
     }
     __gproperties__ = {
@@ -139,23 +171,28 @@ class BTServer(gobject.GObject):
                         "yes",gobject.PARAM_READWRITE)
     }
 
-    def do_get_property(self, property):
-        if property.name == 'connectable':
+    def do_get_property(self, property_param):
+        """Property getter"""
+        if property_param.name == 'connectable':
             return self.connectable
         else:
-            raise AttributeError, 'unknown property %s' % property.name
+            raise AttributeError, 'unknown property %s' % property_param.name
 
-    def do_set_property(self, property, value):
-        if property.name == 'connectable':
+    def do_set_property(self, property_param, value):
+        """Property setter"""
+        if property_param.name == 'connectable':
             if value in ("no", "yes", "filtered"):
                 self.connectable = value
                 self._switch_connectable()
             else:
-                raise AttributeError, 'illegal value for property connectable (allowed: no, yes, filtered): %s' % value
+                raise AttributeError, 'illegal value for property connectable'+\
+                                      ' (allowed: no, yes, filtered): %s'\
+                                      % value
         else:
-            raise AttributeError, 'unknown property %s' % property.name
+            raise AttributeError, 'unknown property %s' % property_param.name
 
-    def __init__(self, name = "LBRC", serverid = "9c6c8dce-9545-11dc-a3c1-0011d8388a56"):
+    def __init__(self, name = "LBRC", 
+                       serverid = "9c6c8dce-9545-11dc-a3c1-0011d8388a56"):
         """
         @param  serverid:   ID associated to the service we announce
         @type   serverid:   string (hexadecimal)
@@ -184,16 +221,20 @@ class BTServer(gobject.GObject):
 
         self.server_sock = bluetooth.BluetoothSocket( bluetooth.RFCOMM )
         self.server_sock.bind(("", bluetooth.PORT_ANY))
-        (addr, self.port) = self.server_sock.getsockname();
+        self.port = self.server_sock.getsockname()[1] # get listening port
         self.server_sock.listen(1)
         
-        self.bluez_db = dinterface(dbus.SystemBus(), 'org.bluez', '/org/bluez', 'org.bluez.Database')
+        self.bluez_db = dinterface(dbus.SystemBus(), 
+                                   'org.bluez', 
+                                   '/org/bluez', 
+                                   'org.bluez.Database')
         self.advertise_id = None
 
         self._register_bluez_signals()
         self._switch_connectable()
 
     def _advertise_service(self, state=False):
+        """Advertise service via SDP"""
         if not state and self.advertise_id:
             self.bluez_db.RemoveServiceRecord(self.advertise_id)
             self.advertise_id = None
@@ -220,13 +261,22 @@ class BTServer(gobject.GObject):
             <text value="%(name)s" name="name"/>
         </attribute>
 </record>
-""" % {'serviceid': self.serverid, 'name': self.name, 'channel': int(self.port) }
+""" % {'serviceid': self.serverid, 
+       'name': self.name, 
+       'channel': int(self.port) }
             self.logger.debug('Trying to register service: %s' % service_record)
-            self.advertise_id = self.bluez_db.AddServiceRecordFromXML(service_record)
+            self.advertise_id = self.bluez_db.AddServiceRecordFromXML(
+                                                                 service_record)
 
     def _switch_connectable(self):
-        if (self.connectable == 'yes' or self.connectable == 'filtered') and not self.server_io_watch:
-            self.server_io_watch = gobject.io_add_watch(self.server_sock, gobject.IO_IN, self.handle_connection)
+        """Update state according to the settings
+        (connectable, filtered, none)"""
+        if (self.connectable == 'yes' or self.connectable == 'filtered') and \
+           not self.server_io_watch:
+            self.server_io_watch = gobject.io_add_watch(
+                                                self.server_sock, 
+                                                gobject.IO_IN, 
+                                                self.cb_handle_connection)
             if BTServer.is_bluez_up():
                 self._advertise_service(True)
         elif self.connectable == 'no' and not self.connected:
@@ -250,13 +300,11 @@ class BTServer(gobject.GObject):
         @type   address:    string
         @param  address:    Address to be removed from filter
         """
-        try:
+        if address in self.filter:
             del self.filter[address]
-        except KeyError:
-            pass
         self.emit('updated_filter')
 
-    def set_allowed(self, filter):
+    def set_allowed(self, address_list):
         """
         Replace existing filter with the string array provided in C{filter}
 
@@ -264,7 +312,7 @@ class BTServer(gobject.GObject):
         @param  filter:     List of addresses allowed to connect
         """
         self.filter = {}
-        for address in filter:
+        for address in address_list:
             self.filter[address] = 1
         self.emit('updated_filter')
 
@@ -299,18 +347,18 @@ class BTServer(gobject.GObject):
             self.bluetooth_keycode = None
             self.bluetooth_connection.shutdown()
 
-    def handle_disconnection(self, serversocket, condition):
+    def cb_handle_disconnection(self, serversocket, condition):
         """
         Handles the shutdown of connections. When the serversocket signals the
         HUP condition.  The handler disconnects from the mainloop by returning
         false.
 
         This method is called when the connection was shutdown from the
-        other side of the connection. The data handler (L{handle_incoming_data})
+        other side of the connection. The data handler (L{cb_handle_incoming_data})
         for incoming data is disconnected and the disconnect signal is fired. 
         
         If we are in connectable or filtered mode, we will reattach the
-        serversocket watch for gtk.IO_IN with L{handle_connection}) as handler.
+        serversocket watch for gtk.IO_IN with L{cb_handle_connection}) as handler.
 
         @type   self:           BTServer
         @param  self:           The BTServer object responsible for handling the connection
@@ -332,17 +380,22 @@ class BTServer(gobject.GObject):
         if self.connected[0] in self.paired_by_us:
             self.logger.debug('BTServer: We paired this device')
             if self.config.get_config_item_fb("remove-pairing", False):
-                self.logger.debug('BTServer: We remove the pairing for this device')
-                self.paired_by_us[self.connected[0]].RemoveBonding(self.connected[0])
+                self.logger.debug(
+                            'BTServer: We remove the pairing for this device')
+                self.paired_by_us[self.connected[0]].RemoveBonding(
+                            self.connected[0])
             del self.paired_by_us[self.connected[0]]
         self.emit("disconnect", self.connected[0], self.connected[1])
         self.connected = None
         if self.connectable == 'yes' or self.connectable == 'filtered':
-            self.server_io_watch = gobject.io_add_watch(self.server_sock, gobject.IO_IN, self.handle_connection)
+            self.server_io_watch = gobject.io_add_watch(
+                                                self.server_sock, 
+                                                gobject.IO_IN, 
+                                                self.cb_handle_connection)
             self._advertise_service(True)
         return False
 
-    def handle_connection(self, serversocket, condition):
+    def cb_handle_connection(self, serversocket, condition):
         """
         Handles incoming connections. The handler disconnects from the mainloop
         by returning false. 
@@ -352,8 +405,8 @@ class BTServer(gobject.GObject):
         If we are in connectable mode or the remote device is allowed to
         connect, when in filter mode, a client connection is established, the
         corresponding signal is fired, the disconnect handler
-        (L{handle_disconnection}) coupled to the serversocket and the client
-        handler coupled to the client socket (L{handle_incoming_data}).
+        (L{cb_handle_disconnection}) coupled to the serversocket and the client
+        handler coupled to the client socket (L{cb_handle_incoming_data}).
 
         When we are in not-connectable mode or the device is not allowed to
         connect in filtered mode, we close the client socket. If we are in
@@ -361,65 +414,102 @@ class BTServer(gobject.GObject):
         socket.
 
         @type   self:           BTServer
-        @param  self:           The BTServer object responsible for handling the connection
+        @param  self:           The BTServer object responsible for handling 
+                                the connection
         @type   serversocket:   bluetooth.BluetoothSocket
-        @param  serversocket:   A bluetooth socket responsible for handling incoming connections
+        @param  serversocket:   A bluetooth socket responsible for handling 
+                                incoming connections
         @type   condition:      integer (gobject.Enum)
-        @param  condition:      The condition of the serversocket which caused the handler to be called
+        @param  condition:      The condition of the serversocket which caused
+                                the handler to be called
                                 should always be gobject.IO_IN (=1)
         @rtype:         bool
         @return:        always False, as we only allow one concurrent connection
         """
         self._advertise_service(False)
 
-        self.client_sock,client_address = self.server_sock.accept()        
-        self.logger.debug("Serversocket: " + str(self.server_sock.getsockname()))
+        self.client_sock, client_address = self.server_sock.accept()        
+        self.logger.debug("Serversocket: %s" % 
+                          str(self.server_sock.getsockname()))
 
         if ( self._check_pairing(client_address) and
             (self.connectable == 'yes' or 
-            (self.connectable == 'filtered' and client_address[0] in self.filter))):
+            (self.connectable == 'filtered' and 
+             client_address[0] in self.filter))):
 
             self.connected = client_address
 
             self.bluetooth_connection = BTConnection(self.client_sock)
             self.bluetooth_keycode = self.bluetooth_connection.connect(
-                                                   "keycode", lambda btc, mp, kc: self.emit("keycode", mp, kc))
+                            "keycode", 
+                            lambda btc, mp, kc: self.emit("keycode", mp, kc))
             
-            self.server_io_watch = gobject.io_add_watch(self.client_sock, gobject.IO_HUP, self.handle_disconnection)
+            self.server_io_watch = gobject.io_add_watch(
+                                                 self.client_sock,
+                                                 gobject.IO_HUP,
+                                                 self.cb_handle_disconnection)
             self.emit("connect", client_address[0], client_address[1])
         else:
             self.logger.debug("Closing remote connection")
             self.client_sock.close()
             self.client_sock = None
             if self.connectable == 'filtered':
-                self.server_io_watch = gobject.io_add_watch(self.server_sock, gobject.IO_IN, self.handle_connection)
+                self.server_io_watch = gobject.io_add_watch(
+                                                 self.server_sock,
+                                                 gobject.IO_IN, 
+                                                 self.cb_handle_connection)
                 self._advertise_service(True)
         return False
 
     def _check_pairing(self, client_address):
-        # Check whether we need pairing!
+        """
+        Check whether we need to be paired before allowing a connection.
+        
+        If one is needed and we are not bonded yet, we initiate a pairing
+        request.
+
+        @type   self:           BTServer
+        @param  self:           The BTServer object responsible for handling 
+                                the connection
+        @type   client_address: Tuple
+        @param  client_address: Client address 
+                                incoming connections
+
+        """
         if not self.config.get_config_item_fb("require-pairing", True):
             self.logger.debug('Pairing not required')
             return True
         self.logger.debug('Check for pairing')
-        manager = dinterface(dbus.SystemBus(), 'org.bluez', '/org/bluez', 'org.bluez.Manager')
+        manager = dinterface( dbus.SystemBus(),
+                              'org.bluez',
+                              '/org/bluez',
+                              'org.bluez.Manager')
         adapters = manager.ListAdapters()
         paired = False
         for adapter in adapters:
-            adapter = dinterface(dbus.SystemBus(), 'org.bluez', adapter, 'org.bluez.Adapter')
+            adapter = dinterface(dbus.SystemBus(), 
+                                 'org.bluez', 
+                                 adapter, 
+                                 'org.bluez.Adapter')
             if adapter.HasBonding(client_address[0]):
                 paired = True
                 break
             
         if not paired:
-            self.logger.debug('We see a new device, that was not yet allowed to connect. Beginning pairing!')
+            self.logger.debug('We see a new device, that was not yet ' + 
+                              'allowed to connect. Beginning pairing!')
             self.logger.debug('Search for adapter, that reaches the phone')
             for adapter in adapters:
-                adapter = dinterface(dbus.SystemBus(), 'org.bluez', adapter, 'org.bluez.Adapter')
-                # We asume that an adapter that can resolve the name is the "right" adapter
+                adapter = dinterface(dbus.SystemBus(), 
+                                     'org.bluez', 
+                                     adapter, 
+                                     'org.bluez.Adapter')
+                # We asume that an adapter that can resolve the name is the 
+                # "right" adapter
                 try:
                     name = adapter.GetRemoteName(client_address[0])
-                    self.logger.debug('Got name %s - will try to create bonding' % (name, ))
+                    self.logger.debug('Got name %s - will try to create bonding'
+                                       % name)
                     adapter.CreateBonding(client_address[0])
                     self.logger.debug('Bonding returned')
                     if adapter.HasBonding(client_address[0]):
@@ -430,25 +520,26 @@ class BTServer(gobject.GObject):
                         self.logger.debug('Bonding failed')
                     break
                 except:
-                    self.logger.debug('Exception in BondingCreation (DBUS Methods)')
-                    pass
+                    self.logger.debug('Exception in BondingCreation' +
+                                      ' (DBUS Methods)')
         return paired
 
     def _register_bluez_signals(self):
+        """Register the dbus signals from dbus to register the addition and
+        removal of bluetooth adapters"""
         if not BTServer.is_bluez_up():
             return
-        bus = dbus.SystemBus()
-        manager = dbus.Interface(bus.get_object('org.bluez', '/org/bluez'),'org.bluez.Manager')
-        manager.connect_to_signal("AdapterAdded", self._adapter_added)
-        manager.connect_to_signal("AdapterRemoved", self._adapter_removed)
- 
-    def _adapter_removed(self, adapter):
-        pass
+        manager = dinterface(dbus.SystemBus(), 'org.bluez', 
+                           '/org/bluez', 'org.bluez.Manager')
+        manager.connect_to_signal("AdapterAdded", self.cb_adapter_added)
+        #manager.connect_to_signal("AdapterRemoved", self.cb_adapter_removed)
 
-    def _adapter_added(self,adapter): 
+    def cb_adapter_added(self, adapter):
+        """An adapter was added - so start advertising our service on it"""
         self._switch_connectable()
 
     def get_bt_connection(self):
+        """Retrieve Bluetooth Connection"""
         return self.bluetooth_connection
 
     @staticmethod
@@ -460,21 +551,23 @@ class BTServer(gobject.GObject):
         @return:    True if bluez if bluez is up, False otherwise
         """
         bus = dbus.SystemBus()
-        manager = dbus.Interface(bus.get_object('org.bluez', '/org/bluez'),'org.bluez.Manager')
+        manager = dbus.Interface(bus.get_object('org.bluez', '/org/bluez'),
+                                 'org.bluez.Manager')
         try:
             manager.ListAdapters()
             return True
         except dbus.dbus_bindings.DBusException:
             return False
 
-def stand_alone_test(*args):
+def stand_alone_test():
+    """Do some standalone testing (necessary to check BTServer"""
     def print_args(*args):
+        """Print function suitable for use in lambda/callbacks"""
         print args
-    import gobject
-    bt = BTServer()
-    bt.connect("keycode", print_args, 'keycode')
-    bt.connect("connect", print_args, 'connect')
-    bt.connect("disconnect", print_args, 'disconnect')
+    btserver = BTServer()
+    btserver.connect("keycode", print_args, 'keycode')
+    btserver.connect("connect", print_args, 'connect')
+    btserver.connect("disconnect", print_args, 'disconnect')
     
     print "You entered Testmode, when you fire up LBRC on your device"
     print "you will see the events (connect, disconnect, keycode), "
@@ -482,42 +575,42 @@ def stand_alone_test(*args):
     print
     print "To stop, press STRG-C"
     print
-    m = gobject.MainLoop()
+    mainloop = gobject.MainLoop()
     try:
-        m.run()
+        mainloop.run()
     except KeyboardInterrupt:
-        m.quit()
+        mainloop.quit()
 
     print
     print "Switching to filtered mode! Allowed: 00:13:FD:93:B1:1B"
     print "To stop, press STRG-C"
     print
-    bt.set_property("connectable", "filtered")
-    bt.add_allowed("00:13:FD:93:B1:1B")
+    btserver.set_property("connectable", "filtered")
+    btserver.add_allowed("00:13:FD:93:B1:1B")
     try:
-        m.run()
+        mainloop.run()
     except KeyboardInterrupt:
-        m.quit()
+        mainloop.quit()
 
     print
     print "Switching to not connectable mode!"
     print "To stop, press STRG-C"
     print
-    bt.set_property("connectable", "no")
+    btserver.set_property("connectable", "no")
     try:
-        m.run()
+        mainloop.run()
     except KeyboardInterrupt:
-        m.quit()
+        mainloop.quit()
 
     print
     print "Switching to connectable mode!"
     print "To stop, press STRG-C"
     print
-    bt.set_property("connectable", "yes")
+    btserver.set_property("connectable", "yes")
     try:
-        m.run()
+        mainloop.run()
     except KeyboardInterrupt:
-        m.quit()
+        mainloop.quit()
 
 if __name__ == "__main__":
     stand_alone_test()
