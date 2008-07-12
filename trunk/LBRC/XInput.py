@@ -4,9 +4,8 @@ injects them via XTest.
 """
 import logging
 import gobject
-import LBRC.consts as co
 from LBRC.Listener import Listener
-from Xlib import X, display, XK, error
+from Xlib import X, display, XK
 from Xlib.ext import xtest
 
 class XInput( Listener ):
@@ -36,10 +35,7 @@ class XInput( Listener ):
                 i.stop()
         # Set new profile up
         self.invoked  = {}
-        try:
-            self._interpret_profile( config, profile )
-        except Exception, e:
-            self.logger.error("Error while interpreting profile: %s" % e)
+        self._interpret_profile( config, profile )
     
     def shutdown( self ):
         """
@@ -84,11 +80,13 @@ class XInput( Listener ):
                 self.invoked[event_tuple].append( entry )
                 entry.activate()
 
-class X11Event( object ): 
+class X11Event( object ):
+    """This class holds the representation of a keycode event"""
     Xdisplay = display.Display()
     XKs = {}
     
     def _init_mouseaxis( self, action ):
+        """Initialize mousemovement commands"""
         self.type = 'MouseAxisEvent'
         command = lambda stat, dyn: self.Xdisplay.warp_pointer(stat[0] * dyn,
                                                                stat[1] * dyn)
@@ -97,7 +95,6 @@ class X11Event( object ):
         
         static = [0, 0]
         
-        # TODO: Error check!
         axis = action['map_to']
         
         if "X" in axis:
@@ -114,18 +111,26 @@ class X11Event( object ):
                            lambda x, y: self.cb_lin_mouse_step( x, y ) )]
 
     def _init_mousebutton( self, action):
-        """Initialize Mousebutton Commands"""
+        """Initialize mousebutton commands"""
         self.type = 'MouseButtonEvent'
 
         command = lambda stat, dyn: xtest.fake_input(self.Xdisplay, 
                                                      stat[0],
                                                      stat[1])
-        self.commands = [( command, (X.ButtonPress, action['map_to']), tuple())]
+        self.commands = [( command, 
+                           (X.ButtonPress, action['map_to']),
+                           tuple())]
         self.repeat_commands = [
-                         ( command, (X.ButtonRelease, action['map_to']), tuple() ),
-                         ( command, (X.ButtonPress, action['map_to']), tuple() )
+                         ( command, 
+                           (X.ButtonRelease, action['map_to']), 
+                           tuple() ),
+                         ( command, 
+                           (X.ButtonPress, action['map_to']), 
+                           tuple() )
                                ]
-        self.cleanup = [( command, (X.ButtonRelease, action['map_to']), tuple())]
+        self.cleanup = [( command, 
+                          (X.ButtonRelease, action['map_to']), 
+                          tuple())]
             
         if 'repeat_freq' in action:
             self.repeat_freq = int( action['repeat_freq'] )
@@ -135,6 +140,7 @@ class X11Event( object ):
                 self.repeat_func = self.cb_const_key
 
     def _init_keypress( self, action ):
+        """Initialize keypress commands"""
         self.type = 'KeyPressEvent'
         command = lambda stat, dyn: xtest.fake_input(self.Xdisplay, 
                                              stat[0],
@@ -154,7 +160,7 @@ class X11Event( object ):
             self.repeat_freq = int( action['repeat_freq'] )
             self.repeat_func = self.cb_const_key
     
-    def __init__( self, parent, action):
+    def __init__( self, _, action):
         # (keycode,mapping) => [callback_id, calls]
         # dictionaries, for handling repeats and cleanups of repeats
         if not self.XKs:
@@ -173,6 +179,9 @@ class X11Event( object ):
         self.type = 'Generic Event'
         self.uinput_dev = None
         self.uinputbridge = None
+        if not 'map-to' in action:
+            self.logger.warning("Definition for XInput without mapping")
+            return
         if action['type'] == 'mouseaxis':
             self._init_mouseaxis(action)
         elif action['type'] == 'mousebutton':
@@ -180,35 +189,34 @@ class X11Event( object ):
         elif action['type'] == 'key':
             self._init_keypress(action)
 
-    def set_uinput_dev( self, uinput_dev, uinputbridge ):
-        self.uinput_dev = uinput_dev
-        self.uinputbridge = uinputbridge
-
-    def cb_lin_mouse_freq( self, x, n ):
+    @staticmethod
+    def cb_lin_mouse_freq( frequency, calls):
         """
-        linear speed up, stopped at 500 (more can't be handled by the mainloop call back)
+        linear speed up, stopped at 500
+        (more can't be handled by the mainloop call back)
         """
-        freq = x * ( n * 0.75 +1 )
+        freq = frequency * ( calls * 0.75 +1 )
         if freq > 500:
             freq = 500
         return freq
 
-    def cb_lin_mouse_step( self, x, n):
+    def cb_lin_mouse_step( self, frequency, calls):
         """
         length of stepps for mouse movement
         """
-        freq = self.cb_lin_mouse_freq( x, n )
+        freq = self.cb_lin_mouse_freq( frequency, calls )
         if( freq < 500 ):
             return 2
         else:
             return 3
 
-    def cb_const_key( self, x, n):
+    @staticmethod
+    def cb_const_key( frequency, calls):
         """
         key repeat is only issued, after 1/2 second, after that
         1/20 s
         """
-        if n == 0:
+        if calls == 0:
             return 2
         return 20
 
@@ -219,11 +227,16 @@ class X11Event( object ):
         repeathandler = self.repeathandler
         repeathandler[1] += 1
         if self.repeat_commands:
-            self._send_commands( self.repeat_commands, self.repeat_freq, repeathandler[1] )
+            self._send_commands( self.repeat_commands, 
+                                 self.repeat_freq, 
+                                 repeathandler[1] )
         else:
-            self._send_commands( self.commands, self.repeat_freq, repeathandler[1] )
+            self._send_commands( self.commands, 
+                                 self.repeat_freq, 
+                                 repeathandler[1] )
         freq = self.repeat_func( self.repeat_freq, repeathandler[1] )
-        repeathandler[0] = gobject.timeout_add( int( 1000.0/freq ), self._repeater )
+        repeathandler[0] = gobject.timeout_add( int(1000.0/freq),
+                                                self._repeater)
         return False
 
     def _send_commands( self, commands, freq, calls ):
@@ -251,15 +264,18 @@ class X11Event( object ):
 
 
     def activate( self ):
+        """Called when a keycode is activated"""
         self.logger.debug( "activated: " + self.type )
         self._send_commands( self.commands, 0, 0 )
         if self.repeat_freq:
             self.repeathandler = []
             freq = self.repeat_func( self.repeat_freq, 0 )
-            self.repeathandler.append( gobject.timeout_add( int( 1000.0/freq ), self._repeater ) )
+            self.repeathandler.append(gobject.timeout_add( int(1000.0/freq),
+                                                           self._repeater))
             self.repeathandler.append( 0 )
 
     def stop( self ):
+        """Called when a keycode is deactivated"""
         if self.repeathandler:
             gobject.source_remove( self.repeathandler[0] )
         if self.cleanup:

@@ -1,4 +1,6 @@
-from LBRC.l10n import _
+"""Main Interface Module for LBRC - the core of the whole application"""
+# pylint: disable-msg=E1101
+
 from LBRC.BTServer import BTServer
 from LBRC.CommandExecutor import CommandExecutor
 from LBRC.DBUSCaller import DBUSCaller
@@ -11,29 +13,28 @@ from LBRC.VolumeControl import VolumeControl
 from LBRC.config import config
 from LBRC.path import path
 from LBRC import dinterface
-import LBRC.consts as co
 
-import bluetooth
 import dbus
 import dbus.glib
 import dbus.service
 import gobject
 import logging
-import os
-import sys
 import time
 
 DBUSNAME = 'de.berlios.lbrc'
 DBUSIFACE = 'de.berlios.lbrc'
 
 class DBUSProfileControl(dbus.service.Object):
-    def __init__(self, busname, path, parent):
-        dbus.service.Object.__init__(self, busname, path)
+    def __init__(self, busname, dbuspath, parent):
+        dbus.service.Object.__init__(self, busname, dbuspath)
         self.parent = parent
-        parent.connect("profile_changed", lambda parent, config, profile: self.profile_changed(config, profile))
-        
+        parent.connect("profile_changed", self.cb_profile_changed)
+    
+    def cb_profile_changed(self, parent, configfile, profile):
+        self.profile_changed(configfile, profile)    
+    
     @dbus.service.signal(DBUSIFACE, signature='ss')
-    def profile_changed(self, config, profile):
+    def profile_changed(self, configfile, profile):
         pass
     
     @dbus.service.method(DBUSIFACE, out_signature="a(ss)")
@@ -45,32 +46,35 @@ class DBUSProfileControl(dbus.service.Object):
         return self.parent.cur_profile
     
     @dbus.service.method(DBUSIFACE, in_signature='ss', out_signature=None)
-    def set_profile(self, config, profileid):
-        self.parent.set_profile(str(config), str(profileid))
+    def set_profile(self, configfile, profileid):
+        self.parent.set_profile(str(configfile), str(profileid))
 
 class ProfileControl(gobject.GObject):
     __gsignals__ = {
-                    "profile_changed": (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING, gobject.TYPE_STRING))
-                    }
+        "profile_changed": (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, 
+                                            (gobject.TYPE_STRING, 
+                                             gobject.TYPE_STRING))
+    }
     
-    def __init__(self, config):
+    def __init__(self, configdata):
         gobject.GObject.__init__(self)
-        self.config = config
-        config.connect("config-reread", self.configure_reread_callback)
+        self.config = configdata
+        config.connect("config-reread", self.cb_config_reread)
         self.cur_profile = (None, None)
 
-    def configure_reread_callback(self, config):
+    def cb_config_reread(self, configfile):
         #verify if the current selected profile doesn't exist anymore
         if self.cur_profile:
             if (not self.cur_profile in self.config.profile_index):
                 self._load_default_profile()
             else:
-                self.emit('profile_changed', self.cur_profile[0], self.cur_profile[1])
+                self.emit('profile_changed', self.cur_profile[0], 
+                                             self.cur_profile[1])
 
-    def set_profile(self, config, profileid):
-        if (config, profileid) in self.config.profile_index and \
-           not (config, profileid) == self.cur_profile:
-            self.cur_profile = (config, profileid)
+    def set_profile(self, configfile, profileid):
+        if (configfile, profileid) in self.config.profile_index and \
+           not (configfile, profileid) == self.cur_profile:
+            self.cur_profile = (configfile, profileid)
             self.config.set_config_item('default-profile', self.cur_profile)
             self.emit('profile_changed', self.cur_profile[0], self.cur_profile[1])
             
@@ -85,8 +89,8 @@ class ProfileControl(gobject.GObject):
 
 class AccessControl(dbus.service.Object):
     @dbus.service.method(DBUSIFACE, in_signature='as')
-    def set_allowed(self, filter):
-        self.btserver.set_allowed(filter)
+    def set_allowed(self, allowed_list):
+        self.btserver.set_allowed(allowed_list)
 
     @dbus.service.method(DBUSIFACE, in_signature='s')
     def add_allowed(self, address):
@@ -109,8 +113,8 @@ class AccessControl(dbus.service.Object):
         pass
 
 class ConnectionControl(dbus.service.Object):
-    def __init__(self, busname, path, btserver):
-        dbus.service.Object.__init__(self,busname, path)
+    def __init__(self, busname, dbuspath, btserver):
+        dbus.service.Object.__init__(self,busname, dbuspath)
         self.logger = logging.getLogger("LBRC.ConnectionControl")
         self.btserver = btserver
         self.btserver.connect('connect', self._connect_cb)
@@ -120,7 +124,10 @@ class ConnectionControl(dbus.service.Object):
     def _lookup_bluetooth_name(bluetooth_address):
         # TODO: Handle no adapters
         # TODO: Handles RequestDefered return type + NotAvailable
-        bluez_manager = dinterface(dbus.SystemBus(), 'org.bluez', '/org/bluez', 'org.bluez.Manager')
+        bluez_manager = dinterface(dbus.SystemBus(), 
+                                   'org.bluez',
+                                   '/org/bluez', 
+                                   'org.bluez.Manager')
         try:
             default_adapter = dinterface(dbus.SystemBus(), 'org.bluez', bluez_manager.DefaultAdapter(), 'org.bluez.Adapter')
             return default_adapter.GetRemoteName(bluetooth_address)
@@ -160,8 +167,8 @@ class ConnectionControl(dbus.service.Object):
         self.logger.debug("disconnect_cb: " + str(btname) + " " + str(btadress) + " " + str(port))
 
 class DBUSLogHandler(logging.Handler, dbus.service.Object):
-    def __init__(self, busname, path):
-        dbus.service.Object.__init__(self, busname, path)
+    def __init__(self, busname, dbuspath):
+        dbus.service.Object.__init__(self, busname, dbuspath)
         logging.Handler.__init__(self)
 
     @dbus.service.signal(DBUSIFACE, signature='sisssssidsixsisss')
@@ -176,7 +183,9 @@ class DBUSLogHandler(logging.Handler, dbus.service.Object):
     
     def emit(self, lr):
         # lr = LogRecord
-        lr.asctime = (time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(lr.created)) + ",%03d") % (lr.msecs,)
+        lr.asctime = (time.strftime("%Y-%m-%d %H:%M:%S", 
+                                    time.localtime(lr.created)) + ",%03d") % \
+                                    (lr.msecs,)
         lr.message = lr.getMessage()
         lr.fmessage = self.format(lr)
         #only in 2.5
@@ -220,13 +229,18 @@ class Core(dbus.service.Object):
         self.config = config()
         
         self.profile_control = ProfileControl(self.config)
-        self.dbus_profile_control = DBUSProfileControl(bus_name, "/profile", self.profile_control)
-        self.connection_control = ConnectionControl(bus_name, "/connection", self.btserver)
+        self.dbus_profile_control = DBUSProfileControl(bus_name,
+                                                       "/profile",
+                                                       self.profile_control)
+        self.connection_control = ConnectionControl(bus_name, 
+                                                    "/connection", 
+                                                    self.btserver)
         
         self.event_listener = []
         
-        for i in (UinputDispatcher, CommandExecutor, DBUSCaller, ProfileSwitcher, 
-                  MPlayer, PresentationCompanion, VolumeControl, XInput):
+        for i in (UinputDispatcher, CommandExecutor, DBUSCaller, 
+                  ProfileSwitcher, MPlayer, PresentationCompanion,
+                  VolumeControl, XInput):
             self._register_listener(i)
 
         self.logger.debug("Register done")
@@ -265,7 +279,6 @@ class Core(dbus.service.Object):
             listener.set_profile(config, profile)
 
     def _register_listener(self, constructor):
-        # TODO: at some point we have to do conflict resolving (when we define what is a conflict ...)
         try: 
             listener = constructor(self.config)
             try: listener.set_bluetooth_connector(self.btserver)
@@ -278,9 +291,9 @@ class Core(dbus.service.Object):
             self.logger.warn("Failed to initalize " + str(constructor) + "\n" + str(e))
             return
 
-    def _dispatch(self, btserver, map, keycode):
+    def _dispatch(self, btserver, mapping, keycode):
         for listener in self.event_listener:
-            listener.keycode(map, keycode)
+            listener.keycode(mapping, keycode)
         return True
 
     @dbus.service.method(DBUSIFACE, out_signature='')
@@ -298,5 +311,5 @@ class Core(dbus.service.Object):
         for i in self.event_listener:
             i.shutdown()
         self.btserver.shutdown()
-        for c in self.shutdown_commands:
-            c()
+        for command in self.shutdown_commands:
+            command()

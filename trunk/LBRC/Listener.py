@@ -1,3 +1,4 @@
+"""See  Listener Object"""
 import logging
 from config import configValueNotFound
 
@@ -6,6 +7,13 @@ class UndefinedCommandClass(Exception):
     command_class ist supplied"""
 
 class Listener(object):
+    """
+    Generic parent class for action listener - Contains base functionality.
+    
+    Descendants of this class have to either provide a custom CommandClass,
+    that is responsible for interpreting the specific actions or has to
+    overwrite _interpret_profile!
+    """
     def __init__(self, config, name, **kwargs):
         self.name = name
         self.logger = logging.getLogger('LBRC.Listener.' + self.name)
@@ -22,12 +30,6 @@ class Listener(object):
         self.destruct = []
         self.logger.debug("__init__ of baseclass done")
     
-    def _debug(self, message):
-        self.logger.debug(message)
-    
-    def _error(self, message):
-        self.logger.error(message)
-    
     def _interpret_profile(self, config, profile):
         """
         Interpret the profile data from the profile.conf(s) and push the commands into
@@ -41,20 +43,28 @@ class Listener(object):
         self.init = []
         self.actions = {}
         self.destruct = []
+        command_class = self.command_class
         try:
-            for init in self.config.get_profile(config, profile, self.name)['init']:
-                self.init.append(self.command_class(self, init))
-        except (configValueNotFound, KeyError), e:
-            self.logger.debug("failure while interprating init: %s", repr(e))
+            config_section = self.config.get_profile(config, profile, self.name)
+        except configValueNotFound:
+            self.logger.debug("No config section found")
+            self.logger.debug("_interpret_profile finished")
+            
         try:
-            for destruct in self.config.get_profile(config, profile, self.name)['destruct']:
-                self.destruct.append(self.command_class(self, destruct))
-        except (configValueNotFound, KeyError), e:
-            self.logger.debug("failure while interprating destruct: %s", repr(e))
+            for init in config_section['init']:
+                self.init.append(command_class(self, init))
+        except KeyError, exception:
+            self.logger.debug("failure while interprating init: %s" % 
+                                                           repr(exception))
+        try:
+            for destruct in config_section['destruct']:
+                self.destruct.append(command_class(self, destruct))
+        except KeyError, exception:
+            self.logger.debug("failure while interprating destruct: %s" %
+                                                           repr(exception))
        
         try:
-            print self.config.get_profile(config, profile, self.name)['actions']
-            for action in self.config.get_profile(config, profile, self.name)['actions']:
+            for action in config_section['actions']:
                 try:
                     mapping = int(action['mapping'])
                 except (TypeError, KeyError):
@@ -62,13 +72,14 @@ class Listener(object):
                 event_tuple = (int(action['keycode']), mapping)
                 if not event_tuple in self.actions:
                     self.actions[event_tuple] = []
-                self.actions[event_tuple].append(self.command_class(self, action))
-        except (configValueNotFound, KeyError), e:
-            self.logger.debug("failure while interprating actions: %s", repr(e))
+                self.actions[event_tuple].append(command_class(self, action))
+        except KeyError, exception:
+            self.logger.debug("failure while interprating actions: %s" % 
+                                                            repr(exception))
 
         self.logger.debug("_interpret_profile finished")
         
-    def set_bluetooth_connector(self, bc):
+    def set_bluetooth_connector(self, bluetooth_connector):
         """
         Set our bluetooth connector, that allows us to issue the presentation
         of a list, from which the user can choose the new profile
@@ -76,7 +87,7 @@ class Listener(object):
         @param    bc:    Bluetooth Adapter
         @type     bc:    L{BTServer}
         """
-        self.bluetooth_connector = bc        
+        self.bluetooth_connector = bluetooth_connector
 
     def set_core(self, core):
         """
