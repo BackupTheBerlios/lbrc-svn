@@ -7,6 +7,7 @@ import gobject
 from LBRC.Listener import Listener
 from Xlib import X, display, XK
 from Xlib.ext import xtest
+from Listener import ListenerInitFailedException
 
 class XInput( Listener ):
     """
@@ -18,6 +19,9 @@ class XInput( Listener ):
         @param  config:         configuration data
         @type   config:         dictionary
         """
+        if not display.Display().has_extension("XTEST"):
+            raise ListenerInitFailedException(
+                                            "X11-Extension XTEST not available")
         Listener.__init__(self, config, "XInput", command_class=X11Event)
         self.invoked = {}
         
@@ -88,8 +92,9 @@ class X11Event( object ):
     def _init_mouseaxis( self, action ):
         """Initialize mousemovement commands"""
         self.type = 'MouseAxisEvent'
-        command = lambda stat, dyn: self.Xdisplay.warp_pointer(stat[0] * dyn,
-                                                               stat[1] * dyn)
+        def cb_command(stat, dyn):
+            """Call warp_pointer of the current X-Display to move the cursor"""
+            self.Xdisplay.warp_pointer(stat[0] * dyn, stat[1] * dyn)
         self.repeat_freq = 10
         self.repeat_func = self.cb_lin_mouse_freq
         
@@ -106,7 +111,7 @@ class X11Event( object ):
             static[0] *= -1
             static[1] *= -1 
         
-        self.commands = [( command,
+        self.commands = [( cb_command,
                            static,
                            lambda x, y: self.cb_lin_mouse_step( x, y ) )]
 
@@ -114,21 +119,22 @@ class X11Event( object ):
         """Initialize mousebutton commands"""
         self.type = 'MouseButtonEvent'
 
-        command = lambda stat, dyn: xtest.fake_input(self.Xdisplay, 
-                                                     stat[0],
-                                                     stat[1])
-        self.commands = [( command, 
+        def cb_command(stat, dyn):
+            """Fake input is used to simulate a button click/release"""
+            xtest.fake_input(self.Xdisplay, stat[0], stat[1])
+            
+        self.commands = [( cb_command, 
                            (X.ButtonPress, action['map_to']),
                            tuple())]
         self.repeat_commands = [
-                         ( command, 
+                         ( cb_command, 
                            (X.ButtonRelease, action['map_to']), 
                            tuple() ),
-                         ( command, 
+                         ( cb_command, 
                            (X.ButtonPress, action['map_to']), 
                            tuple() )
                                ]
-        self.cleanup = [( command, 
+        self.cleanup = [( cb_command, 
                           (X.ButtonRelease, action['map_to']), 
                           tuple())]
             
@@ -142,19 +148,19 @@ class X11Event( object ):
     def _init_keypress( self, action ):
         """Initialize keypress commands"""
         self.type = 'KeyPressEvent'
-        command = lambda stat, dyn: xtest.fake_input(self.Xdisplay, 
-                                             stat[0],
-                                             stat[1])
+        def cb_command(stat, dyn):
+            """Fake input is used to simulate a key press/release"""
+            xtest.fake_input(self.Xdisplay, stat[0], stat[1])
 
         for part in action['map_to'].split( "+" ):
             k = self.XKs[part.lower()]
             k = self.Xdisplay.keysym_to_keycode(k)
-            self.commands.append( (command, (X.KeyPress, k), 1 ) )
-            self.repeat_commands.append( ( command, (X.KeyPress, k), tuple() ) )
-            self.repeat_commands.insert( 0, ( command, 
+            self.commands.append((cb_command, (X.KeyPress, k), 1))
+            self.repeat_commands.append((cb_command, (X.KeyPress, k), tuple()))
+            self.repeat_commands.insert( 0, ( cb_command, 
                                               (X.KeyRelease, k), 
                                               tuple()))
-            self.cleanup.insert( 0, ( command, (X.KeyRelease, k), tuple() ) )
+            self.cleanup.insert( 0, (cb_command, (X.KeyRelease, k), tuple()))
             
         if 'repeat_freq' in action:
             self.repeat_freq = int( action['repeat_freq'] )
