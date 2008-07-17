@@ -6,6 +6,9 @@ class UndefinedCommandClass(Exception):
     """Raised, if the default _interpret_profile of Listener is used, but no
     command_class ist supplied"""
 
+class ListenerInitFailedException(Exception):
+    """Raised, if initialisation of Listener failed!"""
+
 class Listener(object):
     """
     Generic parent class for action listener - Contains base functionality.
