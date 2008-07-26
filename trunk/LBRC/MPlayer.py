@@ -1,15 +1,70 @@
+"""See class documentation of MPlayer"""
+
 from LBRC.Listener import Listener
-import os.path as osp
-import os
-from subprocess import Popen, PIPE
 from LBRC.path import path
 from LBRC.l10n import _
+from subprocess import Popen, PIPE
+import logging
+import os
+import os.path as osp
 
-class FIFO(object):
+class MPlayerStartupException(Exception):
+    """
+    Exception is thrown, when MPlayer can't be connected of started.
+    """
+    pass
+
+class CommandWrapper(dict):
+    """This is a very thin wrapper around a dict, so that it can be used
+    as a ListenerCommand class. So that the super._interpret_profile can
+    be used and only keycode has to be implemented in MPlayer"""
+    def __init__(self, dummy, description):
+        """
+        dummy is needed to be compatible with the rest of the CommandClasses
+        """
+        dict.__init__(self)
+        self.update(description)
+
+class MPlayerEngine(object):
     """
     Just a wrapper
     """
-    pass
+    def __init__(self, **kwdargs):
+        self.path = path()
+        self.logger = logging.getLogger('LBRC.Listener.MPlayerEngine')
+        self.stdin = None
+        if 'fifo' in kwdargs:
+            fifo = kwdargs['fifo']
+            if not osp.exists(fifo):
+                self.logger.debug("FIFO does not exist: %s" % fifo)
+                raise MPlayerStartupException()
+            try:
+                mplayer_fd = os.open(fifo, os.O_NONBLOCK | os.O_WRONLY)
+                self.mplayer_pipe = os.fdopen(mplayer_fd, "w")
+            except IOError, exception:
+                self.logger.error("Failed to open FIFO: %s\n%s" % 
+                                  (fifo, str(exception)))
+                raise MPlayerStartupException()
+        else:
+            self.mplayer = Popen(["mplayer",  "-slave", "-idle", "-quiet"], 
+                                  stdin=PIPE)
+            try:
+                self.mplayer_pipe = self.mplayer.stdin
+                self.command("loadfile %s" % 
+                             self.path.get_datafile("LBRCback.avi"))
+                self.command("pause")
+            except IOError, exception:
+                self.logger.error("Failed to connect to MPlayer: %s\n%s" % 
+                                  (fifo, str(exception)))
+
+    def command(self, command):
+        """Send command to mplayer instance"""
+        self.mplayer_pipe.write(command + "\n")
+        self.mplayer_pipe.flush()
+        
+    def disconnect(self):
+        """Close connection to running mplayer instance"""
+        self.mplayer_pipe.close()
 
 class MPlayer(Listener):
     """
@@ -53,7 +108,7 @@ class MPlayer(Listener):
         @param  config:         configuration data
         @type   config:         dictionary
         """
-        Listener.__init__(self, config, "MPlayer")
+        Listener.__init__(self, config, "MPlayer", command_class=CommandWrapper)
         self.path = path()
         self.querytype = None
         self.querymap = None
@@ -78,7 +133,7 @@ class MPlayer(Listener):
                     self.querymap = None
                 elif selection[2] == 'd':
                     self._query_fileselection(base=selection[1])
-            except:
+            except IOError:
                 self.querytype = None
                 self.querymap = None
               
@@ -91,71 +146,83 @@ class MPlayer(Listener):
         if not base:
             base = osp.expanduser("~")
         files = os.listdir(base)
-        for file in files:
-            if file[0] == ".":
+        for filename in files:
+            if filename[0] == ".":
                 continue
-            fullname = osp.join(base, file)
-            file = file.decode('utf-8')
+            fullname = osp.join(base, filename)
+            filename = filename.decode('utf-8')
             if osp.isfile(fullname):
-                self.querymap.append((file, fullname, 'f'))
+                self.querymap.append((filename, fullname, 'f'))
             elif osp.isdir(fullname):
-                self.querymap.append(("[" + file + "]", fullname, 'd'))
-        def sort_filelist(a, b):
-            if a[2] == b[2]:
-                return cmp(a[0], b[0])
+                self.querymap.append(("[" + filename + "]", fullname, 'd'))
+                
+        def sort_filelist(file1, file2):
+            """
+            Custom sort method for sort function. Sorts directories before
+            files and each group alphabetically
+            """
+            if file1[2] == file2[2]:
+                return cmp(file1[0], file2[0])
             else:
-                if a[2] == 'd':
+                if file1[2] == 'd':
                     return -1
                 else:
                     return 1
         self.querymap.sort(sort_filelist)
-        self.querymap.insert(0, ("[..]", osp.normpath(osp.join(base, "..")), 'd'))
+        self.querymap.insert(0, ("[..]", 
+                                 osp.normpath(osp.join(base, "..")), 
+                                 'd'))
         self.querytype = 'fileselection'
         btconnection = self.bluetooth_connector.get_bt_connection()
         btconnection.send_list_query(_("Select file"), 
                                      [i[0] for i in self.querymap],
                                      self._handle_list_reply)
 
+    def _execute_command_non_running(self, command):
+        """Excute commands assuming a mplayer instance is not present"""
+        if command == "switch_on" or \
+           command == "toggle_onoff":
+            try:
+                self.mplayer = MPlayerEngine()
+            except MPlayerStartupException, exception:
+                self.logger.error("Error while starting MPlayer: %s" %
+                                   repr(exception))
+                self.mplayer = None
+        elif "connect_fifo" == command[0:12]:
+            try:
+                self.mplayer = MPlayerEngine({'fifo': command[13:]})
+            except MPlayerStartupException, exception:
+                self.logger.error("Error while connection to MPlayer " +
+                                  " FIFO: %s" % repr(exception))
+                self.mplayer = None
+    
+    def _execute_command_running(self, command):
+        """Excute commands assuming a mplayer instance is present"""
+        try:
+            if command == "quit" or \
+               command == "toggle_onoff":
+                self.mplayer.command("quit")
+                self.mplayer = None
+            elif command.startswith("remote_fileselect"):
+                if len(command) > 18:
+                    self._query_fileselection(command[18:])
+                else:
+                    self._query_fileselection()
+            elif command == 'disconnect_fifo':
+                self.mplayer.disconnect()
+                self.mplayer = None
+            else:
+                self.mplayer.command(command)
+        except IOError:
+            self.mplayer = None
+        
     def _execute_command(self, command):
+        """Interpret a command"""
         self.logger.debug("Command:" + command)
         if self.mplayer:
-            try:
-                if command == "quit" or \
-                   command == "toggle_onoff":
-                    self.mplayer.stdin.write("quit\n")
-                    self.mplayer.stdin.flush()
-                    self.mplayer = None
-                elif command.startswith("remote_fileselect"):
-                    if len(command) > 18:
-                        self._query_fileselection(command[18:])
-                    else:
-                        self._query_fileselection()
-                elif command == 'disconnect_fifo':
-                    self.mplayer.stdin.close()
-                    self.mplayer = None
-                else:
-                    self.mplayer.stdin.write(command + "\n")
-                    self.mplayer.stdin.flush()
-            except IOError:
-                self.mplayer = None
+            self._execute_command_running(command)
         else:
-            if command == "switch_on" or \
-               command == "toggle_onoff":
-                self.mplayer = Popen(["mplayer",  "-slave", "-idle", "-quiet"], stdin=PIPE)
-                self.mplayer.stdin.write("loadfile " + self.path.get_datafile("LBRCback.avi") + "\n")
-                self.mplayer.stdin.write("pause\n")
-            elif "connect_fifo" == command[0:12]:
-                fifo = command[13:]
-                if not os.path.exists(fifo):
-                    self.logger.debug("FIFO does not exist: %s" % fifo)
-                    return
-                self.mplayer = FIFO()
-                try:
-                    fd = os.open(fifo, os.O_NONBLOCK | os.O_WRONLY)
-                    self.mplayer.stdin = os.fdopen(fd, "w")
-                except Exception, e:
-                    self.logger.error("Failed to open FIFO: %s\n%s" % (fifo, str(e)))
-                    self.mplayer = None
+            self._execute_command_non_running(command)
 
     def keycode(self, mapping, keycode):
         """
@@ -185,40 +252,7 @@ class MPlayer(Listener):
         for command in self.init:
             self._execute_command(command["command"])
                                 
-    def _interpret_profile(self, config, profile):
-        """
-        Interpret the profile data from the profile.conf(s) and push the commands into
-        an array and call it, when the appropriate keycodes and mappings are received.
-
-        If no mapping is provided, we assume mapping = 0 => keypress
-        """
-        self.init = []
-        self.actions = {}
-        self.destruct = []
-        try:
-            for init in self.config.get_profile(config, profile, 'MPlayer')['init']:
-                self.init.append(init)
-        except:
-            pass
-        try:
-            for destruct in self.config.get_profile(config, profile, 'MPlayer')['destruct']:
-                self.destruct.append(destruct)
-        except:
-            pass
-       
-        try:
-            for action in self.config.get_profile(config, profile, 'MPlayer')['actions']:
-                try:
-                    mapping = int(action['mapping'])
-                except:
-                    mapping = 0
-                event_tuple = (int(action['keycode']), mapping)
-                if not event_tuple in self.actions:
-                    self.actions[event_tuple] = []
-                self.actions[event_tuple].append(action)
-        except:
-            pass
-
     def shutdown(self):
+        """Execute destruct command, when we shutdown"""
         for command in self.destruct:
             self._execute_command(command["command"])
