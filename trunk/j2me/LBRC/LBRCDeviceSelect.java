@@ -26,7 +26,7 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 	java.util.Vector services;
 	LocalDevice local;
 	DiscoveryAgent agent;
-	final private UUID lbrc_uuid = new UUID("9c6c8dce954511dca3c10011d8388a56", false);
+	//final private UUID lbrc_uuid = new UUID("9c6c8dce954511dca3c10011d8388a56", false);
 	int state;
 	int search;
 	

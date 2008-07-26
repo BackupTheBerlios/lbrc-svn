@@ -45,6 +45,12 @@ class LBRCSenderController implements CommandListener {
     }
  
     public void doListQuery(String title, JSONArray entries) {
+    	/* TODO: Do this by hand - List ist massivly slow!
+    	 * To quantify: A list with 50 entries takes approx. 5s to instantiate
+    	 * This is plane insane and reworking to prepare a whole string array
+    	 * to pass directly into the constructor does nothing to improve the
+    	 * situation => switch away from List and find another solution
+    	 * */
     	list_query = new List(title, Choice.IMPLICIT);
     	for(int i=0;i<entries.length();i++) {
     		try {
