@@ -175,7 +175,7 @@ class X11Event( object ):
                     # pylint: disable-msg=E1101
                     self.XKs[i.lower()[3:]] = XK.__getattribute__(i)
                     # pylint: enable-msg=E1101
-        self.logger = logging.getLogger("LBRC.Listener.Event")
+        self.logger = logging.getLogger("LBRC.Listener.X11Event")
         self.repeathandler = []
         self.cleanup = []
         self.commands = []
@@ -185,7 +185,7 @@ class X11Event( object ):
         self.type = 'Generic Event'
         self.uinput_dev = None
         self.uinputbridge = None
-        if not 'map-to' in action:
+        if not 'map_to' in action:
             self.logger.warning("Definition for XInput without mapping")
             return
         if action['type'] == 'mouseaxis':

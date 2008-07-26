@@ -47,6 +47,8 @@ class Listener(object):
         self.actions = {}
         self.destruct = []
         command_class = self.command_class
+        config_section = {}
+        
         try:
             config_section = self.config.get_profile(config, profile, self.name)
         except configValueNotFound:

@@ -59,7 +59,7 @@ class ProfileControl(gobject.GObject):
     def __init__(self, configdata):
         gobject.GObject.__init__(self)
         self.config = configdata
-        config.connect("config-reread", self.cb_config_reread)
+        self.config.connect("config-reread", self.cb_config_reread)
         self.cur_profile = (None, None)
 
     def cb_config_reread(self, configfile):
