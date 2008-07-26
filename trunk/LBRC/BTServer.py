@@ -52,13 +52,13 @@ class BTConnection(gobject.GObject):
         
     def _handle_buffer(self):
         """Analyse buffer of received data and act accordingly"""
-        packets = self.buffer.split(u"\u0000")
+        packets = self.buffer.split('\x00')
         # The last packet is either empty (if the last packet was completely 
         # send or we only see a partital package, that we feed back into the 
         # buffer
-        self.buffer = packets.pop()            
+        self.buffer = packets.pop()
         for packet in packets:
-            data = json.read(packet.encode('utf-8'))
+            data = json.read(packet)
             if (data['type'] == "keyCode"):
                 mapping = data["mapping"]
                 keycode = data["keycode"]
@@ -92,6 +92,7 @@ class BTConnection(gobject.GObject):
         except bluetooth.BluetoothError:
             self.logger.debug(
                             "Trying to send while remote side was disconnected")
+        self.logger.debug("Package send done")
 
     def cb_handle_incoming_data(self, clientsocket, condition):
         """
