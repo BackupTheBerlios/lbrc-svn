@@ -30,16 +30,16 @@ _SCRIPTPATH = osp.dirname(osp.abspath(sys.argv[0]))
 class path(object):
     """LBRC.path is a singleton holding the paths necessary to run LBRC
     consider it readonly - you have been warned!"""
+    # pylint: disable-msg=W0142
     def __new__(cls, *args):
         try:
             return cls._singleton
         except AttributeError:
             # Create singleton - so do some magic here - its intended
-            # pylint: disable-msg=W0142
-            cls._singleton = super(path, cls).__new__(cls, *args)
-            # pylint: enable-msg=W0142
+            cls._singleton = super(path, cls).__new__(cls, *args)            
             return cls._singleton
-        
+    # pylint: enable-msg=W0142
+    
     def __init__(self):
         self._local = False
         self.bin_dir = None
