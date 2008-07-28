@@ -1,19 +1,25 @@
-import os
-import time
-import os.path as osp
-import logging
-import gobject
-import dbus
-import dbus.glib
-import LBRC.consts as co
+"""See Documentation of UinputDispatcher for documentation"""
 from LBRC import dinterface
+from LBRC.Listener import Listener
 from LBRC.config import configValueNotFound
 from LBRC.path import path
-from LBRC.Listener import Listener
+import LBRC.consts as co
+import dbus
+import dbus.glib
+import gobject
+import logging
+import os
+import os.path as osp
+import time
 
-class UinputServiceStartException(Exception): pass
+class UinputServiceStartException(Exception):
+    """
+    UinputServiceStartException is fired, when the uinputbridge can't be
+    invoked.
+    """
+    pass
 
-class UinputDispatcher( Listener ):
+class UinputDispatcher(Listener):
     """
     The UinputDispatcher translates keycodes from the phone into input events, that are
     injected into the kernel. When the class is instanciated, the uinput device is opened
@@ -44,21 +50,32 @@ class UinputDispatcher( Listener ):
         self._open_uinput_dev()
 
     def _start_uinput_bridge(self):
-        db = dinterface(dbus.SessionBus(), "org.freedesktop.DBus", "/", "org.freedesktop.DBus")
-        if not "org.uinputbridge" in db.ListNames() and \
-           not "org.uinputbridge" in db.ListActivatableNames():
+        """
+        Connect to a running uinput bridge. If none is running, we invoke one
+        using dbus activation or (if activation is not present) we invoke
+        uinputbridge our self.
+        """
+        dbus_db = dinterface(dbus.SessionBus(), 
+                             "org.freedesktop.DBus", 
+                             "/", 
+                             "org.freedesktop.DBus")
+        if not "org.uinputbridge" in dbus_db.ListNames() and \
+           not "org.uinputbridge" in dbus_db.ListActivatableNames():
             gobject.spawn_async([self.path.get_binfile("uinputbridge")],
                                 flags=gobject.SPAWN_STDOUT_TO_DEV_NULL | 
                                       gobject.SPAWN_STDERR_TO_DEV_NULL )
             count = 0
             while count < 10:
                 count += 1
-                if "org.uinputbridge" in db.ListNames():
+                if "org.uinputbridge" in dbus_db.ListNames():
                     count = 11
                 time.sleep(1)
             if count == 10:
                 raise UinputServiceStartException()
-        self.uinputbridge = dinterface(dbus.SessionBus(), "org.uinputbridge", "/UInputBridge", "org.uinputbridge")
+        self.uinputbridge = dinterface(dbus.SessionBus(), 
+                                       "org.uinputbridge", 
+                                       "/UInputBridge", 
+                                       "org.uinputbridge")
 
     def _open_uinput_dev( self ):
         """
@@ -75,7 +92,7 @@ class UinputDispatcher( Listener ):
             self.uinput_dev = self.uinputbridge.SetupDevice(
                                         device_file, 
                                         "Linux Bluetooth Remote Control", 
-                                        dbus.UInt16(co.input["BUS_BLUETOOTH"]))
+                                        dbus.UInt16(co.input_def["BUS_BLUETOOTH"]))
  
     def set_profile( self, config, profile ):
         """
@@ -94,6 +111,9 @@ class UinputDispatcher( Listener ):
         self._interpret_profile( config, profile )
     
     def shutdown( self ):
+        """
+        Invoke stop actions and close uinputbridge
+        """
         for invoked in self.invoked.values():
             for i in invoked:
                 i.stop()
@@ -121,7 +141,7 @@ class UinputDispatcher( Listener ):
         _actions = None
 
         try:
-            _actions = self.config.get_profile( config, profile, 'UinputDispatcher')['actions']
+            _actions = self.config.get_profile(config, profile, 'UinputDispatcher')['actions']
         except KeyError:
             self.logger.debug("actions section not found")
         except configValueNotFound:
@@ -311,7 +331,7 @@ class Event( object ):
             if callable( param ):
                 param = param( freq, calls )
             self.send_event( command[0], command[1], param )
-        self.send_event( co.input['EV_SYN'], co.input['SYN_REPORT'], 0 )
+        self.send_event( co.input_def['EV_SYN'], co.input_def['SYN_REPORT'], 0 )
 
     def send_event( self, event, descriptor, param ):
         """
@@ -348,46 +368,46 @@ class MouseAxisEvent( Event ):
     def __init__( self, action ):
         Event.__init__( self )
         self.type = 'MouseAxisEvent'
-        axis = co.input["REL_" + action['map_to'][1:2]]
+        axis = co.input_def["REL_" + action['map_to'][1:2]]
         direction = action['map_to'][0:1]
         self.repeat_freq = 10
         self.repeat_func = self.cb_lin_mouse_freq
         if direction == "-":
-            self.commands = [( co.input['EV_REL'], axis, lambda x, y: -1 * self.cb_lin_mouse_step( x, y ) )]
+            self.commands = [( co.input_def['EV_REL'], axis, lambda x, y: -1 * self.cb_lin_mouse_step( x, y ) )]
         else:
-            self.commands = [( co.input['EV_REL'], axis, lambda x, y: self.cb_lin_mouse_step( x, y ) )]
+            self.commands = [( co.input_def['EV_REL'], axis, lambda x, y: self.cb_lin_mouse_step( x, y ) )]
 
 class MouseWheelEvent( Event ):
     def __init__( self, action ):
         Event.__init__( self )
         self.type = 'MouseWheelEvent'
-        axis = co.input["REL_" + action['map_to'][1:]]
+        axis = co.input_def["REL_" + action['map_to'][1:]]
         direction = action['map_to'][0:1]
         self.repeat_freq = int( action['repeat_freq'] )
         self.repeat_func = lambda x, n: x
         if direction == "-":
-            self.commands = [( co.input['EV_REL'], axis, -1 )]
+            self.commands = [( co.input_def['EV_REL'], axis, -1 )]
         else:
-            self.commands = [( co.input['EV_REL'], axis, 1 )]
+            self.commands = [( co.input_def['EV_REL'], axis, 1 )]
 
 class MouseButtonEvent( Event ):
     def __init__( self, action ):
         Event.__init__( self )
         self.type = 'MouseButtonEvent'
-        bt = co.input["BTN_" + action['map_to']]
-        self.commands = [( co.input['EV_KEY'], bt, 1 )]
-        self.cleanup = [( co.input['EV_KEY'], bt, 0 )]
+        bt = co.input_def["BTN_" + action['map_to']]
+        self.commands = [( co.input_def['EV_KEY'], bt, 1 )]
+        self.cleanup = [( co.input_def['EV_KEY'], bt, 0 )]
 
 class KeyPressEvent( Event ):
     def __init__( self, action ):
         Event.__init__( self )
         self.type = 'KeyPressEvent'
         for part in action['map_to'].split( "+" ):
-            k =  co.input["KEY_" + part]
-            self.commands.append( ( co.input['EV_KEY'], k, 1 ) )
-            self.repeat_commands.append( ( co.input['EV_KEY'], k, 1 ) )
-            self.repeat_commands.insert( 0, ( co.input['EV_KEY'], k, 0 ) )
-            self.cleanup.insert( 0, ( co.input['EV_KEY'], k, 0 ) )
+            k =  co.input_def["KEY_" + part]
+            self.commands.append( ( co.input_def['EV_KEY'], k, 1 ) )
+            self.repeat_commands.append( ( co.input_def['EV_KEY'], k, 1 ) )
+            self.repeat_commands.insert( 0, ( co.input_def['EV_KEY'], k, 0 ) )
+            self.cleanup.insert( 0, ( co.input_def['EV_KEY'], k, 0 ) )
             
         if 'repeat_freq' in action:
             self.repeat_freq = int( action['repeat_freq'] )
