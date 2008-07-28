@@ -1,5 +1,6 @@
-import os
+"""Module initialising l10n for LBRC gui/backend"""
 import gettext
+import logging
 
 from LBRC.path import path
 
@@ -15,8 +16,8 @@ def init_glade_gettext():
         import gtk.glade
         gtk.glade.bindtextdomain("LBRC", localedir)
         gtk.glade.textdomain("LBRC")
-    except ImportError, e:
-        pass
+    except ImportError:
+        logging.getLogger('LBRC.l10n').warning("Could not init glade l10n")
 
 # Bind "_" as marker for the translation of texts. We bind to ugettext, as
 # our gui toolkit (gtk2) expects utf-8 strings and the output routines should
