@@ -1,25 +1,24 @@
 """Main Interface Module for LBRC - the core of the whole application"""
 # pylint: disable-msg=E1101
-
+from LBRC import dinterface
 from LBRC.BTServer import BTServer
 from LBRC.CommandExecutor import CommandExecutor
 from LBRC.DBUSCaller import DBUSCaller
 from LBRC.MPlayer import MPlayer
 from LBRC.PresentationCompanion import PresentationCompanion
 from LBRC.ProfileSwitcher import ProfileSwitcher
-from LBRC.UinputDispatcher import UinputDispatcher
-from LBRC.XInput import XInput
+from LBRC.UinputDispatcher import UinputDispatcher, UinputDispatcher
 from LBRC.VolumeControl import VolumeControl
+from LBRC.XInput import XInput
 from LBRC.config import config
 from LBRC.path import path
-from LBRC import dinterface
-
 import dbus
 import dbus.glib
 import dbus.service
 import gobject
 import logging
 import time
+
 
 DBUSNAME = 'de.berlios.lbrc'
 DBUSIFACE = 'de.berlios.lbrc'
@@ -191,7 +190,7 @@ class DBUSLogHandler(logging.Handler, dbus.service.Object):
         #only in 2.5
         try:
             function = lr.funcName
-        except:
+        except AttributeError:
             function = ""
         self.logemit(
                    lr.name,
@@ -259,37 +258,34 @@ class Core(dbus.service.Object):
     def _connection_closed_cb(self, server, bluetoothaddress, port):
         self.logger.debug("_connection_closed_cb called")
         for listener in self.event_listener:
-            try:
+            if callable(listener.__getattribute__("connection_closed")):
                 listener.connection_closed()
-            except AttributeError:
-                pass
         return False
             
     def _connection_established_cb(self, server, bluetoothaddress, port):
         self.logger.debug("_connection_established_cb called")
         for listener in self.event_listener:
-            try:
+            if callable(listener.__getattribute__("connection_established")):
                 listener.connection_established()
-            except AttributeError:
-                pass
         return False
 
-    def _profile_change_cb(self, profile_control, config, profile):
+    def _profile_change_cb(self, profile_control, config_file, profile):
         for listener in self.event_listener:
-            listener.set_profile(config, profile)
+            listener.set_profile(config_file, profile)
 
     def _register_listener(self, constructor):
         try: 
             listener = constructor(self.config)
-            try: listener.set_bluetooth_connector(self.btserver)
-            except AttributeError: pass
-            try: listener.set_core(self)
-            except AttributeError: pass
+            if callable(listener.__getattribute__('set_bluetooth_connector')):
+                listener.set_bluetooth_connector(self.btserver)
+            if callable(listener.__getattribute__('set_core')):
+                listener.set_core(self)
             self.event_listener.append(listener)
-            self.logger.debug("Initiablized Event Listener: " + str(constructor))
-        except Exception, e: 
-            self.logger.warn("Failed to initalize " + str(constructor) + "\n" + str(e))
-            return
+            self.logger.debug("Initiablized Event Listener: %s" 
+                                                     % str(constructor))
+        except Exception, exception: 
+            self.logger.warn("Failed to initalize %s\n%s" %(str(constructor),
+                                                            str(exception)))
 
     def _dispatch(self, btserver, mapping, keycode):
         for listener in self.event_listener:
