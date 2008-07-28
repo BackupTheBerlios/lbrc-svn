@@ -1,6 +1,6 @@
 """See  Listener Object"""
 import logging
-from config import configValueNotFound
+from LBRC.config import configValueNotFound
 
 class UndefinedCommandClass(Exception):
     """Raised, if the default _interpret_profile of Listener is used, but no
@@ -12,7 +12,7 @@ class ListenerInitFailedException(Exception):
 class Listener(object):
     """
     Generic parent class for action listener - Contains base functionality.
-    
+
     Descendants of this class have to either provide a custom CommandClass,
     that is responsible for interpreting the specific actions or has to
     overwrite _interpret_profile!
@@ -147,4 +147,8 @@ class Listener(object):
             command.call()
     
     def shutdown(self):
-        pass
+        """
+        This method is called on shutdown to execute the destruct methods
+        """
+        for command in self.destruct:
+            command.call()
