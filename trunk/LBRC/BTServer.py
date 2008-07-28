@@ -520,7 +520,7 @@ class BTServer(gobject.GObject):
                     else:
                         self.logger.debug('Bonding failed')
                     break
-                except:
+                except dbus.exceptions.DBusException:
                     self.logger.debug('Exception in BondingCreation' +
                                       ' (DBUS Methods)')
         return paired
