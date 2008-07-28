@@ -1,3 +1,4 @@
+# pylint: disable-msg=E0611
 import dbus
 
 def dinterface(bus, service, obj_path, interface):
@@ -19,8 +20,3 @@ def dinterface(bus, service, obj_path, interface):
     """
     proxy_obj = bus.get_object(service, obj_path)
     return dbus.Interface(proxy_obj, interface)
-
-__all__ = ["dbusinterface", "BTServer", "UinputDispatcher", "CommandExecutor",  
-           "config", "consts", "DBUSCaller", "l10n", "path", "ProfileSwitcher",
-           "MPlayer"]
-
