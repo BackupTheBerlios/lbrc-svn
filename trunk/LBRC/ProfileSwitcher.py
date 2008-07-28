@@ -1,5 +1,4 @@
 from LBRC.Listener import Listener
-import logging
 from LBRC.l10n import _
 
 class ProfileSwitcher(Listener):
@@ -41,14 +40,17 @@ class ProfileSwitcher(Listener):
         if self._keycode and \
            keycode == self._keycode and \
            mapping == 1:
-            self.profilestore = ps = []
-            for (type, profile) in self.config.get_profiles():
-                if type == 'system':
-                    ps.append([ "%s (%s)" % (profile, _("System")), (type,profile)])
+            self.profilestore = profilestore = []
+            for (config_type, profile) in self.config.get_profiles():
+                if config_type == 'system':
+                    profilestore.append([ "%s (%s)" % (profile, _("System")), 
+                                         (config_type,profile)])
                 else:
-                    ps.append([profile, (type,profile)])
+                    profilestore.append([profile, (config_type, profile)])
             btconnection = self.bluetooth_connector.get_bt_connection()
-            btconnection.send_list_query(_("Switch Profile"), [i[0] for i in ps], self._handle_list_reply)
+            btconnection.send_list_query(_("Switch Profile"), 
+                                         [i[0] for i in profilestore], 
+                                         self._handle_list_reply)
     
     def _handle_list_reply(self, index):
         """
@@ -59,8 +61,9 @@ class ProfileSwitcher(Listener):
         # profile does not exist anymore
         # TODO: implement exceptions for not exisiting profiles
         if index > -1:
-            self.core.profile_control.set_profile(self.profilestore[index][1][0], 
-                                                  self.profilestore[index][1][1])
+            self.core.profile_control.set_profile(
+                        self.profilestore[index][1][0], 
+                        self.profilestore[index][1][1])
 
     def set_profile(self, config, profile):
         """
