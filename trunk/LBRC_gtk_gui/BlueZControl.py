@@ -1,99 +1,142 @@
-import pygtk
-pygtk.require("2.0")
+"""This module provides control for the bluez connection schemes"""
+# pylint: disable-msg=E1101
+from LBRC import dinterface
+from LBRC.config import config
+from LBRC.l10n import _
+import dbus
+import dbus.glib
+import gobject
 import gtk
 import gtk.gdk
-import gobject
-import dbus, dbus.glib
+import pygtk
+pygtk.require("2.0")
 
-from LBRC.l10n import _
-from LBRC.config import config
-from LBRC import dinterface
 
 class BlueZAdapter(gobject.GObject):
+    """
+    BlueZAdapter controls one bluez adapter via the dbus bindings. It allows
+    to control the visibilty of the adapter and control of automatic hiding
+    """
     __gsignals__ = {
-        'mode_update': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_STRING,)),
-        'timeout_update': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, (gobject.TYPE_INT,)),
+        'mode_update': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, 
+                        (gobject.TYPE_STRING,)),
+        'timeout_update': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, 
+                        (gobject.TYPE_INT,)),
     }
     def __init__(self, adapter):
         gobject.GObject.__init__(self)
-        self.diface = dinterface(dbus.SystemBus(), 'org.bluez', adapter, 'org.bluez.Adapter')
+        self.diface = dinterface(dbus.SystemBus(), 
+                                 'org.bluez', 
+                                 adapter, 
+                                 'org.bluez.Adapter')
         self.mode = self.diface.GetMode()
         self.discoverabletimeout = self.diface.GetDiscoverableTimeout()
-        # This is a known memory leak:
-        self.diface.connect_to_signal("ModeChanged", self._update_adapter_mode)
-        self.diface.connect_to_signal("DiscoverableTimeoutChanged", self._update_adapter_timeout)
-        # This object won't go out of scope, but we can't disconnect with 0.7 bindings
-        # As the above signal is not fired ... we poll every half second
-        self.timeout_poll = gobject.timeout_add(500, self._update_timeout)
+        self.diface.connect_to_signal("ModeChanged", 
+                                      self._update_adapter_mode)
+        self.diface.connect_to_signal("DiscoverableTimeoutChanged", 
+                                      self._update_adapter_timeout)
 
     def _update_adapter_mode(self, mode):
+        """React to changes of the adapter modus"""
         self.mode = mode
         self.emit('mode_update', mode)
 
     def _update_adapter_timeout(self, timeout):
+        """
+        React to changes in the timeout for the duration the adapter
+        stays in the discoverable state
+        """
         self.discoverabletimeout = timeout
         self.emit('timeout_update', timeout)
 
-    def _update_timeout(self):
-        timeout = self.diface.GetDiscoverableTimeout()
-        if timeout != self.discoverabletimeout:
-            self._update_adapter_timeout(timeout)
-        return True
-
     def get_timeout(self):
+        """
+        Timeout until the adapter switches discoverable state (if it is not 
+        discoverable, the timeout is reported as -1)
+        
+        @rtype: integer
+        """
         if self.mode != 'discoverable':
             return -1
         else:
             return self.discoverabletimeout
-
-    def finalize(self):
-        gobject.source_remove(self.timeout_poll) 
-        # Prepare for 0.8 bindings, where we can go out of scope...
-        pass
     
     def set_timeout(self, timeout=180):
+        """
+        Set the timeout for the duration the adapter stays in the discoverable 
+        state
+        
+        @param  discoverable:    timeout
+        @type   discoverable:    integer
+        """
         self.diface.SetDiscoverableTimeout(dbus.UInt32(timeout))
     
     def set_discoverable(self, discoverable):
+        """
+        Switch the discoverable state of the adapter
+        
+        @param  discoverable:    Is adapter discoverable?
+        @type   discoverable:    boolean        
+        """
         if discoverable:
             self.diface.SetMode("discoverable")
         else:
             self.diface.SetMode("connectable")
 
 class BlueZControl(object):
+    """
+    BlueZControl provides methods for the control of the state of bluetooth
+    adapters. This class offers menu entries and controls multiple adapters.
+    """
     def __init__(self):
-        self.bluez_manager = dinterface(dbus.SystemBus(), 'org.bluez', '/org/bluez' , 'org.bluez.Manager')
+        self.bluez_manager = dinterface(dbus.SystemBus(), 
+                                        'org.bluez', 
+                                        '/org/bluez' , 
+                                        'org.bluez.Manager')
         self.bluez_manager.InterfaceVersion()
         self.config = config()
         self.adapter = {}
         self.menu = {}
-        self.bluez_manager.connect_to_signal("AdapterAdded", self._bluez_adapter_added)
-        self.bluez_manager.connect_to_signal("AdapterRemoved", self._bluez_adapter_removed)
-        self.menu["bz_visible"] = {'title': _("Bluetooth visible"),
-                                   'callback': (self._bluez_switch_visible, 0)}
-        self.menu["bz_shorttime"] = {'title': _("Bluetooth visible (automatic hiding)"), 
-                                     'callback': (self._bluez_switch_visible, 180)}
-        self.menu["bz_invisible"] = {'title': _("Bluetooth invisible"), 
-                                     'callback': (self._bluez_switch_visible, -1)}
+        self.bluez_manager.connect_to_signal("AdapterAdded", 
+                                             self.cb_bluez_adapter_added)
+        self.bluez_manager.connect_to_signal("AdapterRemoved", 
+                                             self.cb_bluez_adapter_removed)
+        self.menu["bz_visible"] = {
+                            'title': _("Bluetooth visible"),
+                            'callback': (self.cb_bluez_switch_visible, 0)}
+        self.menu["bz_shorttime"] = {
+                            'title': _("Bluetooth visible (automatic hiding)"), 
+                            'callback': (self.cb_bluez_switch_visible, 180)}
+        self.menu["bz_invisible"] = {
+                            'title': _("Bluetooth invisible"), 
+                            'callback': (self.cb_bluez_switch_visible, -1)}
 
         for menu in self.menu.values():
             menuitem = gtk.CheckMenuItem(menu['title'])
             menuitem.set_draw_as_radio(1)
             menuitem.set_sensitive(0)
-            menu['handler'] = menuitem.connect("toggled", *menu['callback'])
+            menu['handler'] = menuitem.connect("toggled", menu['callback'][0],
+                                                          menu['callback'][1])
             menu['menuitem'] = menuitem
 
         self.menu_list = [i['menuitem'] for i in self.menu.values()]
         menuitem = gtk.SeparatorMenuItem()
         self.menu_list.append(menuitem)
-        self.set_menus_visible(self.config.get_config_item_fb("show-bluetooth", True))
+        self.set_menus_visible(self.config.get_config_item_fb("show-bluetooth", 
+                                                              True))
         self._bluez_init_adapter()
 
     def set_menus_visible(self, state):
-        if state == True:
+        """
+        Make the menus visible or hide them
+        
+        @param  state:    show menus true/false
+        @type   state:    boolean
+        """
+        if state:
             for i in self.menu_list:
                 i.show_all()
-        elif state == False:
+        else:
             for i in self.menu_list:
                 i.hide_all()
 
@@ -106,7 +149,8 @@ class BlueZControl(object):
         """
         return self.menu_list
 
-    def _bluez_update_menu(self, *args):
+    def cb_bluez_update_menu(self, *args):
+        """Update menu with respect to the bluetooth state"""
         common_timeout = None
         for adapter in self.adapter.values():
             if common_timeout == None:
@@ -133,30 +177,38 @@ class BlueZControl(object):
             i['menuitem'].handler_unblock(i['handler'])
 
     def _bluez_init_adapter(self):
+        """
+        Add all bluetooth adapters to the list - after init the adapters
+        are added in response to bluez dbus signals
+        """
         if self.bluez_manager:
             for adapter in self.bluez_manager.ListAdapters():
-                self._bluez_adapter_added(adapter)
+                self.cb_bluez_adapter_added(adapter)
 
-    def _bluez_adapter_added(self, adapter):
+    def cb_bluez_adapter_added(self, adapter):
         """
-        Callback for the addition of a bluetooth adapter, if there was none before, the menu
-        is updated.
+        Callback for the addition of a bluetooth adapter, if there was none 
+        before, the menu is updated.
 
         @param  adapter:    DBUS object path for new adapter
         @type   adapter:    string
         """
         self.adapter[adapter] = BlueZAdapter(adapter)
-        self.adapter[adapter].handler1 = self.adapter[adapter].connect('timeout_update', self._bluez_update_menu)
-        self.adapter[adapter].handler2 = self.adapter[adapter].connect('mode_update', self._bluez_update_menu)
-        self._bluez_update_menu()
+        self.adapter[adapter].handler1 = self.adapter[adapter].connect(
+                                                'timeout_update', 
+                                                self.cb_bluez_update_menu)
+        self.adapter[adapter].handler2 = self.adapter[adapter].connect(
+                                                'mode_update', 
+                                                self.cb_bluez_update_menu)
+        self.cb_bluez_update_menu()
         if len(self.adapter) == 1:
-            for id in self.menu:
-                self.menu[id]['menuitem'].set_sensitive(1)
+            for menu_id in self.menu:
+                self.menu[menu_id]['menuitem'].set_sensitive(1)
 
-    def _bluez_adapter_removed(self, adapter):
+    def cb_bluez_adapter_removed(self, adapter):
         """
-        Callback for the addition of a bluetooth adapter, if there is none left, the menu
-        is updated.
+        Callback for the addition of a bluetooth adapter, if there is none left, 
+        the menu is updated.
 
         @param  adapter:    DBUS object path for the removed adapter
         @type   adapter:    string
@@ -166,17 +218,18 @@ class BlueZControl(object):
         self.adapter[adapter].handler_disconnect(self.adapter[adapter].handler2)
         del self.adapter[adapter]
         
-        self._bluez_update_menu()
+        self.cb_bluez_update_menu()
 
         if len(self.adapter) == 0:
-            for id in self.menu:
-                self.menu[id]['menuitem'].set_sensitive(0)
+            for menu_id in self.menu:
+                self.menu[menu_id]['menuitem'].set_sensitive(0)
     
-    def _bluez_switch_visible(self, menuitem, timeout):
+    def cb_bluez_switch_visible(self, menuitem, timeout):
         """
-        Callback for the bluetooth control menu. The timeout is used, to determine, how long
-        the adapters will be visible. Special cases are 0 (the adapter never gets automaticly
-        invisible) and -1 (the adapters are hidden)
+        Callback for the bluetooth control menu. The timeout is used, to 
+        determine, how long the adapters will be visible. Special cases are 0
+        (the adapter never gets automaticly invisible) and -1 
+        (the adapters are hidden)
 
         @param  menuitem:   Menu item, that activated this callback
         @type   menuitem:   gtk.MenuItem
@@ -184,7 +237,6 @@ class BlueZControl(object):
         @type   timeout:    int
         """
         for adapter in self.adapter.values():
-            interface = adapter.diface
             if timeout == -1:
                 adapter.set_discoverable(False)
             elif timeout >= 0:
