@@ -124,18 +124,18 @@ class X11Event( object ):
             xtest.fake_input(self.Xdisplay, stat[0], stat[1])
             
         self.commands = [( cb_command, 
-                           (X.ButtonPress, action['map_to']),
+                           (X.ButtonPress, int(action['map_to'])),
                            tuple())]
         self.repeat_commands = [
                          ( cb_command, 
-                           (X.ButtonRelease, action['map_to']), 
+                           (X.ButtonRelease, int(action['map_to'])), 
                            tuple() ),
                          ( cb_command, 
-                           (X.ButtonPress, action['map_to']), 
+                           (X.ButtonPress, int(action['map_to'])), 
                            tuple() )
                                ]
         self.cleanup = [( cb_command, 
-                          (X.ButtonRelease, action['map_to']), 
+                          (X.ButtonRelease, int(action['map_to'])), 
                           tuple())]
             
         if 'repeat_freq' in action:
