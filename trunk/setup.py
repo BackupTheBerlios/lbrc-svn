@@ -8,12 +8,20 @@ import os.path as osp
 from subprocess import call
 from distutils.core import setup
 from distutils.command.build import build
+from distutils.command.clean import clean
 
 
 class custom_build(build):
     def run(self):
         call(["./build_dbus_uinput_bridge"])
         build.run(self)
+
+class custom_clean(clean):
+    def run(self):
+        files = ['uinputbridge', 'dbus_uinput_bridge/uinputbridge-glue.h']
+        for file in files:
+            os.remove(file)
+        clean.run(self)
 
 # patch distutils if it can't cope with the "classifiers" or "download_url"
 # keywords (prior to python 2.3.0).
@@ -63,7 +71,8 @@ setup(name='LBRC',
       keywords = ['remotecontrol', 'bluetooth', 'j2me'],
       packages=['LBRC', 'LBRC_gtk_gui'],
       scripts=['LBRCdbus', 'LBRC-applet', 'uinputbridge'],
-      cmdclass = {'build': custom_build},
+      cmdclass = {'build': custom_build,
+                  'clean': custom_clean},
       data_files=data_files
       )
 
