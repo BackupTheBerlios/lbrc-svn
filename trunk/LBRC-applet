@@ -79,4 +79,4 @@ else:
         gtk.main()
     except KeyboardInterrupt:
         lbrc.quit()
-        gtk.mainquit()
+        gtk.main_quit()

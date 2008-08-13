@@ -37,7 +37,7 @@ class UinputDispatcher(Listener):
         @param  config:         configuration data
         @type   config:         dictionary
         """
-        Listener.__init__(self, config, "UInputDispatcher")
+        Listener.__init__(self, config, "UinputDispatcher")
         
         self.path = path()
         
@@ -48,6 +48,8 @@ class UinputDispatcher(Listener):
         
         self._start_uinput_bridge()
         self._open_uinput_dev()
+        
+        self.logger.debug("Loaded succesfully")
 
     def _start_uinput_bridge(self):
         """
@@ -101,14 +103,14 @@ class UinputDispatcher(Listener):
         @param  profile:    the profile we switch to
         @type   profile:    string
         """
-        self.logger.debug("set_profile(%s, %s)" % ( config, profile ) )
         # Stop pending events
         for invoked in self.invoked.values():
             for i in invoked:
                 i.stop()
         # Set new profile up
         self.invoked  = {}
-        self._interpret_profile( config, profile )
+        self._interpret_profile(config, profile)
+        self.logger.debug("Completed processing of UinputDispatcher in %s profile %s"%(config, profile))
     
     def shutdown( self ):
         """
@@ -132,7 +134,6 @@ class UinputDispatcher(Listener):
         @param    profile:   ID of the currently selected Profile
         @type     profile:   String
         """
-        self.logger.debug("_interpret_profile(%s, %s)" % ( config, profile ) )
         
         self.init = []
         self.actions = {}
@@ -143,9 +144,9 @@ class UinputDispatcher(Listener):
         try:
             _actions = self.config.get_profile(config, profile, 'UinputDispatcher')['actions']
         except KeyError:
-            self.logger.debug("actions section not found")
+            self.logger.debug("No actions defined for UinputDispatcher in %s profile %s"%(config, profile))
         except configValueNotFound:
-            self.logger.debug("Error fetching config section for %s profile from %s config" % (config, profile))
+            self.logger.debug("No section UinputDispatcher for %s profile %s"%(config, profile))
             
         if _actions:
             for action in _actions:
@@ -162,10 +163,8 @@ class UinputDispatcher(Listener):
                     event = MouseButtonEvent( action )
                 elif action['type'] == 'key':
                     event = KeyPressEvent( action )
-                event.set_uinput_dev( self.uinput_dev, self.uinputbridge )
+                event.set_uinput_dev(self.uinput_dev, self.uinputbridge)
                 self.actions[event_tuple].append(event)
-        else:
-            self.logger.debug("No actions were defined")
 
     def keycode( self, mapping, keycode ):
         """

@@ -22,7 +22,9 @@ class ProfileSwitcher(Listener):
         Listener.__init__(self, config, "ProfileSwitcher")
         self.profilestore = []
         # Default Value for Profileswitcher Keycode will be the star key
-        self._keycode = self.config.get_config_item_fb("profile-switch", 42)     
+        self._keycode = self.config.get_config_item_fb("profile-switch", 42)
+        
+        self.logger.debug("Loaded succesfully")    
 
     def keycode(self, mapping, keycode):
         """

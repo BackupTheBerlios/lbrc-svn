@@ -7,7 +7,7 @@ from LBRC.DBUSCaller import DBUSCaller
 from LBRC.MPlayer import MPlayer
 from LBRC.PresentationCompanion import PresentationCompanion
 from LBRC.ProfileSwitcher import ProfileSwitcher
-from LBRC.UinputDispatcher import UinputDispatcher, UinputDispatcher
+from LBRC.UinputDispatcher import UinputDispatcher
 from LBRC.VolumeControl import VolumeControl
 from LBRC.XInput import XInput
 from LBRC.config import config
@@ -270,6 +270,7 @@ class Core(dbus.service.Object):
         return False
 
     def _profile_change_cb(self, profile_control, config_file, profile):
+        self.logger.debug("Recieved signal to switch to %s profile %s"%(config_file, profile))
         for listener in self.event_listener:
             listener.set_profile(config_file, profile)
 
@@ -281,7 +282,7 @@ class Core(dbus.service.Object):
             if callable(listener.__getattribute__('set_core')):
                 listener.set_core(self)
             self.event_listener.append(listener)
-            self.logger.debug("Initiablized Event Listener: %s" 
+            self.logger.debug("Initialized Event Listener: %s" 
                                                      % str(constructor))
         except Exception, exception: 
             self.logger.warn("Failed to initalize %s\n%s" %(str(constructor),

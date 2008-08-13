@@ -52,6 +52,8 @@ class PresentationCompanion(Listener):
         self._write = False
         self.slide = 1
         self.buffer = []
+        
+        self.logger.debug("Loaded succesfully")
     
     def change_slide(self, slide_change):
         self.slide = self.slide + int(slide_change)

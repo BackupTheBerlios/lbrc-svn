@@ -20,7 +20,6 @@ class Listener(object):
     def __init__(self, config, name, **kwargs):
         self.name = name
         self.logger = logging.getLogger('LBRC.Listener.' + self.name)
-        self.logger.debug("__init__ begin")
         self.config = config
         if 'command_class' in kwargs:
             self.command_class = kwargs['command_class']
@@ -31,7 +30,6 @@ class Listener(object):
         self.init = []
         self.actions = {}
         self.destruct = []
-        self.logger.debug("__init__ of baseclass done")
     
     def _interpret_profile(self, config, profile):
         """
@@ -40,7 +38,6 @@ class Listener(object):
 
         If no mapping is provided, we assume mapping = 0 => keypress
         """
-        self.logger.debug("_interpret_profile called")
         if not self.command_class:
             raise UndefinedCommandClass()
         self.init = []
@@ -52,38 +49,41 @@ class Listener(object):
         try:
             config_section = self.config.get_profile(config, profile, self.name)
         except configValueNotFound:
-            self.logger.debug("No config section found")
-            self.logger.debug("_interpret_profile finished")
-            
-        try:
-            for init in config_section['init']:
-                self.init.append(command_class(self, init))
-        except KeyError, exception:
-            self.logger.debug("failure while interprating init: %s" % 
-                                                           repr(exception))
-        try:
-            for destruct in config_section['destruct']:
-                self.destruct.append(command_class(self, destruct))
-        except KeyError, exception:
-            self.logger.debug("failure while interprating destruct: %s" %
-                                                           repr(exception))
-       
-        try:
-            for action in config_section['actions']:
-                try:
-                    mapping = int(action['mapping'])
-                except (TypeError, KeyError):
-                    mapping = 0
-                event_tuple = (int(action['keycode']), mapping)
-                if not event_tuple in self.actions:
-                    self.actions[event_tuple] = []
-                self.actions[event_tuple].append(command_class(self, action))
-        except KeyError, exception:
-            self.logger.debug("failure while interprating actions: %s" % 
-                                                            repr(exception))
-
-        self.logger.debug("_interpret_profile finished")
-        
+            self.logger.debug("No config section %s for %s profile %s"%
+                                    (str(self.name), config, profile))
+        if config_section:
+            try:
+                for init in config_section['init']:
+                    self.init.append(command_class(self, init))
+                self.logger.debug("Loading init section from config")
+            except KeyError:
+                self.logger.debug("No init section in config")
+            except Exception, exception:
+                self.logger.debug("Error while loading init: %s"%repr(exception))
+            try:
+                for action in config_section['actions']:
+                    try:
+                        mapping = int(action['mapping'])
+                    except (TypeError, KeyError):
+                        mapping = 0
+                    event_tuple = (int(action['keycode']), mapping)
+                    if not event_tuple in self.actions:
+                        self.actions[event_tuple] = []
+                    self.logger.debug("Mapping key %s : %s"%(str(event_tuple), str(action)))
+                    self.actions[event_tuple].append(command_class(self, action))
+            except KeyError:
+                self.logger.debug("No actions section in config")
+            except Exception, exception:
+                self.logger.debug("Error while loading actions: %s"%repr(exception))
+            try:
+                for destruct in config_section['destruct']:
+                    self.destruct.append(command_class(self, destruct))
+                self.logger.debug("Loading destruct section from config")
+            except KeyError:
+                self.logger.debug("No destruct section in config")
+            except Exception, exception:
+                self.logger.debug("Error while loading destruct: %s"%repr(exception))
+    
     def set_bluetooth_connector(self, bluetooth_connector):
         """
         Set our bluetooth connector, that allows us to issue the presentation
@@ -128,23 +128,31 @@ class Listener(object):
         @param  profile:    the profile we switch to
         @type   profile:    string
         """
-        self.logger.debug("set_profile called")
         for command in self.destruct:
             command.call()
         self._interpret_profile(config, profile)
+        self.logger.debug("Completed processing of %s in %s profile %s"%(self.name, config, profile))
         for command in self.init:
-            command.call()
-        self.logger.debug("set_profile finished")
+            try:
+                command.call()
+            except:
+                self.logger.debug("Calling %s failed"%command)
     
     def connection_closed(self):
         self.logger.debug("connection closed - running destruct actions")
         for command in self.destruct:
-            command.call()
+            try:
+                command.call()
+            except:
+                self.logger.debug("Calling %s failed"%command)
     
     def connection_established(self):
         self.logger.debug("connection established - running init actions")
         for command in self.init:
-            command.call()
+            try:
+                command.call()
+            except:
+                self.logger.debug("Calling %s failed"%command)
     
     def shutdown(self):
         """

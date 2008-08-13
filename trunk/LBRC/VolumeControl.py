@@ -107,6 +107,8 @@ class VolumeControl(Listener):
         Listener.__init__(self, config, 'VolumeControl', command_class=VolumeCommand)
         self.devices = []
         self.default_properties = {}
+        
+        self.logger.debug("Loaded succesfully")
 
     def setVisibleDevices(self, devices):
         self.devices = []

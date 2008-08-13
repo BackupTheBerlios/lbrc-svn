@@ -60,3 +60,5 @@ class DBUSCaller(Listener):
         @type   config:         L{LBRC.config}
         """
         Listener.__init__(self, config, 'DBUSCaller', command_class=DBUSCall)
+        
+        self.logger.debug("Loaded succesfully")

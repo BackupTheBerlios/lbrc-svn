@@ -25,6 +25,8 @@ class XInput( Listener ):
         Listener.__init__(self, config, "XInput", command_class=X11Event)
         self.invoked = {}
         
+        self.logger.debug("Loaded succesfully")
+    
     def set_profile( self, config, profile ):
         """
         Switch to new profile
@@ -32,14 +34,14 @@ class XInput( Listener ):
         @param  profile:    the profile we switch to
         @type   profile:    string
         """
-        self.logger.debug("set_profile(%s, %s)" % ( config, profile ) )
         # Stop pending events
         for invoked in self.invoked.values():
             for i in invoked:
                 i.stop()
         # Set new profile up
         self.invoked  = {}
-        self._interpret_profile( config, profile )
+        self._interpret_profile(config, profile)
+        self.logger.debug("Completed processing of %s in %s profile %s"%(self.name, config, profile))
     
     def shutdown( self ):
         """

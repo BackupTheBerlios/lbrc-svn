@@ -40,3 +40,5 @@ class CommandExecutor(Listener):
                           config, 
                           "CommandExecutor", 
                           command_class=Command)
+                          
+        self.logger.debug("Loaded succesfully")

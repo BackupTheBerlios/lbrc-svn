@@ -113,6 +113,8 @@ class MPlayer(Listener):
         self.querytype = None
         self.querymap = None
         self.mplayer = None
+        
+        self.logger.debug("Loaded succesfully")
     
     def _handle_list_reply(self, index):
         """
@@ -249,6 +251,7 @@ class MPlayer(Listener):
         for command in self.destruct:
             self._execute_command(command["command"])
         self._interpret_profile(config, profile)
+        self.logger.debug("Succesfully processed %s profile %s section Mplayer"%(config, profile))
         for command in self.init:
             self._execute_command(command["command"])
                                 
