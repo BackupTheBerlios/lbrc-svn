@@ -11,8 +11,8 @@ Vcs-Browser: http://svn.berlios.de/wsvn/lbrc
 
 Package: python-lbrc
 Architecture: any
+Depends: ${python:Depends}, python-dbus, python-gtk2, python-bluez, python-gnome2-extras, python-xlib
 XB-Python-Version: ${python:Versions}
-Depends: ${python:Depends}, python-json, python-dbus, python-gtk2, python-bluez, python-gnome2-extras
 Description: Linux Bluetooth Remote Control
  Allows a J2ME device to control the Linux PC. This application allows:
     * injection of mouse/keyboard events into the kernel
