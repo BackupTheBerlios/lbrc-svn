@@ -60,9 +60,9 @@ for (path, dirs, files) in os.walk("pot"):
         target = path.replace("pot", "share/locale", 1)
         data_files.append((target, [osp.join(path, "LBRC.mo")]))
 
-setup(name='LBRC',
+setup(name='lbrc',
       description = 'Linux Bluetooth Remote Control',
-      version='0.5',
+      version='0.6.3-unreleased',
       author = 'Matthias Blaesing',
       author_email = 'matthias.blaesing@rwth-aachen.de',
       url = 'http://lbrc.berlios.de/',
