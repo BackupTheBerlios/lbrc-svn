@@ -52,7 +52,6 @@ while count < 10:
         ok = 1
         break
     except dbus.DBusException, e:
-        logger.warn("DBUS Component not found")
         if count == 0:
             # We got an dbus exception => our service is not running, so
             # try to invoke it (if dbus activation would have worked, we
@@ -67,7 +66,7 @@ while count < 10:
         count += 1
         time.sleep(0.5)
 if not ok:
-    print _("Could not connect to DBUS component of LBRC")
+    logger.error(_("Could not connect to DBUS component of LBRC"))
     # We have to process the pending gtk events, as there the
     # dbus messages are stored.
     while(gtk.events_pending()):
