@@ -1,5 +1,6 @@
 package LBRC;
 
+import java.io.*;
 import javax.bluetooth.DeviceClass;
 import javax.bluetooth.DiscoveryAgent;
 import javax.bluetooth.DiscoveryListener;
@@ -77,12 +78,17 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 		if (com == List.SELECT_COMMAND) {
 			if (dis == deviceDisplayList) {
 				if (deviceDisplayList.getSelectedIndex() >= 0) {
-					int[] attributes = { 0x100 }; // the name of the service
+					int[] attributes = { 0x0000, 0x0001, 0x0004, 0x0100 }; // the name of the service
+					//int[] attributes = null;
 					//UUID[] uuids = new UUID[] {lbrc_uuid};
-					UUID[] uuids = new UUID[1];
-					uuids[0] = new UUID(0x1002); // browsable services
+					UUID[] uuids = new UUID[]{
+							//new UUID(0x1101) // Serial Port Profile
+							//new UUID(0x1002) // browsable services
+							new UUID(0x0003) // RFCOMM Services
+							//new UUID("9c6c8dce954511dca3c10011d8388a56", false)
+					};
 					FindServices( attributes,
-							      uuids, 
+							      uuids,
 							      (RemoteDevice) devices.elementAt(deviceDisplayList.getSelectedIndex()
 							     ));
 					waitScreen.setTitle("LBRC - Inquiery");
@@ -159,31 +165,34 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 		state = 0;
 		display.setCurrent(deviceDisplayList);
 		switch (respCode) {
-		case DiscoveryListener.SERVICE_SEARCH_COMPLETED:
-			for (int x = 0; x < services.size(); x++) {
-				ServiceRecord sr = (ServiceRecord) services.elementAt(x);
-				String name = (String) sr.getAttributeValue(0x0100).getValue();
-				if (name.equals("LBRC")) {
-					this.parent.connectRemoteService(sr);
-					break;
-				}
+			case DiscoveryListener.SERVICE_SEARCH_COMPLETED:
+				// Do nothing!
+				break;
+			case DiscoveryListener.SERVICE_SEARCH_DEVICE_NOT_REACHABLE:
+				this.parent.do_alert("Device not Reachable", 4000);
+				break;
+			case DiscoveryListener.SERVICE_SEARCH_ERROR:
+				this.parent.do_alert("Service serch error", 4000);
+				break;
+			case DiscoveryListener.SERVICE_SEARCH_NO_RECORDS:
+				this.parent.do_alert("LBRC Service not found! Length of " + 
+						             "service list: " + services.size(), 4000);
+				break;
+			case DiscoveryListener.SERVICE_SEARCH_TERMINATED:
+				this.parent.do_alert("Inqury Canceled", 4000);
+				break;
+			default:
+				this.parent.do_alert("Unknown Response on Service search", 4000);
+				break;
+		}
+		for (int x = 0; x < services.size(); x++) {
+			ServiceRecord sr = (ServiceRecord) services.elementAt(x);
+
+			String name = (String) sr.getAttributeValue(0x0100).getValue();
+			if (name.equals("LBRC")) {
+				this.parent.connectRemoteService(sr);
+				break;
 			}
-			break;
-		case DiscoveryListener.SERVICE_SEARCH_DEVICE_NOT_REACHABLE:
-			this.parent.do_alert("Device not Reachable", 4000);
-			break;
-		case DiscoveryListener.SERVICE_SEARCH_ERROR:
-			this.parent.do_alert("Service serch error", 4000);
-			break;
-		case DiscoveryListener.SERVICE_SEARCH_NO_RECORDS:
-			this.parent.do_alert("LBRC Service not found! Length of service list: " + services.size(), 4000);
-			break;
-		case DiscoveryListener.SERVICE_SEARCH_TERMINATED:
-			this.parent.do_alert("Inqury Canceled", 4000);
-			break;
-		default:
-			this.parent.do_alert("Unknown Response on Service search", 4000);
-			break;
 		}
 	}
 	
