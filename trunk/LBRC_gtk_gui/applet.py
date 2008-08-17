@@ -1,20 +1,22 @@
-import pygtk
-pygtk.require("2.0")
-import gtk
-import gtk.gdk
-import egg.trayicon
+"""This is the core of the gui control for LBRC"""
+# pylint: disable-msg=E1101
+from BlueZControl import BlueZControl
+from LBRC import dinterface
+from LBRC.config import config
+from LBRC.l10n import _
+from LBRC.path import path
+from config import ConfigWindow
 import dbus
 import dbus.glib
+import egg.trayicon
+import gtk
+import gtk.gdk
+import pygtk
+pygtk.require("2.0")
 
-from LBRC.path import path
-from LBRC import dinterface
-from LBRC.l10n import _
-from LBRC.config import config
-from BlueZControl import BlueZControl
-from config import ConfigWindow
 
 class Applet(object):
-    def __init__(self, bus, interface, service, **kwds):
+    def __init__(self, bus, interface, service):
         self.lbrc_core = dinterface(bus, service, '/core', interface)
         self.lbrc_profile = dinterface(bus, service, '/profile', interface)
         self.lbrc_connection = dinterface(bus, service, '/connection', interface)
