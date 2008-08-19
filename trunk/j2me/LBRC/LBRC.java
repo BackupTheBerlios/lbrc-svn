@@ -19,7 +19,7 @@ public class LBRC extends MIDlet {
     	try {
 			deviceSelect = new LBRCDeviceSelect(this);
 			deviceSelect.showChooser();
-			deviceSelect.FindDevices();
+			//deviceSelect.FindDevices();
     	}catch (Exception e) {
     		do_alert("Exception in Deviceselect: " + e.toString(), 20000);
     	}

@@ -1,13 +1,7 @@
 package LBRC;
 
 import java.io.*;
-import javax.bluetooth.DeviceClass;
-import javax.bluetooth.DiscoveryAgent;
-import javax.bluetooth.DiscoveryListener;
-import javax.bluetooth.LocalDevice;
-import javax.bluetooth.RemoteDevice;
-import javax.bluetooth.ServiceRecord;
-import javax.bluetooth.UUID;
+import javax.bluetooth.*;
 import javax.microedition.lcdui.Choice;
 import javax.microedition.lcdui.Command;
 import javax.microedition.lcdui.CommandListener;
@@ -18,7 +12,7 @@ import javax.microedition.lcdui.Displayable;
 public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 	private final static Command exit = new javax.microedition.lcdui.Command("Exit", Command.EXIT, 1);
 	private final static Command back = new javax.microedition.lcdui.Command("Back", Command.BACK, 1);
-	private final static Command scan = new javax.microedition.lcdui.Command("Scannen", Command.OK, 1);
+	private final static Command scan = new javax.microedition.lcdui.Command("Find Devices", Command.OK, 1);
 	LBRC parent;
 	WaitScreen waitScreen;
 	List deviceDisplayList;
@@ -35,6 +29,7 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 		this.parent = parent;
 		this.state = 0;
 		this.search = 0;
+		devices = new java.util.Vector();
 		waitScreen = new WaitScreen();
 		display = Display.getDisplay(this.parent);
 		deviceDisplayList = new List("LBRC - Devices", Choice.IMPLICIT);
@@ -44,6 +39,26 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 		deviceDisplayList.addCommand(exit);
 		deviceDisplayList.addCommand(scan);
 		deviceDisplayList.setCommandListener(this);
+		
+		try {
+			LocalDevice local = LocalDevice.getLocalDevice();
+			DiscoveryAgent agent = local.getDiscoveryAgent();
+	
+			RemoteDevice[] btdevices = agent.retrieveDevices(DiscoveryAgent.PREKNOWN);
+			
+			for (int x = 0; x < btdevices.length; x++) {
+				devices.addElement(btdevices[x]);
+				String device_name = "";
+				try {
+					device_name = btdevices[x].getFriendlyName(false);
+				} catch (IOException ex) {}
+				if (device_name.equals(""))
+					device_name = "Unkown: " + btdevices[x].getBluetoothAddress();
+				this.deviceDisplayList.append(device_name, null);
+			}
+		} catch (BluetoothStateException ex) {}
+		devices.addElement(null);
+		this.deviceDisplayList.append("[Find Devices]", null);
 	}
 	
 	public void showChooser() {
@@ -78,22 +93,17 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 		if (com == List.SELECT_COMMAND) {
 			if (dis == deviceDisplayList) {
 				if (deviceDisplayList.getSelectedIndex() >= 0) {
-					int[] attributes = { 0x0000, 0x0001, 0x0004, 0x0100 }; // the name of the service
-					//int[] attributes = null;
-					//UUID[] uuids = new UUID[] {lbrc_uuid};
-					UUID[] uuids = new UUID[]{
-							//new UUID(0x1101) // Serial Port Profile
-							//new UUID(0x1002) // browsable services
-							new UUID(0x0003) // RFCOMM Services
-							//new UUID("9c6c8dce954511dca3c10011d8388a56", false)
-					};
-					FindServices( attributes,
-							      uuids,
-							      (RemoteDevice) devices.elementAt(deviceDisplayList.getSelectedIndex()
-							     ));
-					waitScreen.setTitle("LBRC - Inquiery");
-					waitScreen.setAction("Checking for service");
-					this.display.setCurrent(waitScreen);
+					RemoteDevice dev = (RemoteDevice) devices.elementAt(deviceDisplayList.getSelectedIndex());
+					int[] attributes = { 0x0000, 0x0001, 0x0004, 0x0100 };
+					UUID[] uuids = new UUID[]{ new UUID(0x0003) };
+					if (dev != null) {
+						FindServices( attributes, uuids, dev);
+						waitScreen.setTitle("LBRC - Inquiery");
+						waitScreen.setAction("Checking for service");
+						this.display.setCurrent(waitScreen);
+					} else {
+						FindDevices();
+					}
 				}
 			}
 		}
@@ -101,10 +111,10 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 	
 	public void FindDevices() {
 		waitScreen.setTitle("LBRC - Scan");
-		waitScreen.setAction("Scanning for devices");
+		waitScreen.setAction("Searching for devices");
 		this.display.setCurrent(waitScreen);
+		devices.removeAllElements();
 		try {
-			devices = new java.util.Vector();
 			LocalDevice local = LocalDevice.getLocalDevice();
 			DiscoveryAgent agent = local.getDiscoveryAgent();
 			agent.startInquiry(DiscoveryAgent.GIAC, this);
@@ -140,14 +150,18 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 		switch (param) {
 		case DiscoveryListener.INQUIRY_COMPLETED: // Inquiry completed normally
 			this.deviceDisplayList.deleteAll();
-			for (int x = 0; x < devices.size(); x++)
+			for (int x = 0; x < devices.size(); x++) {
+				String device_name = "";
+				RemoteDevice dev = (RemoteDevice) devices.elementAt(x);
 				try {
-					String device_name = ((RemoteDevice) devices.elementAt(x))
-							.getFriendlyName(false);
-					this.deviceDisplayList.append(device_name, null);
-				} catch (Exception e) {
-					this.parent.do_alert("Error in adding devices", 4000);
-				}
+					device_name = dev.getFriendlyName(false);
+				} catch (IOException ex) {};
+				if (device_name.equals(""))
+					device_name = "Unkown: " + dev.getBluetoothAddress();
+				this.deviceDisplayList.append(device_name, null);
+			}
+			devices.addElement(null);
+			this.deviceDisplayList.append("[Find Devices]", null);
 			break;
 		case DiscoveryListener.INQUIRY_ERROR: // Error during inquiry
 			this.parent.do_alert("Inquiry error", 4000);
