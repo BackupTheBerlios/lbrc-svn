@@ -31,6 +31,10 @@ if 'de.berlios.lbrc' in dbus.SessionBus().list_names():
                             '/core', 
                             'de.berlios.lbrc')
 
+if "--only-reload" in sys.argv and lbrc_core:
+	lbrc_core.reload_config()
+	sys.exit(0)
+
 def config_close_handler(config_dialog, changed):
     if changed and lbrc_core:
         # If the core was running - inform it about the config change
