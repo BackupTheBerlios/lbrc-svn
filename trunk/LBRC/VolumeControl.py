@@ -1,11 +1,9 @@
 # TODO: Check how much overhead is produced by invoking the gstreamer constructor each time
 from LBRC.Listener import Listener
-import gobject
 import gst
 import gst.interfaces
 import re
 import logging
-from subprocess import Popen, PIPE, call
 
 class VolumeCommand(object):
     percent_re = re.compile('([+-])(\d+)%')
@@ -75,7 +73,7 @@ class VolumeCommand(object):
             query = {'type': "displayControl", 
                      'command': 'showModule',
                      "param": "VolumeControl",
-                     };
+                     }
             if not description['ShowVolumeControl']:
                 query['command'] = 'hideModule'
             self.logger.debug("Getting BT Connection")
@@ -93,7 +91,7 @@ class VolumeCommand(object):
             except Exception, e:
                 self.logger.debug(str(e))
         elif 'ShowChannels' in description:
-            self.parent.setVisibleDevices(description['ShowChannels']);
+            self.parent.setVisibleDevices(description['ShowChannels'])
 
 class VolumeControl(Listener):
     """
@@ -104,7 +102,8 @@ class VolumeControl(Listener):
         @param  config:         configuration data
         @type   config:         dictionary
         """
-        Listener.__init__(self, config, 'VolumeControl', command_class=VolumeCommand)
+        Listener.__init__(self, config, 'VolumeControl', 
+                          command_class=VolumeCommand)
         self.devices = []
         self.default_properties = {}
         
@@ -117,8 +116,7 @@ class VolumeControl(Listener):
             option_set.update(device)
             self.devices.append(option_set)
 
-    @staticmethod
-    def _getVolume(option_set):
+    def _getVolume(self, option_set):
         if not "channel" in option_set or \
            not "sound_system" in option_set:
             self.logger.error("Incomplete option_set for Volume Change: " + str(option_set))
@@ -136,9 +134,9 @@ class VolumeControl(Listener):
             mixer.set_property('device', option_set['device'])
         mixer.set_state(gst.STATE_PAUSED)
         track = None
-        for t in mixer.list_tracks():
-            if t.label == option_set['channel']:
-                track = t
+        for current_track in mixer.list_tracks():
+            if current_track.label == option_set['channel']:
+                track = current_track
                 break
         if track == None:
             self.logger.error('Specified channel not found!')
@@ -155,10 +153,6 @@ class VolumeControl(Listener):
             name = str(dev['channel'])
             volume = self._getVolume(dev)
             query['volumeData'].append([name, volume])
-        bc = self.bluetooth_connector.get_bt_connection()
-        if bc != None:
-            bc.send_query(query)
-
-    def shutdown(self):
-        for command in self.destruct:
-            command.call()
+        bluetooth_connector = self.bluetooth_connector.get_bt_connection()
+        if bluetooth_connector:
+            bluetooth_connector.send_query(query)
