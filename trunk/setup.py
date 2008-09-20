@@ -62,7 +62,7 @@ for (path, dirs, files) in os.walk("pot"):
 
 setup(name='lbrc',
       description = 'Linux Bluetooth Remote Control',
-      version='0.6.3-unreleased',
+      version='0.6.3',
       author = 'Matthias Blaesing',
       author_email = 'matthias.blaesing@rwth-aachen.de',
       url = 'http://lbrc.berlios.de/',
@@ -70,7 +70,7 @@ setup(name='lbrc',
       platforms = ['linux'],
       keywords = ['remotecontrol', 'bluetooth', 'j2me'],
       packages=['LBRC', 'LBRC_gtk_gui'],
-      scripts=['LBRCdbus', 'LBRC-applet', 'uinputbridge'],
+      scripts=['LBRCdbus', 'LBRC-applet', 'LBRC-config', 'uinputbridge'],
       cmdclass = {'build': custom_build,
                   'clean': custom_clean},
       data_files=data_files

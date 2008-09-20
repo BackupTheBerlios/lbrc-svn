@@ -75,3 +75,18 @@
 	  (reported by Alexander Fell)
 	* Check uniput device in UInputDispatcher before passing it to the dbusbridge
 	* adjust dbus-signature in loghandler (reported and fix tested by Danial Pässler)
+	
+2008-09-20 Matthias Bläsing <matthias.blaesing@rwth-aachen.de> (0.6.3)
+	* Fix typo in DBUSCaller rendering it unusable
+	* Fix type in CommandExecutorCommand rendering CommandExecutor useless
+	* Massive cleanups of the code and generalisation of functionality
+	* Add XInput Module, making use of the XTest Extension to better inject KeyPresses
+	* Create smaller j2me part (by obfuscation)
+	* Make j2me part create a list of pre known devices without scanning first
+	* Make j2me part more rebust with respect to the device search
+	* better debug output for the listenes modules (colbrac)
+	* make setup.py clean*up after itself (colbrac)
+	* fix debian versions (colbrac)
+	* add MANIFEST.in for easy source package creation (colbrac)
+	* switch applet to use logging framework and suppress irritating warnings when using LBRC*applet
+	* Add possibility to startup the configuration programm standalone
