@@ -43,18 +43,20 @@ public class LBRCDeviceSelect  implements CommandListener, DiscoveryListener {
 		try {
 			LocalDevice local = LocalDevice.getLocalDevice();
 			DiscoveryAgent agent = local.getDiscoveryAgent();
-	
+			
 			RemoteDevice[] btdevices = agent.retrieveDevices(DiscoveryAgent.PREKNOWN);
 			
-			for (int x = 0; x < btdevices.length; x++) {
-				devices.addElement(btdevices[x]);
-				String device_name = "";
-				try {
-					device_name = btdevices[x].getFriendlyName(false);
-				} catch (IOException ex) {}
-				if (device_name.equals(""))
-					device_name = "Unkown: " + btdevices[x].getBluetoothAddress();
-				this.deviceDisplayList.append(device_name, null);
+			if (btdevices != null) {
+				for (int x = 0; x < btdevices.length; x++) {
+					devices.addElement(btdevices[x]);
+					String device_name = "";
+					try {
+						device_name = btdevices[x].getFriendlyName(false);
+					} catch (IOException ex) {}
+					if (device_name.equals(""))
+						device_name = "Unkown: " + btdevices[x].getBluetoothAddress();
+					this.deviceDisplayList.append(device_name, null);
+				}
 			}
 		} catch (BluetoothStateException ex) {}
 		devices.addElement(null);
