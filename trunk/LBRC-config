@@ -30,6 +30,8 @@ if 'de.berlios.lbrc' in dbus.SessionBus().list_names():
                             'de.berlios.lbrc', 
                             '/core', 
                             'de.berlios.lbrc')
+else:
+    lbrc_core = None
 
 if "--only-reload" in sys.argv and lbrc_core:
 	lbrc_core.reload_config()
