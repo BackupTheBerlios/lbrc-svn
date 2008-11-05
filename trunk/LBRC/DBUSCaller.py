@@ -1,7 +1,6 @@
 from LBRC.Listener import Listener
 from LBRC import dinterface
 import dbus
-from dbus.exceptions import DBusException
 import logging
 
 class DBUSCall(object):
@@ -37,7 +36,7 @@ class DBUSCall(object):
                 self.bus = dbus.SystemBus()
             else:
                 self.bus = dbus.SessionBus()
-        except DBusException:
+        except dbus.DBusException:
             self.bus = None
                 
     def call(self):
