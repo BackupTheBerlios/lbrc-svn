@@ -225,10 +225,6 @@ class BTServer(gobject.GObject):
         self.port = self.server_sock.getsockname()[1] # get listening port
         self.server_sock.listen(1)
         
-        self.bluez_db = dinterface(dbus.SystemBus(), 
-                                   'org.bluez', 
-                                   '/org/bluez', 
-                                   'org.bluez.Database')
         self.advertise_id = None
 
         self._register_bluez_signals()
@@ -237,8 +233,22 @@ class BTServer(gobject.GObject):
     def _advertise_service(self, state=False):
         """Advertise service via SDP"""
         if not state and self.advertise_id:
-            self.bluez_db.RemoveServiceRecord(self.advertise_id)
-            self.advertise_id = None
+            if(type(self.advertise_id) != type({})):
+                bluez_db = dinterface(dbus.SystemBus(), 'org.bluez', '/org/bluez', 'org.bluez.Database')
+                self.advertise_id = bluez_db.AddServiceRecordFromXML(service_record)
+            else:
+                self.logger.debug("Entered new codepath for new bluez api")
+                manager = dinterface( dbus.SystemBus(), 'org.bluez', '/org/bluez', 'org.bluez.Manager')
+                active_connectors = manager.ListAdapters();
+                for connector_object in self.advertise_id:
+                    if not connector_object in active_connectors:
+                        continue
+                    connector_interface = dinterface( dbus.SystemBus(), 
+                                                      'org.bluez', 
+                                                      connector_object,
+                                                      'org.bluez.Service')
+                    connector_interface.RemoveRecord(self.advertise_id[connector_object]);
+            self.advertise_id = None;
         elif state and not self.advertise_id:
             service_record = \
 """
@@ -266,8 +276,19 @@ class BTServer(gobject.GObject):
        'name': self.name, 
        'channel': int(self.port) }
             self.logger.debug('Trying to register service: %s' % service_record)
-            self.advertise_id = self.bluez_db.AddServiceRecordFromXML(
-                                                                 service_record)
+            try:
+                bluez_db = dinterface(dbus.SystemBus(), 'org.bluez', '/org/bluez', 'org.bluez.Database')
+                self.advertise_id = bluez_db.AddServiceRecordFromXML(service_record)
+            except dbus.exceptions.DBusException:
+                self.advertise_id = {};
+                self.logger.debug("Entered new codepath for new bluez api")
+                manager = dinterface( dbus.SystemBus(), 'org.bluez', '/org/bluez', 'org.bluez.Manager')
+                for connector_object in manager.ListAdapters():
+                    connector_interface = dinterface( dbus.SystemBus(), 
+                                                      'org.bluez', 
+                                                      connector_object,
+                                                      'org.bluez.Service')
+                    self.advertise_id[connector_object] = connector_interface.AddRecord(service_record);
 
     def _switch_connectable(self):
         """Update state according to the settings
@@ -483,7 +504,7 @@ class BTServer(gobject.GObject):
         self.logger.debug('Check for pairing')
         manager = dinterface( dbus.SystemBus(),
                               'org.bluez',
-                              '/org/bluez',
+                              '/',
                               'org.bluez.Manager')
         adapters = manager.ListAdapters()
         paired = False
@@ -530,8 +551,7 @@ class BTServer(gobject.GObject):
         removal of bluetooth adapters"""
         if not BTServer.is_bluez_up():
             return
-        manager = dinterface(dbus.SystemBus(), 'org.bluez', 
-                           '/org/bluez', 'org.bluez.Manager')
+        manager = dinterface(dbus.SystemBus(), 'org.bluez', '/', 'org.bluez.Manager')
         manager.connect_to_signal("AdapterAdded", self.cb_adapter_added)
         #manager.connect_to_signal("AdapterRemoved", self.cb_adapter_removed)
 
@@ -552,8 +572,7 @@ class BTServer(gobject.GObject):
         @return:    True if bluez if bluez is up, False otherwise
         """
         bus = dbus.SystemBus()
-        manager = dbus.Interface(bus.get_object('org.bluez', '/org/bluez'),
-                                 'org.bluez.Manager')
+        manager = dbus.Interface(bus.get_object('org.bluez', '/'), 'org.bluez.Manager')
         try:
             manager.ListAdapters()
             return True
