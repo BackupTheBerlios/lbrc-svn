@@ -1,0 +1,20 @@
+# Button"mapping" Nokia N70:
+# 1 => 49, 2 => 50, 3 => 51, 
+# 4 => 52, 5 => 53, 6 => 54, 
+# 7 => 55, 8 => 56, 9 => 57
+# * => 42, 0 => 48, # => 35
+#
+# up   => 4294967295
+# down => 4294967294
+# right => 4294967292
+# left  => 4294967293
+# middle => 4294967291
+
+# call => 4294967286
+# hang up => 4294967285 (exit the app)
+
+# menu => 4294967284 (swith app to background)
+# multimedia => no code
+
+# edit => 4294967246
+# cancel => 4294967288
