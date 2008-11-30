@@ -279,7 +279,7 @@ class BTServer(gobject.GObject):
             try:
                 bluez_db = dinterface(dbus.SystemBus(), 'org.bluez', '/org/bluez', 'org.bluez.Database')
                 self.advertise_id = bluez_db.AddServiceRecordFromXML(service_record)
-            except dbus.exceptions.DBusException:
+            except DBusException:
                 self.advertise_id = {};
                 self.logger.debug("Entered new codepath for new bluez api")
                 manager = dinterface( dbus.SystemBus(), 'org.bluez', '/', 'org.bluez.Manager')
@@ -546,7 +546,7 @@ class BTServer(gobject.GObject):
                     else:
                         self.logger.debug('Bonding failed')
                     break
-                except dbus.exceptions.DBusException:
+                except DBusException:
                     self.logger.debug('Exception in BondingCreation' +
                                       ' (DBUS Methods)')
         return paired
