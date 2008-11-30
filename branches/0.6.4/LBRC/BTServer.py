@@ -581,7 +581,7 @@ class BTServer(gobject.GObject):
         try:
             manager.ListAdapters()
             return True
-        except dbus.dbus_bindings.DBusException:
+        except dbus.DBusException:
             return False
 
 def stand_alone_test():
