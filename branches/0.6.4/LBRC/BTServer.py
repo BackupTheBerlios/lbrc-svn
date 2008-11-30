@@ -235,7 +235,7 @@ class BTServer(gobject.GObject):
         if not state and self.advertise_id:
             if(type(self.advertise_id) != type({})):
                 bluez_db = dinterface(dbus.SystemBus(), 'org.bluez', '/org/bluez', 'org.bluez.Database')
-                self.advertise_id = bluez_db.AddServiceRecordFromXML(service_record)
+                self.advertise_id = bluez_db.RemoveServiceRecord(self.advertise_id)
             else:
                 self.logger.debug("Entered new codepath for new bluez api")
                 manager = dinterface( dbus.SystemBus(), 'org.bluez', '/', 'org.bluez.Manager')
@@ -508,6 +508,11 @@ class BTServer(gobject.GObject):
                               'org.bluez.Manager')
         adapters = manager.ListAdapters()
         paired = False
+        # TODO: Call a ghost to hunt the designers of api transition of bluez
+        #       This is plain evil!
+        for i in range(0,len(adapters)):
+            if adapters[i].count("/") == 1:
+                adapters[i] = "/org/bluez" + adapters[i]
         for adapter in adapters:
             adapter = dinterface(dbus.SystemBus(), 
                                  'org.bluez', 
