@@ -238,7 +238,7 @@ class BTServer(gobject.GObject):
                 self.advertise_id = bluez_db.AddServiceRecordFromXML(service_record)
             else:
                 self.logger.debug("Entered new codepath for new bluez api")
-                manager = dinterface( dbus.SystemBus(), 'org.bluez', '/org/bluez', 'org.bluez.Manager')
+                manager = dinterface( dbus.SystemBus(), 'org.bluez', '/', 'org.bluez.Manager')
                 active_connectors = manager.ListAdapters();
                 for connector_object in self.advertise_id:
                     if not connector_object in active_connectors:
@@ -282,7 +282,7 @@ class BTServer(gobject.GObject):
             except dbus.exceptions.DBusException:
                 self.advertise_id = {};
                 self.logger.debug("Entered new codepath for new bluez api")
-                manager = dinterface( dbus.SystemBus(), 'org.bluez', '/org/bluez', 'org.bluez.Manager')
+                manager = dinterface( dbus.SystemBus(), 'org.bluez', '/', 'org.bluez.Manager')
                 for connector_object in manager.ListAdapters():
                     connector_interface = dinterface( dbus.SystemBus(), 
                                                       'org.bluez', 
