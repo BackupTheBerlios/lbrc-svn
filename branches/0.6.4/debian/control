@@ -11,12 +11,13 @@ Vcs-Browser: http://svn.berlios.de/wsvn/lbrc
 
 Package: python-lbrc
 Architecture: any
-Depends: ${python:Depends}, python-dbus, python-gtk2, python-bluez, python-gnome2-extras, python-xlib
+Depends: ${python:Depends}, python-dbus, python-gtk2, python-bluez, python-gnome2-extras, python-xlib, libc6
 XB-Python-Version: ${python:Versions}
 Description: Linux Bluetooth Remote Control
  Allows a J2ME device to control the Linux PC. This application allows:
     * injection of mouse/keyboard events into the kernel
-    * execution of custom commands (commandline + dbus)
-      one example for the dbus controller: control rhythmbox from your phone
+    * injection of mouse/keyboard events into a X11-Session
+    * execution of custom commands (commandline + D-Bus)
+      one example for the D-Bus controller: control rhythmbox from your phone
     * remote volume control
     * controlling a mplayer instance
