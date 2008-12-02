@@ -1,3 +1,9 @@
+lbrc (0.6.4) unstable; urgency=low
+
+  * New upstream version
+
+ -- Matthias Bläsing <matthias.blaesing@rwth-aachen.de>  Tue,  02 Dec 2008 20:41:00 +0100
+ 
 lbrc (0.6.3) unstable; urgency=low
 
   * New upstream version

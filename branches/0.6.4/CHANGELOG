@@ -75,3 +75,6 @@
 	  (reported by Alexander Fell)
 	* Check uniput device in UInputDispatcher before passing it to the dbusbridge
 	* adjust dbus-signature in loghandler (reported and fix tested by Danial Pässler)
+	
+2008-12-02 Matthias Bläsing <matthias.blaesing@rwth-aachen.de>
+	* Fix issues with new bluez api - needs more attention, but should work for now
