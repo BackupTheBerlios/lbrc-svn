@@ -90,3 +90,6 @@
 	* add MANIFEST.in for easy source package creation (colbrac)
 	* switch applet to use logging framework and suppress irritating warnings when using LBRC*applet
 	* Add possibility to startup the configuration programm standalone
+	
+2008-12-02 Matthias Bläsing <matthias.blaesing@rwth-aachen.de>
+	* Fix issues with new bluez api - needs more attention, but should work for now
