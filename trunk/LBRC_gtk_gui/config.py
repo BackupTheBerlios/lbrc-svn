@@ -542,14 +542,44 @@ class ConfigWindowWidget(gtk.VBox):
         'changed': (gobject.SIGNAL_RUN_LAST, gobject.TYPE_NONE, ())
     }
     
+    def remove_entry(self, *args):
+        selection = self.treeview.get_selection()
+        print selection.count_selected_rows()
+        treemodel = self.treeview.get_model()
+        for path in selection.get_selected_rows()[1]:
+            iter = treemodel.get_iter(path)
+            (mod, entry) = treemodel.get(iter, 4, 5)
+            section = self.config.get_profile(self.current_profilesource, 
+                                              self.current_profileid,
+                                              mod.section)
+            section[self.subaction].remove(entry)
+            treemodel.remove(iter)
+        self.emit("changed")
+        #self.entries.append([keycode, mapping, name, description(entry), mod, entry])
+        #section = self.config.get_profile(config, profileid, config_section)
+    
     def __init__(self, config, subaction, modules):
         gtk.VBox.__init__(self)
+        self.current_profileid = None;
+        self.current_profilesource = None;
         self.modules = modules
         self.subaction = subaction
         scrolledwindow = gtk.ScrolledWindow()
+        scrolledwindow.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
         self.treeview = treeview = gtk.TreeView()
+        treeview.get_selection().set_mode(gtk.SELECTION_MULTIPLE)
+        self.treeview.set_grid_lines(True)
         scrolledwindow.add(treeview)
-        self.add(scrolledwindow)
+        self.pack_start(scrolledwindow, True, True, 0)
+        buttonbox = gtk.HButtonBox()
+        buttonbox.set_homogeneous(True)
+        buttonbox.set_layout(gtk.BUTTONBOX_END)
+        self.new_button = gtk.Button(label="", stock=gtk.STOCK_NEW)
+        self.delete_button = gtk.Button(label="", stock=gtk.STOCK_DELETE)
+        self.delete_button.connect("clicked", self.remove_entry)
+        buttonbox.pack_start(self.new_button);
+        buttonbox.pack_start(self.delete_button);
+        self.pack_start(buttonbox, False, True, 0)
         offset = 0
         if subaction == 'actions':
             textrenderer = gtk.CellRendererText()
@@ -565,7 +595,7 @@ class ConfigWindowWidget(gtk.VBox):
             #textrenderer.set_property("editable-set", True)
             treeview.insert_column_with_attributes(
                         1, 
-                        _("Mapping"), 
+                        _("Map"), 
                         textrenderer,
                         text=1)
             offset = 2
@@ -593,15 +623,19 @@ class ConfigWindowWidget(gtk.VBox):
         
         self.config = config
         self.editable = False
-        self.entries = gtk.ListStore(str, str, str, str, gobject.TYPE_PYOBJECT)
+        self.entries = gtk.ListStore(str, str, str, str, gobject.TYPE_PYOBJECT, gobject.TYPE_PYOBJECT)
     
     def set_noprofile(self):
-        self.section = None
-        self.editable = False
+        self.current_profileid = None;
+        self.current_profilesource = None;
+        self.set_editable(False)
+        self.entries.clear()
         self.update_view()
     
     def set_profile(self, profileid, config):
         self.entries.clear()
+        self.current_profileid = profileid
+        self.current_profilesource = config;
         for mod in self.modules:
             name = mod.name
             config_section = mod.section
@@ -614,7 +648,7 @@ class ConfigWindowWidget(gtk.VBox):
                         keycode = str(entry['keycode'])
                     if 'mapping' in entry:
                         mapping = str(entry['mapping'])
-                    self.entries.append([keycode, mapping, name, description(entry), entry])
+                    self.entries.append([keycode, mapping, name, description(entry), mod, entry])
             except (LBRC.config.sectionNotFoundException, KeyError):
                 pass
         if config == 'system':
@@ -624,12 +658,13 @@ class ConfigWindowWidget(gtk.VBox):
         self.update_view()
         
     def update_view(self):
-        print "Updated view with:" + str(self.entries)
         self.treeview.set_model(self.entries)
         
     def set_editable(self, value):
         self.editable = value
         self.treeview.set_sensitive(value)
+        self.new_button.set_sensitive(value)
+        self.delete_button.set_sensitive(value)
         
 class UinputKeyMouseEditor(ConfigWindowWidget):
     """
@@ -964,6 +999,7 @@ class ConfigWindow(gobject.GObject):
             )
             self.widget("config_notebook").append_page(
               self.config_applets[-1], gtk.Label(i))
+            self.config_applets[-1].connect("changed", self._change_handler)
         
         self.widget("config_notebook").show_all()
         self.widget("config_notebook").set_current_page(1)
